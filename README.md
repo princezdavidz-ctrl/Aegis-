@@ -34,9 +34,11 @@ The repository currently contains the project overview and the first React UI fo
 Requirements: Node.js 20.19+ or 22.12+ and npm.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
+
+Use `npm ci` for a clean, lockfile-pinned install. After changing dependencies, update `package-lock.json` with `npm install` and commit both dependency files.
 
 Available checks:
 
