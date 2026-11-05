@@ -8,8 +8,7 @@
 - Default branch: `main`.
 - Starting commit: `a51322bf88436fc853c2f67214bdf98c3b266cd0` (`docs: establish AEGIS project overview and roadmap`).
 - Starting tree contained only `README.md`; no application source, package manifest, tests, or progress log existed.
-- `feat/react-ui-foundation` already existed but pointed to the same starting commit as `main`; no open pull request existed.
-- UI foundation delivered on `feat/react-ui-foundation` in commit `21ad1ff6de899c4c782d637ac1b3b0c62b79a393`; draft review: https://github.com/princezdavidz-ctrl/Aegis-/pull/1.
+- `feat/react-ui-foundation` was created from the initial baseline. The first UI implementation is tracked in draft PR [#1](https://github.com/princezdavidz-ctrl/Aegis-/pull/1).
 - No existing application code or project decisions needed to be replaced. The existing defensive-security principles and layered roadmap were retained.
 
 ### Completed
@@ -19,26 +18,55 @@
 - Added explicit preview states for unavailable services. The UI does not imply that telemetry, models, agents, memory, or security tools are live.
 - Added platform-readiness placeholders for the planned Python API, orchestrator, model provider, and memory store.
 - Added a small Node.js built-in test suite for the navigation model.
-- Added a GitHub Actions workflow to install dependencies and run tests, typecheck, and production build on pushes and pull requests.
+- Added a GitHub Actions workflow for tests, TypeScript checking, and the production build.
 - Added `.gitignore`, setup/check commands, and this progress log; updated the README to describe the actual repository state.
 
-### Validation and limitations
+### Validation at initial delivery
 
-- `node --test tests/*.test.mjs`: **2 tests passed** (navigation module coverage).
-- TypeScript transpile/syntax checks passed for all TS/TSX source and the Vite config; the standalone JavaScript navigation module passed TypeScript checking.
+- `node --test tests/*.test.mjs`: **2 tests passed**.
+- TypeScript transpile/syntax checks passed for TS/TSX source and the Vite config; the standalone JavaScript navigation module passed TypeScript checking.
 - PostCSS successfully parsed `src/index.css`.
-- Full project typecheck and Vite production build have not been run locally: outbound DNS/network access is unavailable, the repository could not be cloned locally, and frontend npm dependencies are not installed here. The new GitHub Actions workflow is the network-enabled verification path; its first run is pending.
-- A dependency lockfile has not been generated. Do not treat the frontend as production-ready until dependencies are installed, a lockfile is committed, and typecheck/build checks pass in a network-enabled environment.
+- At initial delivery, full project typecheck/build and a committed lockfile were still pending because the local environment could not resolve external network hosts.
 
-### Pending
+### Pending at initial delivery
 
-- Install frontend dependencies in a network-enabled environment, generate and commit `package-lock.json`, and run `npm run typecheck`, `npm test`, and `npm run build`.
-- Add component-level interaction/accessibility tests and CI after the dependency install is verified.
+- Generate and commit a dependency lockfile, then run the complete install/test/typecheck/build sequence on a network-enabled runner.
+- Add component-level interaction/accessibility tests.
 - Implement the Python API with authentication, request validation, scoped authorization, and audit events.
 - Implement the central orchestrator and narrowly scoped agents.
 - Add model adapters, controlled memory, and defensive tool adapters behind explicit permission gates.
-- Add end-to-end security tests, CI, observability, and deployment configuration.
+- Add end-to-end security tests, observability, and deployment configuration.
+
+### Next task at initial delivery
+
+Verify and lock the frontend toolchain in a network-enabled runner before beginning the Python API boundary.
+
+## 2026-11-05 — Lockfile and reproducible frontend CI
+
+### Completed
+
+- Generated and committed `package-lock.json` using the GitHub-hosted Node.js 22.16.0 runner; the lockfile uses npm lockfile version 3 and records 161 package entries.
+- Updated the web CI workflow to install with `npm ci --no-audit --no-fund` instead of resolving dependencies afresh with `npm install`.
+- Restored least-privilege workflow permissions to `contents: read` after the one-time lockfile bootstrap.
+- Updated the README to use `npm ci` for clean installs and explain how to update the lockfile when dependencies change.
+
+### Validation
+
+- GitHub Actions run [#42023899788](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42023899788) completed successfully on 2026-11-05.
+- `npm ci --no-audit --no-fund`: passed.
+- `npm test`: passed (**2 tests**).
+- `npm run typecheck`: passed.
+- `npm run build`: passed.
+- A local clone was attempted but blocked by DNS resolution for `github.com`; the full install and checks were therefore executed on the network-enabled GitHub runner.
+
+### Current pending work
+
+- Add React component-level tests for navigation behavior, keyboard interaction, selected states, and responsive navigation accessibility.
+- Implement the Python API with typed request/response boundaries, authentication, scope validation, and audit events.
+- Implement the central orchestrator and narrowly scoped agents.
+- Add replaceable model adapters, controlled memory, and permission-gated defensive security tool adapters.
+- Add end-to-end security tests, observability, configuration management, and deployment infrastructure.
 
 ### Next task
 
-Verify and lock the frontend toolchain in a network-enabled runner, then add component-level tests and CI. Only after the UI build is reproducible should the next architectural layer—the Python API boundary—begin.
+Add component-level UI interaction and accessibility tests. Once that coverage is in place, begin the Python API boundary without connecting the preview UI to unimplemented services.
