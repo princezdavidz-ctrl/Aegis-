@@ -10,7 +10,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   web:
@@ -26,16 +26,19 @@ jobs:
           node-version: 22.16.0
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Export generated lockfile for repository pinning
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-package-lock
-          path: package-lock.json
-          if-no-files-found: error
-          retention-days: 1
       - name: Run tests
         run: npm test
       - name: Typecheck
         run: npm run typecheck
       - name: Build production bundle
         run: npm run build
+      - name: Commit generated lockfile after successful checks
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "build: pin frontend dependencies [skip ci]"
+            git push
+          fi
