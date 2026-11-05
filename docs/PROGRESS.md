@@ -9,6 +9,7 @@
 - Starting commit: `a51322bf88436fc853c2f67214bdf98c3b266cd0` (`docs: establish AEGIS project overview and roadmap`).
 - Starting tree contained only `README.md`; no application source, package manifest, tests, or progress log existed.
 - `feat/react-ui-foundation` already existed but pointed to the same starting commit as `main`; no open pull request existed.
+- UI foundation delivered on `feat/react-ui-foundation` in commit `21ad1ff6de899c4c782d637ac1b3b0c62b79a393`; draft review: https://github.com/princezdavidz-ctrl/Aegis-/pull/1.
 - No existing application code or project decisions needed to be replaced. The existing defensive-security principles and layered roadmap were retained.
 
 ### Completed
