@@ -19,6 +19,7 @@
 - Added explicit preview states for unavailable services. The UI does not imply that telemetry, models, agents, memory, or security tools are live.
 - Added platform-readiness placeholders for the planned Python API, orchestrator, model provider, and memory store.
 - Added a small Node.js built-in test suite for the navigation model.
+- Added a GitHub Actions workflow to install dependencies and run tests, typecheck, and production build on pushes and pull requests.
 - Added `.gitignore`, setup/check commands, and this progress log; updated the README to describe the actual repository state.
 
 ### Validation and limitations
@@ -26,7 +27,7 @@
 - `node --test tests/*.test.mjs`: **2 tests passed** (navigation module coverage).
 - TypeScript transpile/syntax checks passed for all TS/TSX source and the Vite config; the standalone JavaScript navigation module passed TypeScript checking.
 - PostCSS successfully parsed `src/index.css`.
-- Full project typecheck and Vite production build have not been run in this execution environment: outbound DNS/network access is unavailable, the repository could not be cloned locally, and frontend npm dependencies are not installed here.
+- Full project typecheck and Vite production build have not been run locally: outbound DNS/network access is unavailable, the repository could not be cloned locally, and frontend npm dependencies are not installed here. The new GitHub Actions workflow is the network-enabled verification path; its first run is pending.
 - A dependency lockfile has not been generated. Do not treat the frontend as production-ready until dependencies are installed, a lockfile is committed, and typecheck/build checks pass in a network-enabled environment.
 
 ### Pending
