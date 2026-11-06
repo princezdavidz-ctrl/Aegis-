@@ -48,7 +48,7 @@ npm run typecheck
 npm run build
 ```
 
-The dashboard labels all unavailable services as pending and does not fabricate security events or operational metrics.
+The dashboard labels all unavailable services as pending and does not fabricate security events or operational metrics. The UI test suite renders the React dashboard and sidebar through Vite SSR to check navigation landmarks, selected-page semantics, native button controls, and visible keyboard focus styling. Browser-driven key-event and viewport testing remains a follow-on quality task.
 
 ## Project workspace
 
