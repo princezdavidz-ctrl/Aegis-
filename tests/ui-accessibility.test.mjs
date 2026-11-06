@@ -36,13 +36,13 @@ after(async () => {
 });
 
 function findNavigation(markup, label) {
-  const openingTag = \`<nav aria-label="\${label}"\`;
+  const openingTag = '<nav aria-label="' + label + '"';
   const start = markup.indexOf(openingTag);
 
-  assert.notEqual(start, -1, \`Expected a navigation landmark named "\${label}"\`);
+  assert.notEqual(start, -1, 'Expected a navigation landmark named "' + label + '"');
 
   const end = markup.indexOf('</nav>', start);
-  assert.notEqual(end, -1, \`Expected the "\${label}" navigation landmark to close\`);
+  assert.notEqual(end, -1, 'Expected the "' + label + '" navigation landmark to close');
 
   return markup.slice(start, end + '</nav>'.length);
 }
