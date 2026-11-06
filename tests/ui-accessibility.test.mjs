@@ -36,19 +36,19 @@ after(async () => {
 });
 
 function findNavigation(markup, label) {
-  const openingTag = `<nav aria-label="${label}"`;
+  const openingTag = \`<nav aria-label="\${label}"\`;
   const start = markup.indexOf(openingTag);
 
-  assert.notEqual(start, -1, `Expected a navigation landmark named "${label}"`);
+  assert.notEqual(start, -1, \`Expected a navigation landmark named "\${label}"\`);
 
   const end = markup.indexOf('</nav>', start);
-  assert.notEqual(end, -1, `Expected the "${label}" navigation landmark to close`);
+  assert.notEqual(end, -1, \`Expected the "\${label}" navigation landmark to close\`);
 
   return markup.slice(start, end + '</nav>'.length);
 }
 
 function getButtons(markup) {
-  return [...markup.matchAll(/<button\\b([^>]*)>([\\s\\S]*?)<\\/button>/g)].map((match) => ({
+  return [...markup.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)].map((match) => ({
     attributes: match[1],
     label: match[2].replace(/<[^>]*>/g, '').trim(),
   }));
@@ -65,17 +65,17 @@ test('dashboard exposes separately named desktop and mobile navigation landmarks
 
     assert.deepEqual(buttons.map(({ label }) => label), expectedLabels);
     assert.ok(
-      buttons.every(({ attributes }) => /\\btype="button"/.test(attributes)),
+      buttons.every(({ attributes }) => /\btype="button"/.test(attributes)),
       'Navigation controls must be non-submitting native buttons',
     );
     assert.equal(
-      buttons.filter(({ attributes }) => /\\baria-current="page"/.test(attributes)).length,
+      buttons.filter(({ attributes }) => /\baria-current="page"/.test(attributes)).length,
       1,
       'Each navigation landmark must expose exactly one current page',
     );
     assert.match(
       buttons[0].attributes,
-      /\\baria-current="page"/,
+      /\baria-current="page"/,
       'Overview is the initial selected page',
     );
   }
@@ -93,16 +93,16 @@ test('Sidebar exposes the selected section through aria-current', () => {
 
   assert.equal(buttons.length, expectedLabels.length);
   assert.equal(
-    buttons.filter(({ attributes }) => /\\baria-current="page"/.test(attributes)).length,
+    buttons.filter(({ attributes }) => /\baria-current="page"/.test(attributes)).length,
     1,
   );
   assert.match(
     buttons.find(({ label }) => label === 'Memory').attributes,
-    /\\baria-current="page"/,
+    /\baria-current="page"/,
   );
   assert.doesNotMatch(
     buttons.find(({ label }) => label === 'Overview').attributes,
-    /\\baria-current="page"/,
+    /\baria-current="page"/,
   );
 });
 
@@ -111,7 +111,7 @@ test('navigation controls retain a visible keyboard focus indicator', async () =
 
   assert.match(
     stylesheet,
-    /button:focus-visible\\s*\\{[^}]*outline:\\s*2px[^}]*outline-offset:\\s*3px/s,
+    /button:focus-visible\s*\{[^}]*outline:\s*2px[^}]*outline-offset:\s*3px/s,
     'Keyboard focus must be visibly distinguishable',
   );
 });
