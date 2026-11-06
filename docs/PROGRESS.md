@@ -70,3 +70,35 @@ Verify and lock the frontend toolchain in a network-enabled runner before beginn
 ### Next task
 
 Add component-level UI interaction and accessibility tests. Once that coverage is in place, begin the Python API boundary without connecting the preview UI to unimplemented services.
+
+
+## 2026-11-06 — UI navigation accessibility regression coverage
+
+### Completed
+
+- Added component-level regression tests that load the real React App and Sidebar through Vite's SSR module loader; no additional runtime or test dependencies were introduced.
+- Verified that desktop and mobile navigation expose distinct, named navigation landmarks.
+- Verified all six navigation items render as native non-submitting buttons and exactly one item in each navigation landmark is exposed as the current page.
+- Verified the sidebar reports a non-default selected section with aria-current="page".
+- Verified the stylesheet retains a visible :focus-visible outline for keyboard users.
+
+### Validation
+
+- GitHub Actions run [#42213137584](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42213137584) completed successfully on 2026-11-06.
+- npm ci --no-audit --no-fund: passed.
+- npm test: passed (5 tests, 0 failures).
+- npm run typecheck: passed.
+- npm run build: passed.
+- Two earlier test runs failed while the initial test file was being corrected; the final tested commit is 337e0d67f857ab0cfd982064334038af585a9275, and its CI run is green.
+
+### Current pending work
+
+- Add browser-driven keyboard activation and viewport-specific navigation tests; the current SSR suite checks semantic controls and focus styling but does not dispatch real key events or emulate responsive breakpoints.
+- Implement the Python API with typed request/response boundaries, authentication, scope validation, and audit events.
+- Implement the central orchestrator and narrowly scoped agents.
+- Add replaceable model adapters, controlled memory, and permission-gated defensive security tool adapters.
+- Add end-to-end security tests, observability, configuration management, and deployment infrastructure.
+
+### Next task
+
+Create the Python API foundation with FastAPI and Pydantic, starting with configuration-safe startup, liveness/readiness endpoints, and typed API contracts. Keep the service disconnected from models, memory, and security tools until their authorization and audit boundaries are implemented.
