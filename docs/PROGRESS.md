@@ -102,3 +102,49 @@ Add component-level UI interaction and accessibility tests. Once that coverage i
 ### Next task
 
 Create the Python API foundation with FastAPI and Pydantic, starting with configuration-safe startup, liveness/readiness endpoints, and typed API contracts. Keep the service disconnected from models, memory, and security tools until their authorization and audit boundaries are implemented.
+
+
+## 2026-11-07 — Initial Python API service boundary
+
+### Repository state at start of run
+
+- Re-read the repository README, progress log, package manifest, frontend CI workflow, React dashboard, sidebar, navigation model, and existing UI tests on `feat/react-ui-foundation`.
+- Repository: `princezdavidz-ctrl/Aegis-`; default branch: `main`.
+- Starting branch head: `cabb86a124062725f17afecd76cb5efe33bef863`.
+- Existing draft PR [#1](https://github.com/princezdavidz-ctrl/Aegis-/pull/1) remains open; no existing UI or documentation files were removed.
+
+### Completed
+
+- Added a Python 3.11+ FastAPI application factory under `backend/app/`.
+- Added validated, immutable settings sourced only from the documented non-secret `AEGIS_APP_NAME`, `AEGIS_ENVIRONMENT`, and `AEGIS_LOG_LEVEL` variables.
+- Added typed Pydantic response contracts and unauthenticated `/health/live` and `/health/ready` endpoints. Readiness explicitly reports external dependencies as `not_configured`; it does not imply that any database, model, memory store, or security integration is operational.
+- Disabled interactive API docs and the OpenAPI document when `AEGIS_ENVIRONMENT=production`.
+- Added pinned runtime and development Python dependencies, local setup documentation, and Python cache/virtual-environment ignore rules.
+- Extended GitHub Actions with a separate Python API test/compile job while preserving the existing frontend CI job and read-only workflow permissions.
+- Updated the root README with the API setup, checks, current limitations, and accurate service status.
+
+### Validation
+
+- `PYTHONPATH=backend python -m pytest backend/tests -q`: **6 passed**.
+- `python -m compileall -q backend/app`: passed.
+- GitHub Actions workflow YAML parsed locally and contains both `web` and `api` jobs.
+- The existing frontend CI job remains configured to run `npm ci`, `npm test`, `npm run typecheck`, and `npm run build`; a fresh hosted-runner result is required after this push before the combined change can be considered fully verified.
+
+### Security and scope notes
+
+- No credentials, tokens, private data, or real telemetry were added.
+- Health endpoints expose only process/service readiness metadata and are the only API routes.
+- No authentication, user-data routes, model calls, memory persistence, orchestration, or security-tool execution has been implemented. Those capabilities remain blocked on explicit identity, authorization-scope, audit, and approval contracts.
+
+### Current pending work
+
+- Obtain a green GitHub Actions run for both frontend and Python jobs on the pushed commit.
+- Add browser-driven keyboard activation and responsive viewport tests for the React UI.
+- Design and test authentication, request identity, authorization scope, and append-only audit-event boundaries before adding protected API routes.
+- Implement the central orchestrator and narrowly scoped agents after the API security boundary is established.
+- Add replaceable model adapters, controlled memory, and permission-gated defensive security tool adapters.
+- Add end-to-end security tests, observability, configuration management, and deployment infrastructure.
+
+### Next task
+
+Design the API identity/scope and audit-event contracts, with tests for deny-by-default behavior. Do not add protected routes or connect the UI to the API until those controls are implemented and verified.

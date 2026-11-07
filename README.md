@@ -27,7 +27,7 @@ This is a roadmap, not a claim that the later components already exist.
 
 ## Repository status
 
-The repository currently contains the project overview and the first React UI foundation. The UI is intentionally a **local preview**: it does not connect to telemetry, models, agents, memory, or security tools, and it cannot perform security actions. See [the progress log](docs/PROGRESS.md) for the audit, completed work, limitations, and next task.
+The repository contains the first React UI foundation and a local FastAPI service foundation. The UI remains a **local preview** and is not connected to telemetry, models, agents, memory, or security tools. The API currently exposes only liveness and readiness endpoints; it is not deployed and has no authentication, user-data, model, memory, or security-tool routes. See [the progress log](docs/PROGRESS.md) for completed work, validation, limitations, and the next task.
 
 ## Web UI development
 
@@ -49,6 +49,28 @@ npm run build
 ```
 
 The dashboard labels all unavailable services as pending and does not fabricate security events or operational metrics. The UI test suite renders the React dashboard and sidebar through Vite SSR to check navigation landmarks, selected-page semantics, native button controls, and visible keyboard focus styling. Browser-driven key-event and viewport testing remains a follow-on quality task.
+
+## Python API development
+
+Requirements: Python 3.11+ and pip.
+
+```bash
+python -m venv .venv
+# macOS/Linux: source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -r backend/requirements-dev.txt
+uvicorn app.main:app --app-dir backend --reload
+```
+
+The API listens on `http://127.0.0.1:8000`. Development documentation is available at `/docs`; it is disabled in the `production` environment. Only `/health/live` and `/health/ready` exist at this stage. Readiness explicitly reports external dependencies as `not_configured` rather than implying that models, databases, or security tools are connected.
+
+Run API tests from the repository root:
+
+```bash
+PYTHONPATH=backend python -m pytest backend/tests -q
+```
+
+The pinned runtime and development dependencies are listed in `backend/requirements.txt` and `backend/requirements-dev.txt`. Current non-secret configuration variables are documented in [the backend README](backend/README.md).
 
 ## Project workspace
 
