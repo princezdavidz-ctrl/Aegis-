@@ -64,6 +64,8 @@ uvicorn app.main:app --app-dir backend --reload
 
 The API listens on `http://127.0.0.1:8000`. Development documentation is available at `/docs`; it is disabled in the `production` environment. Only `/health/live` and `/health/ready` exist at this stage. Readiness explicitly reports external dependencies as `not_configured` rather than implying that models, databases, or security tools are connected.
 
+The API also contains pure security contracts under `backend/app/security/`: immutable principal and permission models, exact-scope deny-by-default authorization, immutable audit events, and an append-only `AuditEventSink` protocol. These contracts are **not authentication or active enforcement**: no credential verifier, request middleware, protected route, or durable audit store is connected. Only a future trusted authentication adapter may create a `Principal`; caller-supplied identity data must never be trusted. The `tool:execute` permission is a contract only and does not enable tool execution.
+
 Run API tests from the repository root:
 
 ```bash

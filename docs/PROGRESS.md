@@ -147,3 +147,41 @@ Create the Python API foundation with FastAPI and Pydantic, starting with config
 ### Next task
 
 Design the API identity/scope and audit-event contracts, with tests for deny-by-default behavior. Do not add protected routes or connect the UI to the API until those controls are implemented and verified.
+
+
+## 2026-11-08 — Deny-by-default identity, scope, and audit contracts
+
+### Repository state at start of run
+
+- Re-inspected the repository tree, README, full progress log, backend README, FastAPI application/configuration/health contracts, backend tests, pinned Python dependencies, and the existing GitHub Actions workflow on `feat/react-ui-foundation`.
+- Starting branch head: `9341dadfa2f1540b6b6c764a27a8ac7f313d0ca8`; default branch remains `main`.
+- Existing draft PR [#1](https://github.com/princezdavidz-ctrl/Aegis-/pull/1) remains open. Existing UI, API health routes, workflow, and prior documentation were preserved.
+
+### Completed
+
+- Added `backend/app/security/identity.py` with immutable user/service principal types and a small explicit permission catalog. Principals receive no permissions by default.
+- Added `backend/app/security/authorization.py` with a pure authorization function that grants only an exact declared permission. Missing principals and missing scopes are denied; wildcard and unknown scopes are rejected by validation.
+- Added `backend/app/security/audit.py` with immutable, timezone-aware, payload-free audit event contracts and an append-only asynchronous sink protocol. Event outcome and authorization reason consistency are validated.
+- Added focused tests for missing identity, empty scopes, exact-scope grants, non-inherited scopes, wildcard rejection, model immutability, extra-field rejection, UTC timestamps, audit outcome consistency, and the append-only sink interface.
+- Updated the root and backend READMEs to distinguish these contracts from actual authentication, enforcement, or durable audit storage.
+
+### Validation
+
+- Local validation used Python 3.13.5 with the repository-pinned FastAPI/Pydantic versions and development test dependencies already available in the execution environment.
+- `PYTHONPATH=backend python -m pytest backend/tests -q`: **18 passed** (6 existing API tests and 12 new security-contract tests).
+- `python -m compileall -q backend/app`: passed.
+- No new dependencies, credentials, secrets, private data, middleware, protected routes, persistence, or security-tool execution were added.
+- GitHub Actions validation is triggered by the pushed commit; its result will be recorded after the hosted run completes.
+
+### Security boundaries and pending work
+
+- These models do not authenticate callers. No code currently constructs a request principal from a verified token, and no protected endpoint uses the authorization function.
+- The audit sink is an interface only. No durable append-only storage, retention policy, or fail-closed persistence adapter exists.
+- Browser-driven keyboard activation and responsive viewport tests for the UI remain pending.
+- A trusted authentication verifier and request-scoped identity boundary must be implemented and tested before protected routes.
+- A durable append-only audit adapter must be implemented and tested before security actions can be exposed.
+- The central orchestrator, narrowly scoped agents, replaceable model adapters, controlled memory, permission-gated defensive tools, end-to-end tests, observability, and deployment remain pending.
+
+### Next task
+
+Define a provider-independent authentication verifier interface and request-scoped principal dependency, with tests proving missing, malformed, and unverified credentials cannot create an authenticated principal. Do not add protected routes or accept caller-asserted identity until the verifier boundary is implemented and reviewed.

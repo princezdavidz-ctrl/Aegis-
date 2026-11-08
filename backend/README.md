@@ -49,3 +49,15 @@ PYTHONPATH=backend python -m pytest backend/tests -q
 ```
 
 Authentication, scoped authorization, audit events, persistent storage, orchestrator routes, model adapters, and security-tool integrations remain future work. Protected endpoints must not be added until those controls and their tests are in place.
+
+
+## Security contracts (not active authentication)
+
+The `app.security` package currently provides small, framework-independent contracts:
+
+- `Principal` is an immutable identity assertion intended to be constructed only by a future trusted authentication adapter. Constructing one does not authenticate a request.
+- Principals have an empty permission set by default. Authorization grants only an exact declared permission; missing identity, missing scope, wildcard scopes, and unknown scopes are denied or rejected.
+- `AuditEvent` is immutable, requires timezone-aware timestamps, and contains only bounded opaque identifiers and action/resource labels. Extra fields such as request bodies are rejected.
+- `AuditEventSink` exposes only an asynchronous append operation. It is a protocol, not a storage implementation; no events are currently persisted.
+
+No authentication verifier, request middleware, protected API route, or durable audit store is wired. Do not accept a principal from a request body or unverified header. Before any protected operation is introduced, add a trusted verifier and request identity boundary, then a durable append-only audit adapter that fails closed when persistence is unavailable. The `tool:execute` permission does not authorize or execute any tool by itself.
