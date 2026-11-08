@@ -171,7 +171,7 @@ Design the API identity/scope and audit-event contracts, with tests for deny-by-
 - `PYTHONPATH=backend python -m pytest backend/tests -q`: **18 passed** (6 existing API tests and 12 new security-contract tests).
 - `python -m compileall -q backend/app`: passed.
 - No new dependencies, credentials, secrets, private data, middleware, protected routes, persistence, or security-tool execution were added.
-- GitHub Actions validation is triggered by the pushed commit; its result will be recorded after the hosted run completes.
+- GitHub Actions run [#42475856336](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42475856336) completed successfully on 2026-11-08. Both the web job (`npm ci`, `npm test`, TypeScript typecheck, and production build) and Python API job (pinned dependency installation, `python -m pytest backend/tests -q`, and module compilation) passed.
 
 ### Security boundaries and pending work
 
