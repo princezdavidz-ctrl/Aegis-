@@ -1,4 +1,4 @@
-"""Minimal append-only audit event contract; no storage adapter is wired yet."""
+"""Minimal append-only audit event contract; durable adapters are injected."""
 
 from __future__ import annotations
 
@@ -24,12 +24,14 @@ class AuditEvent(BaseModel):
     """Immutable, payload-free event for an authorization or action outcome.
 
     Identifiers are opaque references, not places for names, credentials, URLs,
-    request bodies, command output, or other sensitive data.
+    request bodies, command output, or other sensitive data. Tenant binding is
+    required by durable persistence adapters.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     event_id: UUID = Field(default_factory=uuid4)
+    tenant_id: UUID | None = None
     occurred_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     actor_subject: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
     actor_type: PrincipalType
@@ -62,7 +64,8 @@ class AuditEventSink(Protocol):
     """Append-only persistence boundary; implementations must never update/delete.
 
     Production adapters must provide durable writes and fail closed when an
-    event cannot be persisted. No in-memory or database adapter is registered.
+    event cannot be persisted. A tenant-bound durable adapter must reject events
+    without a server-resolved tenant ID.
     """
 
     async def append(self, event: AuditEvent, /) -> None:
