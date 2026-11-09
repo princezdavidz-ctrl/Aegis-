@@ -240,3 +240,48 @@ Implement a durable append-only audit adapter with an explicitly selected persis
 - Re-ran the backend validation harness against the corrected authentication module: **29 tests passed** (18 existing API/security contract tests and 11 authentication tests); Python compilation passed.
 - The corrected branch head was verified by GitHub Actions push run [#42612930850](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42612930850) and pull-request run [#42612937147](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42612937147); both completed successfully. The Python job reported **29 passed** and module compilation passed. The web job passed `npm ci`, all 5 UI tests, TypeScript typechecking, and the production build.
 - The subsequent documentation-only clarification commit `41b6a71ffad68ed6b60acb83e0b79c536c47aaea` also passed both jobs in GitHub Actions push run [#42613267355](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42613267355).
+
+
+## 2026-11-09 — Repository integration and secure backend core increments 1–2
+
+### Repository integration — merged to main
+
+- Merged [PR #9](https://github.com/princezdavidz-ctrl/Aegis-/pull/9) into `main` (merge commit `4878b80191b24ee5aac2849d1829a1f1b1cfd09a`).
+- Consolidated the React + TypeScript portal under `frontend/`, FastAPI under `backend/`, Flutter engineer workstation under `apps/engineer-desktop/`, and retained the AI foundation under `services/ai/`.
+- Updated the root README and CI workflow working directories.
+- Verified the new folder paths directly on `main`.
+- Web/API CI and Flutter format/analyze/widget tests passed for the integration branch before merge.
+
+### Secure backend core — increment 1 merged
+
+- Merged [PR #10](https://github.com/princezdavidz-ctrl/Aegis-/pull/10) into `main` (merge commit `5e1347bca7d995be4cef3f02d43b91cef6cc5ba5`).
+- Added SQLAlchemy async models for tenants, memberships and audit records.
+- Added secret-wrapped `AEGIS_DATABASE_URL` configuration and FastAPI lifespan-managed session factory.
+- Added active membership resolution: a request tenant slug is only a selector; tenant UUID and role are resolved from the verified subject's persisted membership.
+- Added a tenant-bound audit persistence adapter with append-only application interface and fail-closed write behavior.
+- Added SQLite-backed tests for active, missing, cross-tenant and suspended membership and durable audit persistence.
+- Validation: **34 Python tests passed**; web/API checks passed. Flutter CI passed on the same desktop source tree.
+
+### Secure backend core — increment 2 merged
+
+- Merged [PR #11](https://github.com/princezdavidz-ctrl/Aegis-/pull/11) into `main` (merge commit `ac847c7f3c577875c1f929faa230c806b253bade`).
+- Added optional OIDC JWT verification using trusted JWKS and RS256-only signature validation, required claims, issuer, audience and expiry checks.
+- Only known AEGIS permission scopes are mapped; unknown scopes do not grant permissions. JWKS connectivity failures fail closed.
+- Added Alembic async migration setup for tenant, membership and audit tables.
+- Added PostgreSQL row-level security policies using transaction-local subject and tenant context, plus an audit trigger rejecting update/delete.
+- Applied RLS context in membership lookup, tenant-scoped DB sessions and audit writes.
+- Added OIDC tests for valid tokens, wrong issuer/audience, expiry, missing claims and JWKS outage.
+- Validation: **40 Python tests passed**; web/API checks, Flutter formatting, analysis and widget tests passed on the PR head.
+
+### Current implementation status and limits
+
+- No OIDC provider is selected or configured. Deployment must supply `AEGIS_OIDC_ISSUER`, `AEGIS_OIDC_AUDIENCE` and `AEGIS_OIDC_JWKS_URL`.
+- No Neon/PostgreSQL connection is configured. The Alembic migration has not yet been applied to a live database.
+- PostgreSQL RLS policies and audit trigger are implemented in migration source but still require integration testing against Neon/PostgreSQL using a separate migration-owner role and restricted runtime role.
+- The API still exposes health endpoints only; no protected tenant or customer-data routes are connected.
+- No customer integrations, telemetry ingestion, production AI model provider, active agent execution or response/remediation actions are connected.
+- Do not treat the current backend as production-ready multi-tenant isolation until live PostgreSQL RLS and cross-tenant integration tests pass.
+
+### Next task
+
+Provision a dedicated Neon development database with separate migration and runtime roles, apply the migration, and add integration tests proving cross-tenant reads/writes and audit immutability are blocked. Then wire an explicitly selected OIDC provider in deployment configuration before adding protected tenant onboarding and asset APIs.

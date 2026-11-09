@@ -71,7 +71,7 @@ flutter test
 
 This repository now contains the web UI foundation, a modular FastAPI foundation, a Flutter desktop scaffold and AI architecture boundaries. These are early foundations, not a production-ready security platform:
 
-- The API currently exposes health endpoints only. A concrete identity provider and durable audit store are not configured.
+- The API currently exposes health endpoints only. It now includes an optional OIDC/JWKS verifier, tenant-membership resolution, SQLAlchemy persistence models, a tenant-bound audit sink, and PostgreSQL RLS migrations; no identity provider or database is configured, migrations have not been applied to Neon, and no protected business routes are exposed.
 - The web portal is a frontend foundation; production authentication and backend data workflows are not connected.
 - The Flutter workstation is a structural scaffold; live SOC telemetry and operational actions are not connected.
 - The AI service is primarily architecture/contracts; no production model provider, agent orchestration or security-tool execution is connected.
