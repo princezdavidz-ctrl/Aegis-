@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aegis_engineer_desktop/app/aegis_app.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('renders the AEGIS engineer workstation overview',
       (tester) async {
-    await tester.view.setPhysicalSize(const Size(1440, 1000));
+    tester.view.physicalSize = const Size(1440, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -25,7 +25,7 @@ void main() {
 
   testWidgets('does not fabricate operational metrics while disconnected',
       (tester) async {
-    await tester.view.setPhysicalSize(const Size(1440, 1000));
+    tester.view.physicalSize = const Size(1440, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
