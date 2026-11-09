@@ -12,6 +12,7 @@ from app.config import Settings
 from app.db.session import create_session_factory
 from app.health import router as health_router
 from app.security.authentication import CredentialVerifier
+from app.security.oidc import OidcJwtCredentialVerifier
 
 
 def configure_logging(level: str) -> None:
@@ -33,6 +34,20 @@ def create_app(
     resolved_settings = settings or Settings.from_environment()
     configure_logging(resolved_settings.log_level)
 
+    resolved_verifier = credential_verifier
+    if (
+        resolved_verifier is None
+        and resolved_settings.oidc_issuer
+        and resolved_settings.oidc_audience
+        and resolved_settings.oidc_jwks_url
+    ):
+        resolved_verifier = OidcJwtCredentialVerifier(
+            issuer=resolved_settings.oidc_issuer,
+            audience=resolved_settings.oidc_audience,
+            jwks_url=resolved_settings.oidc_jwks_url,
+            clock_skew_seconds=resolved_settings.oidc_clock_skew_seconds,
+        )
+
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         engine = None
@@ -51,14 +66,14 @@ def create_app(
     is_production = resolved_settings.environment == "production"
     application = FastAPI(
         title=resolved_settings.app_name,
-        version="0.2.0",
+        version="0.3.0",
         docs_url=None if is_production else "/docs",
         redoc_url=None if is_production else "/redoc",
         openapi_url=None if is_production else "/openapi.json",
         lifespan=lifespan,
     )
     application.state.settings = resolved_settings
-    application.state.credential_verifier = credential_verifier
+    application.state.credential_verifier = resolved_verifier
     application.include_router(health_router)
     return application
 
