@@ -1,5 +1,7 @@
 # AEGIS Python API
 
+See [STRUCTURE.md](STRUCTURE.md) for the backend package layout, ownership boundaries, tenant-isolation requirements, and phased implementation sequence.
+
 This directory contains the first, intentionally small FastAPI service boundary. It currently exposes only non-sensitive process health endpoints; it does not authenticate users, access telemetry, call models, retain memory, or execute security tools.
 
 ## Requirements
