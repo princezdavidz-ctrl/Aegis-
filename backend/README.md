@@ -1,39 +1,46 @@
-# AEGIS API
+# AEGIS FastAPI backend
 
-FastAPI service foundation with health endpoints, provider-independent authentication contracts, an optional OIDC/JWKS verifier, deny-by-default permission checks, tenant membership resolution and durable audit persistence.
+The backend provides authenticated, tenant-scoped API boundaries. PostgreSQL
+membership resolution and row-level security remain authoritative for tenant
+access. AI analysis is advisory-only and requires a verified principal, an
+active tenant membership, the `investigation:create` permission, and a durable
+audit store.
 
-## Local development
+## Install
+
+From the repository root:
 
 ```bash
-python -m venv .venv
+python -m pip install -e services/ai
 python -m pip install -r backend/requirements-dev.txt
-PYTHONPATH=backend python -m pytest backend/tests -q
-uvicorn app.main:app --app-dir backend --reload
 ```
 
-## OIDC authentication
-
-Configure all three values together in the deployment environment:
-- `AEGIS_OIDC_ISSUER`
-- `AEGIS_OIDC_AUDIENCE`
-- `AEGIS_OIDC_JWKS_URL`
-
-The verifier accepts RS256 JWTs only, validates signature, issuer, audience, expiry and required claims, and maps only known AEGIS scopes. Unknown scopes do not grant capabilities. JWKS network failures fail closed as authentication unavailable. No provider is selected or configured by default.
-
-## Database and migrations
-
-Set `AEGIS_DATABASE_URL` in the environment or deployment secret store to a PostgreSQL/asyncpg connection URL. Never commit credentials. SQLite/aiosqlite is used only in tests.
-
-Run reviewed schema migrations with:
+For a Render service whose Root Directory is `backend`, use this Build Command:
 
 ```bash
-AEGIS_DATABASE_URL='postgresql+asyncpg://...' alembic -c backend/alembic.ini upgrade head
+python -m pip install -e ../services/ai && python -m pip install -r requirements.txt
 ```
 
-The migration enables and forces PostgreSQL row-level security for tenant, membership and audit tables. The request tenant context sets transaction-local subject and tenant values used by the policies. The audit table also receives a trigger that rejects update/delete.
+## AI provider configuration
 
-Use a restricted application database role that does not own tables and has only required privileges. Keep the migration owner credentials separate from runtime credentials.
+Set these environment variables on the backend service to enable the shared
+specialist runtime:
 
-## Security status
+- `AEGIS_AI_PROVIDER` — provider label (defaults to `openai-compatible`)
+- `AEGIS_AI_BASE_URL` — OpenAI-compatible API base URL (defaults to the OpenAI API)
+- `AEGIS_AI_MODEL` — model identifier; must be explicitly configured
+- `AEGIS_AI_API_KEY` — provider credential, stored only in the deployment secret manager
+- `AEGIS_AI_TIMEOUT_SECONDS` — request timeout from 1 to 120 seconds
+- `AEGIS_AI_MAX_OUTPUT_TOKENS` — output token cap from 1 to 8192
 
-The current API still exposes health routes only. No protected customer-data route or live customer integration is connected. RLS/migration behavior is covered by PostgreSQL migration design but still requires a live Neon/PostgreSQL integration test before production use. Configure a trusted OIDC provider and Neon connection in deployment secrets; do not commit credentials.
+The AI runtime stays disabled when the model or API key is absent. The API returns
+503 rather than substituting a mock model. Never commit credentials or put them
+in customer prompts or logs.
+
+The provider is called only after authentication, tenant membership resolution,
+authorization and input validation. Customer data is sent to the configured
+provider only when the operator has intentionally configured that provider.
+Review the provider's data-processing and retention terms before production use.
+
+No tool execution, autonomous remediation, patch deployment, or production
+change is enabled by this integration.
