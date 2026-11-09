@@ -1,13 +1,10 @@
 """Tests for the authenticated advisory AI API boundary."""
 
-from uuid import uuid4
-
 from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
 from app.security.identity import Permission, Principal, PrincipalType
-from app.security.tenant import TenantContext, get_tenant_context
 from app.security.authentication import get_current_principal
 
 
@@ -15,7 +12,7 @@ def test_ai_analysis_requires_authentication() -> None:
     client = TestClient(create_app(Settings()))
     response = client.post(
         "/api/v1/ai/analysis",
-        headers={"X-AEGIS-Tenant": "acme"},
+        headers={"X-AEGIS-Tenant": "acme", "Authorization": "Bearer test-token"},
         json={
             "kind": "alert_triage",
             "evidence": [{"evidence_id": "evt-1", "source_type": "alert", "content": "suspicious login"}],
