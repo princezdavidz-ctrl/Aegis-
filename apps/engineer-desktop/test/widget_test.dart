@@ -6,7 +6,7 @@ import 'package:aegis_engineer_desktop/app/aegis_app.dart';
 void main() {
   testWidgets('renders the AEGIS engineer workstation overview', (tester) async {
     await tester.view.setPhysicalSize(const Size(1440, 1000));
-    await tester.view.devicePixelRatio = 1;
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
@@ -24,7 +24,7 @@ void main() {
 
   testWidgets('does not fabricate operational metrics while disconnected', (tester) async {
     await tester.view.setPhysicalSize(const Size(1440, 1000));
-    await tester.view.devicePixelRatio = 1;
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
