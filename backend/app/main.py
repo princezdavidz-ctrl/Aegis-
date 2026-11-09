@@ -8,6 +8,11 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI
 
+from aegis_ai.config import AISettings
+from aegis_ai.gateway import ModelGateway
+from aegis_ai.providers.openai_compatible import OpenAICompatibleProvider
+
+from app.ai.specialist_service import SpecialistAnalysisAdapter
 from app.config import Settings
 from app.db.session import create_session_factory
 from app.health import router as health_router
@@ -52,15 +57,27 @@ def create_app(
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         engine = None
+        ai_provider = None
         application.state.session_factory = None
+        application.state.ai_provider = None
+        application.state.specialist_analysis_service = None
         if resolved_settings.database_url is not None:
             engine, factory = create_session_factory(
                 resolved_settings.database_url.get_secret_value()
             )
             application.state.session_factory = factory
+        ai_settings = AISettings.from_environment()
+        if ai_settings.model != "unset" and ai_settings.api_key:
+            ai_provider = OpenAICompatibleProvider(ai_settings)
+            application.state.ai_provider = ai_provider
+            application.state.specialist_analysis_service = SpecialistAnalysisAdapter(
+                ModelGateway(ai_provider)
+            )
         try:
             yield
         finally:
+            if ai_provider is not None:
+                await ai_provider.aclose()
             if engine is not None:
                 await engine.dispose()
 
