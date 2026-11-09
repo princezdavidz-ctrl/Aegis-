@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from app.config import Settings
 from app.db.session import create_session_factory
 from app.health import router as health_router
+from app.api.ai_analysis import router as ai_analysis_router
 from app.security.authentication import CredentialVerifier
 from app.security.oidc import OidcJwtCredentialVerifier
 
@@ -75,6 +76,7 @@ def create_app(
     application.state.settings = resolved_settings
     application.state.credential_verifier = resolved_verifier
     application.include_router(health_router)
+    application.include_router(ai_analysis_router)
     return application
 
 
