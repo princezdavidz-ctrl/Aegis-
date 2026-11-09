@@ -1,6 +1,6 @@
 """Tests for the FastAPI-to-specialist-runtime adapter."""
 
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -32,8 +32,8 @@ async def test_adapter_dispatches_tenant_scoped_alert_triage() -> None:
     adapter = SpecialistAnalysisAdapter(FakeModelGateway())
     result = await adapter.analyze(
         kind=AnalysisKind.ALERT_TRIAGE,
-        tenant_id=__import__("uuid").UUID(TENANT_ID),
-        request_id=__import__("uuid").UUID(REQUEST_ID),
+        tenant_id=UUID(TENANT_ID),
+        request_id=UUID(REQUEST_ID),
         evidence=[
             EvidenceInput(
                 evidence_id="evt-1",
