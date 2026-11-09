@@ -211,7 +211,7 @@ Define a provider-independent authentication verifier interface and request-scop
 - Local isolated backend validation: `PYTHONPATH=/tmp/aegis-check/backend python -m pytest /tmp/aegis-check/backend/tests -q`: **29 passed** (18 existing API/security contract tests plus 11 authentication tests).
 - `python -m compileall -q /tmp/aegis-check/backend/app`: passed.
 - The local environment could not resolve `github.com` for a full repository clone. The local harness was assembled from the exact inspected backend source and existing test contracts; the complete repository CI run is required to verify the pushed tree.
-- GitHub Actions verification for the new commit is pending at the time of this log entry and will be recorded after the hosted run completes.
+- GitHub Actions push run [#42612930850](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42612930850) and pull-request run [#42612937147](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42612937147) completed successfully on the corrected authentication commit; the hosted Python suite reported **29 passed**, and the web checks passed.
 
 ### Security and scope notes
 
@@ -239,3 +239,4 @@ Implement a durable append-only audit adapter with an explicitly selected persis
 - A post-push source inspection found that an over-escaped hyphen in the bearer-token regular expression caused the pattern to fail at module import. The pattern was corrected by placing the hyphen at the end of the character class, avoiding escape ambiguity.
 - Re-ran the backend validation harness against the corrected authentication module: **29 tests passed** (18 existing API/security contract tests and 11 authentication tests); Python compilation passed.
 - The corrected branch head was verified by GitHub Actions push run [#42612930850](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42612930850) and pull-request run [#42612937147](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42612937147); both completed successfully. The Python job reported **29 passed** and module compilation passed. The web job passed `npm ci`, all 5 UI tests, TypeScript typechecking, and the production build.
+- The subsequent documentation-only clarification commit `41b6a71ffad68ed6b60acb83e0b79c536c47aaea` also passed both jobs in GitHub Actions push run [#42613267355](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42613267355).
