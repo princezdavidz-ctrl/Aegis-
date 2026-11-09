@@ -15,7 +15,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.security.identity import Principal
 
-_BEARER_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9\\-._~+/]+=*$")
+_BEARER_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9._~+/-]+=*$")
 _MAX_BEARER_TOKEN_LENGTH = 8192
 _bearer_scheme = HTTPBearer(auto_error=False)
 

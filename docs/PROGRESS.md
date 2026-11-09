@@ -232,3 +232,10 @@ Define a provider-independent authentication verifier interface and request-scop
 ### Next task
 
 Implement a durable append-only audit adapter with an explicitly selected persistence backend, atomic append semantics, integrity/retention considerations, and tests proving that persistence failure blocks protected operations. Keep production protected routes and active security tools disconnected until this is verified.
+
+
+### Follow-up validation correction — 2026-11-09
+
+- A post-push source inspection found that an over-escaped hyphen in the bearer-token regular expression caused the pattern to fail at module import. The pattern was corrected by placing the hyphen at the end of the character class, avoiding escape ambiguity.
+- Re-ran the backend validation harness against the corrected authentication module: **29 tests passed** (18 existing API/security contract tests and 11 authentication tests); Python compilation passed.
+- The initial hosted workflow run was already queued against the preceding commit. A follow-up run on the corrected branch head is required before treating the pushed implementation as CI-verified.
