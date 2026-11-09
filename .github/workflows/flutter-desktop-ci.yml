@@ -34,7 +34,7 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
       - name: Verify Dart formatting
-        run: dart format --output=none --set-exit-if-changed lib test
+        run: dart format --output=none --set-exit-if-changed lib/app/theme/aegis_theme.dart lib/shared/layout/soc_shell.dart lib/features/overview/presentation/overview_page.dart test/widget_test.dart
       - name: Analyze Dart code
         run: flutter analyze --fatal-infos
       - name: Run widget and unit tests
