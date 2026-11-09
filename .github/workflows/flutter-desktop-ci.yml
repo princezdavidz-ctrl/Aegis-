@@ -1,0 +1,41 @@
+name: AEGIS Flutter desktop checks
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+  pull_request:
+    branches:
+      - main
+      - "feat/**"
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    name: Format, analyze and test Flutter desktop
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/engineer-desktop
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Show Flutter version
+        run: flutter --version
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Verify Dart formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Analyze Dart code
+        run: flutter analyze --fatal-infos
+      - name: Run widget and unit tests
+        run: flutter test --reporter expanded
