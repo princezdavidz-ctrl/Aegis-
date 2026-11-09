@@ -1,6 +1,7 @@
 """Tests for the authenticated advisory AI API boundary."""
 
 from fastapi.testclient import TestClient
+from uuid import uuid4
 
 from app.config import Settings
 from app.main import create_app
@@ -49,7 +50,7 @@ def _validated_request_client() -> TestClient:
         scopes=frozenset({Permission.INVESTIGATION_CREATE}),
     )
     app.dependency_overrides[get_tenant_context] = lambda: TenantContext(
-        tenant_id=__import__("uuid").uuid4(), membership_id=__import__("uuid").uuid4(),
+        tenant_id=uuid4(), membership_id=__import__("uuid").uuid4(),
         tenant_slug="acme", role="analyst", subject="analyst-1",
     )
     return TestClient(app)
