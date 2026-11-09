@@ -33,11 +33,19 @@ class AuditEvent(BaseModel):
     event_id: UUID = Field(default_factory=uuid4)
     tenant_id: UUID | None = None
     occurred_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    actor_subject: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+    actor_subject: str = Field(
+        min_length=1,
+        max_length=128,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9._:@|/-]{0,127}$",
+    )
     actor_type: PrincipalType
     action: str = Field(min_length=1, max_length=96, pattern=r"^[a-z][a-z0-9_.:-]{0,95}$")
     resource_type: str = Field(min_length=1, max_length=64, pattern=r"^[a-z][a-z0-9_.:-]{0,63}$")
-    resource_id: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+    resource_id: str = Field(
+        min_length=1,
+        max_length=128,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+    )
     outcome: AuditOutcome
     authorization_reason: AuthorizationReason
     correlation_id: UUID | None = None

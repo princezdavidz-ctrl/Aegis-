@@ -1,9 +1,11 @@
-"""Async SQLAlchemy engine and session factory construction."""
+"""Async SQLAlchemy engine, request sessions and PostgreSQL RLS context."""
 
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from uuid import UUID
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -25,6 +27,28 @@ def create_session_factory(
         pool_recycle=300,
     )
     return engine, async_sessionmaker(engine, expire_on_commit=False)
+
+
+async def apply_database_context(
+    session: AsyncSession,
+    *,
+    subject: str,
+    tenant_id: UUID | None = None,
+) -> None:
+    """Set transaction-local values consumed by PostgreSQL RLS policies."""
+
+    # SQLite is used only for isolated unit tests; production is PostgreSQL.
+    if session.bind is None or session.bind.dialect.name != "postgresql":
+        return
+    await session.execute(
+        text("SELECT set_config('aegis.subject', :subject, true)"),
+        {"subject": subject},
+    )
+    if tenant_id is not None:
+        await session.execute(
+            text("SELECT set_config('aegis.tenant_id', :tenant_id, true)"),
+            {"tenant_id": str(tenant_id)},
+        )
 
 
 async def get_session(
