@@ -16,11 +16,27 @@ class SocShell extends StatelessWidget {
   static const items = <({String label, String path, IconData icon})>[
     (label: 'Overview', path: '/', icon: Icons.grid_view_rounded),
     (label: 'Companies', path: '/companies', icon: Icons.business_outlined),
-    (label: 'Live Monitoring', path: '/monitoring', icon: Icons.monitor_heart_outlined),
-    (label: 'Threat Alerts', path: '/alerts', icon: Icons.notifications_active_outlined),
-    (label: 'Investigations', path: '/investigations', icon: Icons.manage_search),
+    (
+      label: 'Live Monitoring',
+      path: '/monitoring',
+      icon: Icons.monitor_heart_outlined
+    ),
+    (
+      label: 'Threat Alerts',
+      path: '/alerts',
+      icon: Icons.notifications_active_outlined
+    ),
+    (
+      label: 'Investigations',
+      path: '/investigations',
+      icon: Icons.manage_search
+    ),
     (label: 'AI Agents', path: '/ai-agents', icon: Icons.smart_toy_outlined),
-    (label: 'Vulnerabilities', path: '/vulnerabilities', icon: Icons.bug_report_outlined),
+    (
+      label: 'Vulnerabilities',
+      path: '/vulnerabilities',
+      icon: Icons.bug_report_outlined
+    ),
     (label: 'Patch Center', path: '/patch-center', icon: Icons.code_rounded),
     (label: 'Incidents', path: '/incidents', icon: Icons.assignment_outlined),
     (label: 'Reports', path: '/reports', icon: Icons.analytics_outlined),
@@ -74,11 +90,14 @@ class _Sidebar extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(compact ? 0 : 22, 22, compact ? 0 : 16, 22),
+            padding:
+                EdgeInsets.fromLTRB(compact ? 0 : 22, 22, compact ? 0 : 16, 22),
             child: Row(
-              mainAxisAlignment: compact ? MainAxisAlignment.center : MainAxisAlignment.start,
+              mainAxisAlignment:
+                  compact ? MainAxisAlignment.center : MainAxisAlignment.start,
               children: [
-                const Icon(Icons.shield_rounded, color: AegisTheme.accent, size: 29),
+                const Icon(Icons.shield_rounded,
+                    color: AegisTheme.accent, size: 29),
                 if (!compact) ...[
                   const SizedBox(width: 11),
                   const Text(
@@ -107,19 +126,22 @@ class _Sidebar extends StatelessWidget {
                   child: Tooltip(
                     message: compact ? item.label : '',
                     child: Material(
-                      color: active ? AegisTheme.accentSoft : Colors.transparent,
+                      color:
+                          active ? AegisTheme.accentSoft : Colors.transparent,
                       borderRadius: BorderRadius.circular(9),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(9),
                         onTap: () => context.go(item.path),
                         child: Container(
                           height: 43,
-                          padding: EdgeInsets.symmetric(horizontal: compact ? 0 : 12),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: compact ? 0 : 12),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(9),
                             border: active
                                 ? const Border(
-                                    left: BorderSide(color: AegisTheme.accent, width: 2),
+                                    left: BorderSide(
+                                        color: AegisTheme.accent, width: 2),
                                   )
                                 : null,
                           ),
@@ -131,7 +153,9 @@ class _Sidebar extends StatelessWidget {
                               Icon(
                                 item.icon,
                                 size: 19,
-                                color: active ? AegisTheme.accent : AegisTheme.textMuted,
+                                color: active
+                                    ? AegisTheme.accent
+                                    : AegisTheme.textMuted,
                               ),
                               if (!compact) ...[
                                 const SizedBox(width: 12),
@@ -145,7 +169,9 @@ class _Sidebar extends StatelessWidget {
                                           ? AegisTheme.textPrimary
                                           : AegisTheme.textMuted,
                                       fontSize: 12.5,
-                                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                                      fontWeight: active
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
                                     ),
                                   ),
                                 ),
@@ -165,7 +191,8 @@ class _Sidebar extends StatelessWidget {
             child: compact
                 ? const Tooltip(
                     message: 'Services not connected',
-                    child: Icon(Icons.cloud_off_outlined, color: AegisTheme.warning, size: 18),
+                    child: Icon(Icons.cloud_off_outlined,
+                        color: AegisTheme.warning, size: 18),
                   )
                 : const Row(
                     children: [
@@ -174,7 +201,8 @@ class _Sidebar extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'Services not connected',
-                          style: TextStyle(color: AegisTheme.textMuted, fontSize: 11),
+                          style: TextStyle(
+                              color: AegisTheme.textMuted, fontSize: 11),
                         ),
                       ),
                     ],
@@ -228,7 +256,8 @@ class _TopBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(9),
               border: Border.all(color: AegisTheme.border),
             ),
-            child: const Icon(Icons.account_circle_outlined, size: 19, color: AegisTheme.textMuted),
+            child: const Icon(Icons.account_circle_outlined,
+                size: 19, color: AegisTheme.textMuted),
           ),
           const SizedBox(width: 9),
           const Text(

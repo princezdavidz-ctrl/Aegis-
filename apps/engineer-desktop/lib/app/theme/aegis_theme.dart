@@ -80,7 +80,8 @@ class AegisTheme {
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: accent, width: 1.3),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
     );
   }

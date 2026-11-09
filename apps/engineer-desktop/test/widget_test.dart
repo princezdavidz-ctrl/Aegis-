@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aegis_engineer_desktop/app/aegis_app.dart';
 
 void main() {
-  testWidgets('renders the AEGIS engineer workstation overview', (tester) async {
+  testWidgets('renders the AEGIS engineer workstation overview',
+      (tester) async {
     await tester.view.setPhysicalSize(const Size(1440, 1000));
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -22,7 +23,8 @@ void main() {
     expect(find.text('Waiting for security telemetry'), findsOneWidget);
   });
 
-  testWidgets('does not fabricate operational metrics while disconnected', (tester) async {
+  testWidgets('does not fabricate operational metrics while disconnected',
+      (tester) async {
     await tester.view.setPhysicalSize(const Size(1440, 1000));
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
