@@ -5,13 +5,13 @@ import json
 
 import pytest
 
+from aegis_ai.contracts import GenerationRequest, GenerationResult
 from aegis_ai.specialists import (
     EvidenceItem,
     SpecialistKind,
     SpecialistOrchestrator,
     SpecialistRequest,
 )
-from aegis_ai.contracts import GenerationRequest, GenerationResult
 
 
 class FakeClient:

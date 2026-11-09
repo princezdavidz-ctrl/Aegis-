@@ -1,5 +1,8 @@
 """AEGIS AI runtime public interfaces."""
 
+from aegis_ai.config import AISettings
+from aegis_ai.contracts import GenerationRequest, GenerationResult
+from aegis_ai.gateway import ModelGateway
 from aegis_ai.specialists import (
     EvidenceItem,
     SpecialistAnalysis,
@@ -7,9 +10,6 @@ from aegis_ai.specialists import (
     SpecialistOrchestrator,
     SpecialistRequest,
 )
-from aegis_ai.config import AISettings
-from aegis_ai.contracts import GenerationRequest, GenerationResult
-from aegis_ai.gateway import ModelGateway
 
 __all__ = [
     "AISettings",
