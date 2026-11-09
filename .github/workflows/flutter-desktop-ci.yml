@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   flutter:
@@ -28,9 +28,6 @@ jobs:
     steps:
       - name: Check out source branch
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -40,18 +37,8 @@ jobs:
         run: flutter --version
       - name: Resolve dependencies
         run: flutter pub get
-      - name: Apply canonical Dart formatting
-        run: dart format lib test
-      - name: Commit formatting when needed
-        working-directory: .
-        run: |
-          if ! git diff --quiet -- apps/engineer-desktop/lib apps/engineer-desktop/test; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add apps/engineer-desktop/lib apps/engineer-desktop/test
-            git commit -m "style(desktop): apply Dart formatter"
-            git push
-          fi
+      - name: Verify Dart formatting
+        run: dart format --output=none --set-exit-if-changed lib test
       - name: Analyze Dart code
         run: flutter analyze --fatal-infos
       - name: Run widget and unit tests
