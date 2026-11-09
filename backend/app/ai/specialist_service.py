@@ -10,6 +10,7 @@ from aegis_ai.specialists import (
     SpecialistKind,
     SpecialistOrchestrator,
     SpecialistRequest,
+    GenerationClient,
 )
 
 from app.api.ai_analysis import (
@@ -22,8 +23,8 @@ from app.api.ai_analysis import (
 class SpecialistAnalysisAdapter:
     """Translate validated API inputs into the provider-neutral specialist runtime."""
 
-    def __init__(self, client: object) -> None:
-        self._orchestrator = SpecialistOrchestrator(client)  # type: ignore[arg-type]
+    def __init__(self, client: GenerationClient) -> None:
+        self._orchestrator = SpecialistOrchestrator(client)
 
     async def analyze(
         self,
