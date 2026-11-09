@@ -52,6 +52,8 @@ jobs:
           python-version: "3.13"
           cache: pip
           cache-dependency-path: backend/requirements-dev.txt
+      - name: Install AEGIS AI runtime package
+        run: python -m pip install --disable-pip-version-check -e services/ai
       - name: Install pinned API dependencies
         run: python -m pip install --disable-pip-version-check -r backend/requirements-dev.txt
       - name: Run API tests
