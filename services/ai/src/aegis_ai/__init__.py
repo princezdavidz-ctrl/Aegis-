@@ -1,6 +1,6 @@
 """AEGIS AI runtime public interfaces."""
 
-from aegis_ai.agents import (
+from aegis_ai.specialists import (
     EvidenceItem,
     SpecialistAnalysis,
     SpecialistKind,

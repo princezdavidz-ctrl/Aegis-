@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from aegis_ai.agents import (
+from aegis_ai.specialists import (
     EvidenceItem,
     SpecialistKind,
     SpecialistOrchestrator,
