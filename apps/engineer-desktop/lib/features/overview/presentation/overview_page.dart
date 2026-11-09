@@ -323,7 +323,7 @@ class _ActivityPanel extends StatelessWidget {
           title: 'No activity recorded',
           message:
               'Activity will be displayed after authenticated services are connected.',
-          height: 94,
+          height: 110,
         ),
       );
 }
