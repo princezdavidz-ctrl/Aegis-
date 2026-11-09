@@ -8,8 +8,7 @@ from aegis_ai.specialists import (
     EvidenceItem,
     SpecialistKind,
     SpecialistOrchestrator,
-    GenerationRequest,
-    GenerationResult,
+    SpecialistRequest,
     GenerationClient,
 )
 
