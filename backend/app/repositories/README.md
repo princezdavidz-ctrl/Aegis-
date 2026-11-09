@@ -1,3 +1,9 @@
-# Repository layer
+# Repositories
 
-Define narrow persistence interfaces and their implementations here. All reads and writes must be tenant-scoped, parameterized, and covered by cross-tenant isolation tests. Avoid returning secrets or raw telemetry payloads to logs. Durable audit records require append-only semantics and integrity controls.
+Repositories isolate persistence from HTTP handlers and application services.
+
+Implemented in this phase:
+- active tenant membership lookup by verified subject and tenant slug;
+- append-only API surface for durable audit event insertion.
+
+The tenant UUID and role are loaded from persisted membership; a request-supplied tenant selector never grants access by itself. Database-level row security, migrations, and additional repositories remain pending.

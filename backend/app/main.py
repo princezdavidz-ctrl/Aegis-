@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
 
 from fastapi import FastAPI
 
 from app.config import Settings
+from app.db.session import create_session_factory
 from app.health import router as health_router
 from app.security.authentication import CredentialVerifier
 
@@ -25,22 +28,34 @@ def create_app(
     *,
     credential_verifier: CredentialVerifier | None = None,
 ) -> FastAPI:
-    """Build an independently testable AEGIS API application.
-
-    A verifier may be injected by a trusted deployment adapter. No verifier is
-    configured by default, and no protected route is registered at this stage.
-    """
+    """Build an independently testable AEGIS API application."""
 
     resolved_settings = settings or Settings.from_environment()
     configure_logging(resolved_settings.log_level)
 
+    @asynccontextmanager
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        engine = None
+        application.state.session_factory = None
+        if resolved_settings.database_url is not None:
+            engine, factory = create_session_factory(
+                resolved_settings.database_url.get_secret_value()
+            )
+            application.state.session_factory = factory
+        try:
+            yield
+        finally:
+            if engine is not None:
+                await engine.dispose()
+
     is_production = resolved_settings.environment == "production"
     application = FastAPI(
         title=resolved_settings.app_name,
-        version="0.1.0",
+        version="0.2.0",
         docs_url=None if is_production else "/docs",
         redoc_url=None if is_production else "/redoc",
         openapi_url=None if is_production else "/openapi.json",
+        lifespan=lifespan,
     )
     application.state.settings = resolved_settings
     application.state.credential_verifier = credential_verifier
