@@ -185,3 +185,50 @@ Design the API identity/scope and audit-event contracts, with tests for deny-by-
 ### Next task
 
 Define a provider-independent authentication verifier interface and request-scoped principal dependency, with tests proving missing, malformed, and unverified credentials cannot create an authenticated principal. Do not add protected routes or accept caller-asserted identity until the verifier boundary is implemented and reviewed.
+
+
+## 2026-11-09 — Provider-independent authentication boundary
+
+### Repository state at start of run
+
+- Re-inspected the connected repository metadata, branch head, pull request, README, full progress log, backend README, security contracts, API factory, existing backend tests, and CI workflow.
+- Repository: `princezdavidz-ctrl/Aegis-`; default branch: `main`; working branch: `feat/react-ui-foundation`.
+- Starting branch head: `935ada57226915089b2b7b6d8812a9fc94e9aee1`. Draft PR [#1](https://github.com/princezdavidz-ctrl/Aegis-/pull/1) remains open and unmerged.
+- Existing React UI, health endpoints, identity/authorization/audit contracts, workflow, and prior documentation were preserved.
+
+### Completed
+
+- Added `backend/app/security/authentication.py` with a provider-independent asynchronous `CredentialVerifier` protocol. The adapter contract requires provider-specific credential integrity and claim checks before it may return a validated immutable `Principal`.
+- Added `get_current_principal`, a request-scoped FastAPI dependency that accepts only Bearer credentials and obtains identity exclusively from the configured verifier. It never trusts caller-supplied identity headers, query parameters, or request-body fields.
+- Added bounded Bearer token syntax validation (maximum 8,192 characters) before invoking the verifier.
+- Missing, malformed, and rejected credentials return a generic 401 with a Bearer challenge. Missing verifier configuration and verifier failures fail closed with a generic 503; provider exception details are not returned to callers.
+- Updated the application factory to accept an optional trusted verifier adapter and store it in application state. No concrete provider is configured, and no production protected route was added.
+- Added 11 authentication-boundary tests using only an in-memory test verifier. Coverage includes missing credentials, non-Bearer scheme, empty/malformed/oversized token, missing verifier, rejected credential, verified principal injection, provider outage, unexpected provider failure, non-Principal verifier result, and spoofed identity headers.
+- Updated the root and backend READMEs to distinguish the verifier contract from a configured identity provider or operational login system.
+
+### Validation
+
+- Local isolated backend validation: `PYTHONPATH=/tmp/aegis-check/backend python -m pytest /tmp/aegis-check/backend/tests -q`: **29 passed** (18 existing API/security contract tests plus 11 authentication tests).
+- `python -m compileall -q /tmp/aegis-check/backend/app`: passed.
+- The local environment could not resolve `github.com` for a full repository clone. The local harness was assembled from the exact inspected backend source and existing test contracts; the complete repository CI run is required to verify the pushed tree.
+- GitHub Actions verification for the new commit is pending at the time of this log entry and will be recorded after the hosted run completes.
+
+### Security and scope notes
+
+- No provider, API key, signing secret, static token, user record, or private data was added.
+- The default application has no configured verifier. There is still no authentication provider, production protected route, authorization enforcement middleware, or durable audit store.
+- A returned `Principal` is trusted only because it comes from the injected verifier contract. A future provider adapter must validate issuer, audience, signature/introspection, expiry, and revocation according to that provider.
+- The authentication dependency is not yet attached to any production route. The existing health routes remain the only production API routes.
+- No orchestrator, model integration, memory persistence, or security-tool execution was added.
+
+### Current pending work
+
+- Select and implement a concrete identity-provider adapter, with key rotation, issuer/audience validation, expiry/revocation handling, and deployment-managed secrets.
+- Implement durable append-only audit persistence and prove fail-closed behavior before exposing protected operations.
+- Add browser-driven keyboard activation and responsive viewport tests for the React UI.
+- Implement protected API route patterns with exact-scope authorization and audit integration only after authentication and durable audit storage are operational.
+- Implement the central orchestrator and narrowly scoped agents, then model adapters, controlled memory, permission-gated defensive tools, end-to-end security tests, observability, and deployment infrastructure.
+
+### Next task
+
+Implement a durable append-only audit adapter with an explicitly selected persistence backend, atomic append semantics, integrity/retention considerations, and tests proving that persistence failure blocks protected operations. Keep production protected routes and active security tools disconnected until this is verified.

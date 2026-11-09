@@ -48,7 +48,7 @@ From the repository root:
 PYTHONPATH=backend python -m pytest backend/tests -q
 ```
 
-Authentication, scoped authorization, audit events, persistent storage, orchestrator routes, model adapters, and security-tool integrations remain future work. Protected endpoints must not be added until those controls and their tests are in place.
+The security package includes immutable identity and permission contracts, exact-scope deny-by-default authorization, payload-free audit-event contracts, and an append-only audit sink protocol. It now also defines a provider-independent asynchronous `CredentialVerifier` protocol and `get_current_principal` FastAPI dependency. The dependency accepts only syntactically valid Bearer credentials and obtains identity exclusively from the configured verifier; it never trusts a caller-supplied subject or scope. Missing, malformed, or rejected credentials return 401. If no verifier is configured or verification infrastructure fails, it returns a generic 503 and does not create a principal. The application factory accepts an optional trusted verifier adapter for dependency injection, but no concrete provider is configured and no production route uses the dependency. These are integration contracts, not a complete operational login system. Durable audit persistence, protected routes, orchestrator routes, model adapters, and security-tool integrations remain future work. Do not add protected operations until trusted provider verification and durable fail-closed audit persistence are implemented and tested.
 
 
 ## Security contracts (not active authentication)

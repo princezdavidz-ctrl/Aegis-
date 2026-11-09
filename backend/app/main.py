@@ -8,6 +8,7 @@ from fastapi import FastAPI
 
 from app.config import Settings
 from app.health import router as health_router
+from app.security.authentication import CredentialVerifier
 
 
 def configure_logging(level: str) -> None:
@@ -19,8 +20,16 @@ def configure_logging(level: str) -> None:
     )
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    """Build an independently testable AEGIS API application."""
+def create_app(
+    settings: Settings | None = None,
+    *,
+    credential_verifier: CredentialVerifier | None = None,
+) -> FastAPI:
+    """Build an independently testable AEGIS API application.
+
+    A verifier may be injected by a trusted deployment adapter. No verifier is
+    configured by default, and no protected route is registered at this stage.
+    """
 
     resolved_settings = settings or Settings.from_environment()
     configure_logging(resolved_settings.log_level)
@@ -34,6 +43,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=None if is_production else "/openapi.json",
     )
     application.state.settings = resolved_settings
+    application.state.credential_verifier = credential_verifier
     application.include_router(health_router)
     return application
 
