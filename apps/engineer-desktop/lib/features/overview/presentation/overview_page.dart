@@ -113,6 +113,8 @@ class OverviewPage extends StatelessWidget {
 }
 
 class _ConnectionBadge extends StatelessWidget {
+  const _ConnectionBadge({super.key});
+
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
@@ -197,7 +199,7 @@ class _Panel extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(color: AegisTheme.textPrimary, fontSize: 14, fontWeight: FontWeight.w650)),
+        Text(title, style: const TextStyle(color: AegisTheme.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
         const SizedBox(height: 4),
         Text(subtitle, style: const TextStyle(color: AegisTheme.textMuted, fontSize: 10.5)),
         const SizedBox(height: 18),
