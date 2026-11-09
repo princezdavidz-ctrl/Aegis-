@@ -132,13 +132,20 @@ async def run_advisory_analysis(
             detail="evidence_ids_must_be_unique",
         )
 
-    result = await service.analyze(
-        kind=payload.kind,
-        tenant_id=tenant.tenant_id,
-        request_id=request_id,
-        evidence=payload.evidence,
-        analyst_context=payload.analyst_context,
-    )
+    try:
+        result = await service.analyze(
+            kind=payload.kind,
+            tenant_id=tenant.tenant_id,
+            request_id=request_id,
+            evidence=payload.evidence,
+            analyst_context=payload.analyst_context,
+        )
+    except Exception:
+        # Provider failures are sanitized; request payloads and credentials stay out of logs.
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="ai_provider_unavailable",
+        ) from None
     if (
         result.request_id != request_id
         or result.kind != payload.kind
