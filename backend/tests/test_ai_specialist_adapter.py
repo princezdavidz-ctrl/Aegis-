@@ -44,7 +44,7 @@ async def test_adapter_dispatches_tenant_scoped_alert_triage() -> None:
         analyst_context="Assess whether this merits escalation.",
     )
 
-    assert result.request_id == __import__("uuid").UUID(REQUEST_ID)
+    assert result.request_id == UUID(REQUEST_ID)
     assert result.kind == AnalysisKind.ALERT_TRIAGE
     assert result.evidence_ids == ["evt-1"]
     assert result.provider == "test-provider"
