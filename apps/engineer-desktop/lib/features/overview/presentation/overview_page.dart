@@ -133,7 +133,7 @@ class OverviewPage extends StatelessWidget {
 }
 
 class _ConnectionBadge extends StatelessWidget {
-  const _ConnectionBadge({super.key});
+  const _ConnectionBadge();
 
   @override
   Widget build(BuildContext context) => Container(
