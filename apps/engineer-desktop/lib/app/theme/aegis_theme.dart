@@ -43,7 +43,7 @@ class AegisTheme {
         titleLarge: TextStyle(
           color: textPrimary,
           fontSize: 17,
-          fontWeight: FontWeight.w650,
+          fontWeight: FontWeight.w600,
         ),
         titleMedium: TextStyle(
           color: textPrimary,
