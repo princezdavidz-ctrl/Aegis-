@@ -1,17 +1,18 @@
 import 'package:go_router/go_router.dart';
-import '../shared/layout/soc_shell.dart';
-import '../features/overview/presentation/overview_page.dart';
-import '../features/companies/presentation/companies_page.dart';
-import '../features/monitoring/presentation/monitoring_page.dart';
-import '../features/alerts/presentation/alerts_page.dart';
-import '../features/investigations/presentation/investigations_page.dart';
+
 import '../features/ai_agents/presentation/ai_agents_page.dart';
-import '../features/vulnerabilities/presentation/vulnerabilities_page.dart';
-import '../features/patch_center/presentation/patch_center_page.dart';
+import '../features/alerts/presentation/alerts_page.dart';
+import '../features/companies/presentation/companies_page.dart';
 import '../features/incidents/presentation/incidents_page.dart';
+import '../features/investigations/presentation/investigations_page.dart';
+import '../features/monitoring/presentation/monitoring_page.dart';
+import '../features/overview/presentation/overview_page.dart';
+import '../features/patch_center/presentation/patch_center_page.dart';
 import '../features/reports/presentation/reports_page.dart';
-import '../features/team/presentation/team_page.dart';
 import '../features/settings/presentation/settings_page.dart';
+import '../features/team/presentation/team_page.dart';
+import '../features/vulnerabilities/presentation/vulnerabilities_page.dart';
+import '../shared/layout/soc_shell.dart';
 
 final aegisRouter = GoRouter(initialLocation: '/', routes: [
   ShellRoute(builder: (context, state, child) => SocShell(location: state.uri.path, child: child), routes: [
