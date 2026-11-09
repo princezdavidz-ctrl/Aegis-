@@ -7,9 +7,9 @@ class AegisApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(
-    title: 'AEGIS Engineer Desktop',
-    debugShowCheckedModeBanner: false,
-    theme: AegisTheme.dark(),
-    routerConfig: aegisRouter,
-  );
+        title: 'AEGIS Engineer Desktop',
+        debugShowCheckedModeBanner: false,
+        theme: AegisTheme.dark(),
+        routerConfig: aegisRouter,
+      );
 }

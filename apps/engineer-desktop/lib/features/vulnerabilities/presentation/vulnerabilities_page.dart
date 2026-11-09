@@ -5,8 +5,9 @@ class VulnerabilitiesPage extends StatelessWidget {
   const VulnerabilitiesPage({super.key});
   @override
   Widget build(BuildContext context) => const FeaturePlaceholder(
-    title: 'Vulnerabilities',
-    description: 'Findings, exposure context and remediation prioritization.',
-    icon: Icons.bug_report_outlined,
-  );
+        title: 'Vulnerabilities',
+        description:
+            'Findings, exposure context and remediation prioritization.',
+        icon: Icons.bug_report_outlined,
+      );
 }
