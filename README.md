@@ -1,38 +1,51 @@
 # AEGIS
 
-AEGIS is a cybersecurity-focused AI system intended to assist with defensive security operations, investigation, and security analysis.
+**AI-assisted, human-governed cybersecurity operations for organizations of every size and industry.**
 
-## Project direction
+AEGIS is a multi-tenant managed security platform that continuously monitors customer-authorized environments, detects and investigates threats, coordinates response, and helps security engineers deliver verified remediation. Customers use a portal to manage their organization and risk; AEGIS security engineers use a separate operations console to oversee investigations and approve consequential actions.
 
-The implementation is planned in layers so the user interface can be developed first without coupling it to unfinished backend services:
+## Product decisions
 
-1. **Web UI** — React, TypeScript, and Tailwind CSS.
-2. **Python API** — typed service boundaries, authentication, validation, and audit events.
-3. **Orchestration** — a central orchestrator that routes requests to narrowly scoped agents.
-4. **Model integration** — provider/model adapters behind explicit interfaces.
-5. **Memory** — controlled, inspectable storage with retention and access rules.
-6. **Security tools** — defensive integrations with permission checks, safe defaults, and traceable tool execution.
-7. **Quality and infrastructure** — automated tests, CI, configuration management, observability, and deployment.
+| Decision | Baseline |
+|---|---|
+| Customer market | All industries and organization sizes; policy and compliance profiles are configurable |
+| Monitoring | Continuous, 24/7 telemetry processing, detection, alerting and escalation |
+| AI authority | Human approval required for consequential response, changes and production remediation |
+| Model strategy | Multi-provider, replaceable model adapters; no provider lock-in |
+| Product priority | Full platform, delivered in controlled phases |
 
-This is a roadmap, not a claim that these components already exist.
+## Product surfaces
 
-## Working principles
+- **Customer portal:** onboarding, organization and asset inventory, integrations, security posture, findings, incidents, reports, remediation approvals and audit history.
+- **Security operations console:** tenant-scoped queues, 24/7 alert triage, investigations, assignments, evidence, AI recommendations, approval workflows and customer communications.
+- **Platform administration:** tenant lifecycle, plans, integration health, policy templates, access governance, usage and platform audit.
+- **AI operations:** orchestrated specialist agents, model routing, evaluation, tool permissions and traceable execution.
 
-- Build for authorized, defensive security work.
-- Keep model providers and security tools behind replaceable interfaces.
-- Require explicit authorization and scope before any active security operation.
-- Prefer least privilege, auditable actions, safe defaults, and human approval for consequential actions.
-- Never store credentials in source control; use environment-based configuration and managed secrets.
-- Keep UI, API, orchestration, agents, memory, and tool adapters independently testable.
+## Architecture at a glance
 
-## Project workspace
+- **Web:** React, TypeScript and Tailwind CSS, deployed on Vercel.
+- **API and workers:** Python/FastAPI services and asynchronous workers, deployed on Render.
+- **Relational system of record:** Neon Postgres for tenants, identities, assets, findings, incidents, approvals and audit events.
+- **AI:** central orchestrator, narrowly scoped agents, provider adapters, evaluation and retrieval services.
+- **Telemetry:** streaming/queue-based ingestion and separate scalable event/log storage where volume requires it.
+- **Security integrations:** authorized cloud, endpoint, identity, network, source-control and vulnerability-management connectors.
 
-The existing working approach uses Google Drive as the central project workspace and Google Colab for experiments, model evaluation, and training work. This repository is the source of truth for versioned application code and project documentation.
+See [Architecture](docs/ARCHITECTURE.md), [Implementation roadmap](docs/ROADMAP.md), and [Security and operations model](docs/SECURITY-MODEL.md).
+
+## Non-negotiable safety principles
+
+1. Tenant isolation is enforced server-side on every data and tool operation.
+2. Every customer integration and active security operation requires explicit authorization, scope and revocable credentials.
+3. AI may analyze, correlate, recommend and prepare changes; consequential actions require an authorized human approval.
+4. Production changes use least privilege, staged rollout where possible, verification, rollback plans and immutable audit evidence.
+5. Model providers and security tools sit behind replaceable, permissioned adapters.
+6. Secrets never enter source control, prompts, logs or customer-visible reports.
+7. Monitoring is continuous; staffing, on-call coverage and response-time commitments are defined by service tier and contract.
+
+## Delivery approach
+
+The complete product is the target, but delivery is incremental: establish secure foundations and the engineer console first, onboard tenants and assets, add continuous telemetry and detection, introduce AI-assisted investigation, then controlled remediation and enterprise-grade operations. See the roadmap for phase exit criteria.
 
 ## Repository status
 
-The repository was found empty during the initial implementation audit: no tracked files, commits, branches, pull requests, or project documentation were present. The first repository commit therefore establishes this overview and records the implementation baseline. See [the progress log](docs/PROGRESS.md) for the audit and next task.
-
-## Getting started
-
-The frontend toolchain has not yet been committed. The next implementation task is to establish the React + TypeScript + Tailwind UI foundation, then add a reproducible install/build/test workflow before integrating the Python API.
+This repository currently contains the product baseline and architecture/roadmap documentation. Application code, deployment configuration, integrations and automated CI are not yet implemented. Documentation describes the intended design, not features already running.
