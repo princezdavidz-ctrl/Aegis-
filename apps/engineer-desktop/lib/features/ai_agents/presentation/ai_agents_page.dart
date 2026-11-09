@@ -5,8 +5,9 @@ class AiAgentsPage extends StatelessWidget {
   const AiAgentsPage({super.key});
   @override
   Widget build(BuildContext context) => const FeaturePlaceholder(
-    title: 'AI Agents',
-    description: 'Agent status, evidence summaries and permissioned execution traces.',
-    icon: Icons.smart_toy_outlined,
-  );
+        title: 'AI Agents',
+        description:
+            'Agent status, evidence summaries and permissioned execution traces.',
+        icon: Icons.smart_toy_outlined,
+      );
 }
