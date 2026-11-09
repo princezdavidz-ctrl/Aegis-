@@ -2,8 +2,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "aws_caller_identity" "current" {}
-
 data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 }
@@ -50,13 +48,9 @@ data "aws_iam_policy_document" "deploy" {
     sid    = "EcrPush"
     effect = "Allow"
     actions = [
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:CompleteLayerUpload",
-      "ecr:InitiateLayerUpload",
-      "ecr:PutImage",
-      "ecr:UploadLayerPart",
-      "ecr:BatchGetImage",
-      "ecr:DescribeImages"
+      "ecr:BatchCheckLayerAvailability", "ecr:CompleteLayerUpload",
+      "ecr:InitiateLayerUpload", "ecr:PutImage", "ecr:UploadLayerPart",
+      "ecr:BatchGetImage", "ecr:DescribeImages"
     ]
     resources = ["arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/${var.ecr_repository}"]
   }
@@ -64,17 +58,18 @@ data "aws_iam_policy_document" "deploy" {
   statement {
     sid    = "EcsRelease"
     effect = "Allow"
-    actions = [
-      "ecs:DescribeClusters",
-      "ecs:DescribeServices",
-      "ecs:DescribeTaskDefinition",
-      "ecs:RegisterTaskDefinition",
-      "ecs:UpdateService"
-    ]
+    actions = ["ecs:DescribeClusters", "ecs:DescribeServices", "ecs:UpdateService"]
     resources = [
       "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:cluster/${var.ecs_cluster}",
       "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:service/${var.ecs_cluster}/${var.ecs_service}"
     ]
+  }
+
+  statement {
+    sid       = "TaskDefinitionReadAndRegister"
+    effect    = "Allow"
+    actions   = ["ecs:DescribeTaskDefinition", "ecs:RegisterTaskDefinition"]
+    resources = ["*"]
   }
 
   statement {
@@ -93,7 +88,7 @@ data "aws_iam_policy_document" "deploy" {
   }
 
   statement {
-    sid       = "FrontendUpload"
+    sid       = "FrontendBucketList"
     effect    = "Allow"
     actions   = ["s3:ListBucket"]
     resources = ["arn:aws:s3:::${var.frontend_bucket}"]
@@ -102,11 +97,7 @@ data "aws_iam_policy_document" "deploy" {
   statement {
     sid    = "FrontendObjects"
     effect = "Allow"
-    actions = [
-      "s3:PutObject",
-      "s3:DeleteObject",
-      "s3:AbortMultipartUpload"
-    ]
+    actions = ["s3:PutObject", "s3:DeleteObject", "s3:AbortMultipartUpload"]
     resources = ["arn:aws:s3:::${var.frontend_bucket}/*"]
   }
 
