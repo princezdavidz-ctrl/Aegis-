@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from aegis_ai.contracts import GenerationRequest, GenerationResult
 from aegis_ai.specialists import (
     EvidenceItem,
     SpecialistKind,
     SpecialistOrchestrator,
-    SpecialistRequest,
+    GenerationRequest,
+    GenerationResult,
     GenerationClient,
 )
 
