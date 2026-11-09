@@ -1,14 +1,20 @@
 """HTTP adapter for OpenAI-compatible chat-completions endpoints."""
+
 from __future__ import annotations
+
 import httpx
+
 from aegis_ai.config import AISettings
 from aegis_ai.contracts import GenerationRequest, GenerationResult
+
 
 class ProviderError(RuntimeError):
     """Safe provider error; deliberately excludes response bodies and secrets."""
 
+
 class OpenAICompatibleProvider:
     """Interoperate with compatible services using a small HTTP surface."""
+
     def __init__(self, settings: AISettings, *, client: httpx.AsyncClient | None = None) -> None:
         self.settings = settings
         self.name = settings.provider
@@ -49,9 +55,12 @@ class OpenAICompatibleProvider:
                 raise ProviderError("AI provider returned an empty response")
             usage = data.get("usage") or {}
             return GenerationResult(
-                text=content, provider=self.settings.provider, model=self.settings.model,
+                text=content,
+                provider=self.settings.provider,
+                model=self.settings.model,
                 finish_reason=choice.get("finish_reason"),
-                input_tokens=usage.get("prompt_tokens"), output_tokens=usage.get("completion_tokens"),
+                input_tokens=usage.get("prompt_tokens"),
+                output_tokens=usage.get("completion_tokens"),
             )
         except ProviderError:
             raise

@@ -1,12 +1,16 @@
 """Environment-backed AI settings with secret-safe representations."""
+
 from __future__ import annotations
+
 import os
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
+
 @dataclass(frozen=True, slots=True)
 class AISettings:
     """Settings for one OpenAI-compatible provider endpoint."""
+
     provider: str = "openai-compatible"
     base_url: str = "https://api.openai.com/v1"
     model: str = "unset"
@@ -28,7 +32,7 @@ class AISettings:
             raise ValueError("max_output_tokens must be between 1 and 8192")
 
     @classmethod
-    def from_environment(cls) -> "AISettings":
+    def from_environment(cls) -> AISettings:
         """Load settings without printing or logging credential values."""
         return cls(
             provider=os.getenv("AEGIS_AI_PROVIDER", "openai-compatible"),

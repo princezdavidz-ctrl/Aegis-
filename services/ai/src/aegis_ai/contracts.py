@@ -1,11 +1,15 @@
 """Typed model gateway contracts."""
+
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Literal
+
 
 @dataclass(frozen=True, slots=True)
 class GenerationRequest:
     """One bounded advisory generation request."""
+
     system_instruction: str
     user_input: str
     tenant_id: str
@@ -21,6 +25,7 @@ class GenerationRequest:
             raise ValueError("user_input exceeds the 40000-character limit")
         if not 1 <= self.max_output_tokens <= 8192:
             raise ValueError("max_output_tokens must be between 1 and 8192")
+
 
 @dataclass(frozen=True, slots=True)
 class GenerationResult:
