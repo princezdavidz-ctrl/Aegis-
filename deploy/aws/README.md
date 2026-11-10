@@ -21,7 +21,7 @@ Create (or have an AWS administrator create) these resources in `af-south-1`:
 3. Task execution role with ECR pull and CloudWatch Logs permissions; task role with only the runtime permissions AEGIS actually needs.
 4. Private S3 bucket for the frontend, CloudFront distribution with Origin Access Control, HTTPS redirect and SPA fallback to `index.html`.
 5. RDS PostgreSQL in private subnets, encrypted, backups enabled, not publicly accessible.
-6. Secrets Manager entries for the database URL, OIDC settings and optional AI provider settings. Keep AI disabled until a real provider is deliberately configured.
+6. Secrets Manager entries for the database URL, OIDC settings and optional AI provider settings. Configure `AEGIS_OIDC_JWKS_CACHE_SECONDS` only when needed (default 300 seconds; allowed range 30–600). A shorter cache bounds how long a removed signing key may remain trusted. Keep AI disabled until a real provider is deliberately configured.
 
 Do not use public database access. Restrict ALB ingress to HTTPS and ECS ingress to the ALB security group. Configure CloudWatch log retention and budget alerts.
 

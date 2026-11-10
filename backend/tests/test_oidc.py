@@ -1,11 +1,15 @@
-"""OIDC JWT verifier tests with an isolated signing key."""
+"""OIDC JWT verifier tests with isolated signing keys and a local JWKS endpoint."""
 
+import json
+import threading
 from datetime import datetime, timedelta, timezone
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import SimpleNamespace
 
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
+from jwt.algorithms import RSAAlgorithm
 from jwt.exceptions import PyJWKClientConnectionError
 
 from app.security.authentication import CredentialVerificationUnavailable
@@ -34,7 +38,7 @@ def make_verifier(public_key):
     return verifier
 
 
-def make_token(private_key, **overrides):
+def make_token(private_key, *, kid="test-key", **overrides):
     now = datetime.now(timezone.utc)
     claims = {
         "iss": ISSUER,
@@ -45,7 +49,44 @@ def make_token(private_key, **overrides):
         "scope": "telemetry:read investigation:read unknown:admin",
     }
     claims.update(overrides)
-    return jwt.encode(claims, private_key, algorithm="RS256", headers={"kid": "test-key"})
+    return jwt.encode(claims, private_key, algorithm="RS256", headers={"kid": kid})
+
+
+def jwk_for(public_key, kid):
+    jwk = json.loads(RSAAlgorithm.to_jwk(public_key))
+    jwk.update({"kid": kid, "use": "sig", "alg": "RS256"})
+    return jwk
+
+
+@pytest.fixture
+def local_jwks_endpoint():
+    class Handler(BaseHTTPRequestHandler):
+        payload = {"keys": []}
+
+        def do_GET(self):
+            body = json.dumps(self.payload).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, _format, *_args):
+            return
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    def set_keys(*keys):
+        Handler.payload = {"keys": list(keys)}
+
+    try:
+        yield f"http://127.0.0.1:{server.server_port}/.well-known/jwks.json", set_keys
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
 
 
 @pytest.mark.asyncio
@@ -108,3 +149,56 @@ async def test_jwks_network_failure_fails_closed_as_unavailable(key_pair) -> Non
     verifier._jwks_client.get_signing_key_from_jwt = unavailable
     with pytest.raises(CredentialVerificationUnavailable):
         await verifier.verify("opaque-token")
+
+
+@pytest.mark.asyncio
+async def test_real_jwks_rotation_refreshes_new_kid_and_rejects_removed_key(
+    local_jwks_endpoint,
+) -> None:
+    first_private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    second_private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    jwks_url, set_keys = local_jwks_endpoint
+    set_keys(jwk_for(first_private.public_key(), "key-1"))
+    verifier = OidcJwtCredentialVerifier(
+        issuer=ISSUER,
+        audience=AUDIENCE,
+        jwks_url=jwks_url,
+        jwks_cache_seconds=30,
+    )
+
+    first = await verifier.verify(make_token(first_private, kid="key-1"))
+    assert first is not None
+
+    # The new key ID is not in the cached document, so the client must refresh JWKS.
+    set_keys(jwk_for(second_private.public_key(), "key-2"))
+    second = await verifier.verify(make_token(second_private, kid="key-2"))
+    assert second is not None
+
+    # After refresh, a removed key ID must no longer validate.
+    assert await verifier.verify(make_token(first_private, kid="key-1")) is None
+
+
+def test_oidc_endpoints_require_https_except_loopback() -> None:
+    with pytest.raises(ValueError, match="HTTPS"):
+        OidcJwtCredentialVerifier(
+            issuer=ISSUER,
+            audience=AUDIENCE,
+            jwks_url="http://identity.example.test/jwks.json",
+        )
+
+    with pytest.raises(ValueError, match="HTTPS"):
+        OidcJwtCredentialVerifier(
+            issuer="http://identity.example.test/",
+            audience=AUDIENCE,
+            jwks_url="https://identity.example.test/jwks.json",
+        )
+
+
+def test_jwks_cache_lifetime_is_bounded() -> None:
+    with pytest.raises(ValueError, match="30 and 600"):
+        OidcJwtCredentialVerifier(
+            issuer=ISSUER,
+            audience=AUDIENCE,
+            jwks_url="https://identity.example.test/jwks.json",
+            jwks_cache_seconds=601,
+        )
