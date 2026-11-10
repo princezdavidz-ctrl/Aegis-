@@ -1,7 +1,6 @@
 """Unit tests for the official NVD CVE feed importer."""
 
 import pytest
-
 from app.vulnerability_intel.nvd_sync import (
     feed_names,
     normalize_cve,
