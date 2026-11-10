@@ -386,7 +386,13 @@ Provision a dedicated Neon development database with separate migration and runt
 
 ### Validation
 
-- The branch CI workflow is triggered by the push. Its final run ID and results will be recorded after completion.
+### Validation
+
+- Local `node --check` passed for the added readiness-test block.
+- Push workflow [#42813791466](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42813791466): web checks passed (**6 tests**), TypeScript typecheck and production build passed; Python API suite passed (**55 passed, 2 skipped**); PostgreSQL migration/RLS/provisioning integration passed (**2 passed**); API container smoke test and Terraform validation passed.
+- Flutter desktop workflow [#42813791492](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42813791492): format, analyze and widget/unit tests passed.
+- Security workflow [#42813791687](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42813791687): secret scanning, Python/TypeScript CodeQL, and Python/npm dependency audits passed.
+- Pull-request workflows [#42813877083](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42813877083), [#42813877027](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42813877027), and [#42813877130](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/42813877130) all completed successfully.
 - No live identity provider, database, model provider, telemetry source, customer data, or security tool was accessed or configured.
 
 ### Current pending work
