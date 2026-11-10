@@ -86,11 +86,20 @@ async def test_rejects_duplicate_embedding_indices():
 @pytest.mark.asyncio
 async def test_rejects_non_finite_and_zero_vectors():
     for vector in ([0.0, 0.0, 0.0], [float("nan"), 0.2, 0.3]):
-        embedder, client = make_embedder(
-            lambda request, vector=vector: httpx.Response(
+        def handler(request, vector=vector):
+            if any(value != value for value in vector):
+                # A raw provider response can contain non-standard NaN tokens;
+                # constructing it through httpx's JSON encoder rejects NaN first.
+                return httpx.Response(
+                    200,
+                    content=b'{"data":[{"index":0,"embedding":[NaN,0.2,0.3]}]}',
+                    headers={"content-type": "application/json"},
+                )
+            return httpx.Response(
                 200, json={"data": [{"index": 0, "embedding": vector}]}
             )
-        )
+
+        embedder, client = make_embedder(handler)
         try:
             with pytest.raises(EmbeddingProviderError, match="invalid response"):
                 await embedder.embed(["one"])
