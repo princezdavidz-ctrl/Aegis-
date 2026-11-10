@@ -95,6 +95,26 @@ async def test_postgres_rls_isolates_tenants_and_audit_is_append_only() -> None:
             )
             await session.commit()
 
+        # The application connection is a restricted role, never a superuser
+        # or a BYPASSRLS role. Confirm FORCE ROW LEVEL SECURITY is active.
+        async with runtime_factory() as session:
+            role = (await session.execute(
+                text("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user")
+            )).one()
+            assert role == (False, False)
+            table_security = (await session.execute(
+                text("""
+                    SELECT relrowsecurity, relforcerowsecurity
+                    FROM pg_class WHERE relname = 'audit_events'
+                """)
+            )).one()
+            assert table_security == (True, True)
+
+        # Missing transaction-local identity/tenant context exposes no rows.
+        async with runtime_factory() as session:
+            assert (await session.execute(select(Tenant.id))).scalars().all() == []
+            assert (await session.execute(select(AuditRecord.event_id))).scalars().all() == []
+
         # Runtime identity can see only its own tenant and membership.
         async with runtime_factory() as session:
             await apply_database_context(session, subject="subject-a")
@@ -172,20 +192,6 @@ async def test_postgres_rls_isolates_tenants_and_audit_is_append_only() -> None:
                 )
             await session.rollback()
     finally:
-        # Remove test rows with the administrative connection after assertions.
-        async with admin_factory() as session:
-            await session.execute(
-                text("DELETE FROM audit_events WHERE tenant_id IN (:a, :b)"),
-                {"a": str(tenant_a), "b": str(tenant_b)},
-            )
-            await session.execute(
-                text("DELETE FROM tenant_memberships WHERE tenant_id IN (:a, :b)"),
-                {"a": str(tenant_a), "b": str(tenant_b)},
-            )
-            await session.execute(
-                text("DELETE FROM tenants WHERE id IN (:a, :b)"),
-                {"a": str(tenant_a), "b": str(tenant_b)},
-            )
-            await session.commit()
+        # The CI database is ephemeral. Keep the append-only audit trail intact.
         await runtime_engine.dispose()
         await admin_engine.dispose()
