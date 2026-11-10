@@ -365,3 +365,12 @@ Provision a dedicated Neon development database with separate migration and runt
 - Phase 1 code-level security foundation: PostgreSQL migration/RLS tests, database role separation, security scans, OIDC/JWKS transport and rotation tests, and controlled tenant provisioning are merged.
 - Phase 1 live staging readiness is still incomplete: a real OIDC provider, dedicated Neon development database, AWS resources and a verified AWS OIDC deployment are required.
 - Phase 2 has started with the platform tenant-provisioning vertical slice. Organization lifecycle, member invitations/role management, asset inventory and customer portal workflows remain to be implemented.
+
+
+## 2026-11-10 — Tenant membership lifecycle increment in review
+
+- Added tenant-admin-only member listing, pending invitations to known OIDC subjects, invitation acceptance, role changes, suspension and revocation.
+- Pending invitations expire after seven days and can only be accepted by the exact authenticated OIDC subject.
+- Added database SECURITY DEFINER functions that recheck tenant-admin authority, scope operations to the server-resolved tenant, and append audit events transactionally.
+- Added protection against demoting, suspending or revoking the last active tenant administrator.
+- Added API validation/authorization tests and PostgreSQL integration coverage. Email/IdP invitation delivery is explicitly not implemented; invitations require a known subject and are accepted after the invitee authenticates.

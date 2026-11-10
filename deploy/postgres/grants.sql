@@ -11,3 +11,7 @@ GRANT EXECUTE ON FUNCTION
 -- Future tables default to SELECT only. Add write grants only with reviewed APIs/RLS.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT SELECT ON TABLES TO aegis_runtime;
+
+GRANT EXECUTE ON FUNCTION public.aegis_list_tenant_members(uuid, text) TO aegis_provisioner;
+GRANT EXECUTE ON FUNCTION public.aegis_manage_tenant_member(uuid, text, text, text, text, text, uuid) TO aegis_provisioner;
+GRANT EXECUTE ON FUNCTION public.aegis_accept_tenant_invitation(text, text, uuid) TO aegis_provisioner;
