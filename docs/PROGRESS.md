@@ -327,3 +327,22 @@ Provision a dedicated Neon development database with separate migration and runt
 - Initial dependency audit identified published vulnerabilities in the pinned PyJWT 2.10.1 and resolved Starlette 0.50.0 dependency tree.
 - Updated the API runtime pins to FastAPI 0.162.2 and PyJWT 2.15.1. FastAPI now resolves a newer Starlette release through its supported dependency range.
 - The dependency audit must pass on the final PR commit; no vulnerability is treated as resolved solely because a version string was changed.
+
+
+## 2026-11-10 — Phase 1 database role separation merged
+
+- Merged [PR #29](https://github.com/princezdavidz-ctrl/Aegis-/pull/29) into `main` at `364cd0e0bfd95fe3a2139fbd796bd113d642798f`.
+- Added production PostgreSQL role bootstrap and grant scripts for separate `aegis_migrator` and `aegis_runtime` identities. Both are explicitly non-superuser and `NOBYPASSRLS`.
+- The API runtime role receives SELECT on tenant/membership/audit tables and INSERT on audit events only; it has no audit UPDATE/DELETE privileges and does not own tables.
+- Alembic migrations now run in CI as the dedicated migration owner. A separate test-only role verifies that the database trigger rejects audit UPDATE/DELETE even when those SQL privileges are granted.
+- All PR checks passed: PostgreSQL migration/RLS integration, Python API tests, web tests/typecheck/build, Docker smoke test, Terraform validation, Gitleaks, pip-audit, npm audit, CodeQL Python/TypeScript, and Flutter format/analyze/widget tests.
+- Production tenant/membership provisioning remains intentionally unimplemented until a controlled, audited provisioning boundary is designed.
+
+
+## 2026-11-10 — Phase 1 OIDC/JWKS hardening increment in review
+
+- Added an explicit bounded JWKS cache lifetime setting (`AEGIS_OIDC_JWKS_CACHE_SECONDS`, default 300 seconds, allowed range 30–600).
+- Restricted OIDC issuer and JWKS endpoints to HTTPS. HTTP loopback JWKS endpoints are permitted only in development/test environments for local integration tests.
+- Added a real local HTTP JWKS integration test that signs tokens with two RSA keys, rotates the served JWKS document, verifies automatic refresh for a new `kid`, and rejects a removed signing key after refresh.
+- Added configuration tests for the cache lifetime setting.
+- Live provider configuration remains an external prerequisite; this test proves the verifier's JWKS rotation behavior without selecting or claiming a production IdP.

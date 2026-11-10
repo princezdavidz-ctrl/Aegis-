@@ -24,6 +24,7 @@ class Settings(BaseModel):
     oidc_audience: str | None = None
     oidc_jwks_url: str | None = None
     oidc_clock_skew_seconds: int = Field(default=30, ge=0, le=300)
+    oidc_jwks_cache_seconds: int = Field(default=300, ge=30, le=600)
 
     @field_validator("app_name")
     @classmethod
@@ -53,6 +54,7 @@ class Settings(BaseModel):
             "environment": os.getenv("AEGIS_ENVIRONMENT", "development"),
             "log_level": os.getenv("AEGIS_LOG_LEVEL", "INFO"),
             "oidc_clock_skew_seconds": os.getenv("AEGIS_OIDC_CLOCK_SKEW_SECONDS", "30"),
+            "oidc_jwks_cache_seconds": os.getenv("AEGIS_OIDC_JWKS_CACHE_SECONDS", "300"),
         }
         for setting, variable in (
             ("database_url", "AEGIS_DATABASE_URL"),
