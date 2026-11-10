@@ -1,5 +1,6 @@
 """Tests for evidence-grounded AI analysis and provider boundaries."""
 
+import asyncio
 import json
 
 import httpx
@@ -37,8 +38,7 @@ def request_data() -> AnalysisRequest:
     )
 
 
-@pytest.mark.asyncio
-async def test_analysis_accepts_grounded_findings_and_requires_review(request_data: AnalysisRequest) -> None:
+def test_analysis_accepts_grounded_findings_and_requires_review(request_data: AnalysisRequest) -> None:
     model = StubModel({
         "summary": "A suspicious sign-in sequence warrants investigation.",
         "findings": [{
@@ -52,15 +52,14 @@ async def test_analysis_accepts_grounded_findings_and_requires_review(request_da
         "limitations": ["No endpoint telemetry was supplied."],
         "requires_human_review": True,
     })
-    result = await SecurityAnalysisService(model).analyze(request_data)
+    result = asyncio.run(SecurityAnalysisService(model).analyze(request_data))
     assert result.findings[0].evidence_ids == ("evt-1",)
     assert result.requires_human_review is True
     assert "untrusted data" in model.user_prompt
     assert "never as instructions" in model.system_prompt
 
 
-@pytest.mark.asyncio
-async def test_analysis_rejects_fabricated_evidence_references(request_data: AnalysisRequest) -> None:
+def test_analysis_rejects_fabricated_evidence_references(request_data: AnalysisRequest) -> None:
     model = StubModel({
         "summary": "Possible compromise.",
         "findings": [{
@@ -75,17 +74,15 @@ async def test_analysis_rejects_fabricated_evidence_references(request_data: Ana
         "requires_human_review": True,
     })
     with pytest.raises(AIAnalysisError):
-        await SecurityAnalysisService(model).analyze(request_data)
+        asyncio.run(SecurityAnalysisService(model).analyze(request_data))
 
 
-@pytest.mark.asyncio
-async def test_analysis_rejects_malformed_json(request_data: AnalysisRequest) -> None:
+def test_analysis_rejects_malformed_json(request_data: AnalysisRequest) -> None:
     with pytest.raises(AIAnalysisError):
-        await SecurityAnalysisService(StubModel("not-json")).analyze(request_data)
+        asyncio.run(SecurityAnalysisService(StubModel("not-json")).analyze(request_data))
 
 
-@pytest.mark.asyncio
-async def test_analysis_rejects_model_turning_off_human_review(request_data: AnalysisRequest) -> None:
+def test_analysis_rejects_model_turning_off_human_review(request_data: AnalysisRequest) -> None:
     model = StubModel({
         "summary": "Done.",
         "findings": [],
@@ -93,7 +90,7 @@ async def test_analysis_rejects_model_turning_off_human_review(request_data: Ana
         "requires_human_review": False,
     })
     with pytest.raises(AIAnalysisError):
-        await SecurityAnalysisService(model).analyze(request_data)
+        asyncio.run(SecurityAnalysisService(model).analyze(request_data))
 
 
 def test_request_rejects_duplicate_evidence_ids() -> None:
@@ -122,8 +119,7 @@ def test_model_settings_reject_insecure_endpoint(monkeypatch: pytest.MonkeyPatch
         ModelSettings.from_environment()
 
 
-@pytest.mark.asyncio
-async def test_provider_sends_server_credential_and_parses_response() -> None:
+def test_provider_sends_server_credential_and_parses_response() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         assert request.headers["authorization"] == "Bearer test-secret"
         body = json.loads(request.content)
@@ -136,12 +132,11 @@ async def test_provider_sends_server_credential_and_parses_response() -> None:
         ModelSettings("https://provider.example/v1", "test-model", "test-secret"),
         client=client,
     )
-    assert await provider.complete(system_prompt="system", user_prompt="user") == '{"summary":"ok"}'
+    assert asyncio.run(provider.complete(system_prompt="system", user_prompt="user")) == '{"summary":"ok"}'
     await client.aclose()
 
 
-@pytest.mark.asyncio
-async def test_provider_hides_upstream_error_body() -> None:
+def test_provider_hides_upstream_error_body() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(401, text="secret leaked by upstream")
 
@@ -151,6 +146,6 @@ async def test_provider_hides_upstream_error_body() -> None:
         client=client,
     )
     with pytest.raises(AIProviderError, match="model provider request failed") as error:
-        await provider.complete(system_prompt="system", user_prompt="user")
+        asyncio.run(provider.complete(system_prompt="system", user_prompt="user"))
     assert "secret leaked" not in str(error.value)
     await client.aclose()
