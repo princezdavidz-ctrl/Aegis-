@@ -14,6 +14,8 @@ COPY backend/requirements.txt /tmp/backend-requirements.txt
 RUN python -m pip install --no-cache-dir -r /tmp/backend-requirements.txt
 
 COPY backend/app /app/app
+COPY backend/migrations /app/migrations
+COPY backend/alembic.ini /app/alembic.ini
 
 RUN useradd --system --uid 10001 --create-home aegis \
     && chown -R aegis:aegis /app
