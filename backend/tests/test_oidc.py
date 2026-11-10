@@ -164,6 +164,7 @@ async def test_real_jwks_rotation_refreshes_new_kid_and_rejects_removed_key(
         audience=AUDIENCE,
         jwks_url=jwks_url,
         jwks_cache_seconds=30,
+        allow_loopback_http=True,
     )
 
     first = await verifier.verify(make_token(first_private, kid="key-1"))

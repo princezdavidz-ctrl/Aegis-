@@ -53,6 +53,7 @@ def create_app(
             jwks_url=resolved_settings.oidc_jwks_url,
             clock_skew_seconds=resolved_settings.oidc_clock_skew_seconds,
             jwks_cache_seconds=resolved_settings.oidc_jwks_cache_seconds,
+            allow_loopback_http=resolved_settings.environment in {"development", "test"},
         )
 
     @asynccontextmanager

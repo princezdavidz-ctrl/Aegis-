@@ -15,8 +15,13 @@ from app.security.identity import Permission, Principal, PrincipalType
 _LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
-def _validate_trusted_endpoint(value: str, name: str) -> None:
-    """Require TLS for configured OIDC endpoints; allow HTTP only on loopback tests."""
+def _validate_trusted_endpoint(
+    value: str,
+    name: str,
+    *,
+    allow_loopback_http: bool,
+) -> None:
+    """Require TLS for OIDC endpoints except explicit local development tests."""
 
     try:
         parsed = urlsplit(value)
@@ -27,7 +32,11 @@ def _validate_trusted_endpoint(value: str, name: str) -> None:
         raise ValueError(f"{name} must be a valid absolute URL") from None
 
     secure = parsed.scheme == "https"
-    local_test_endpoint = parsed.scheme == "http" and hostname in _LOOPBACK_HOSTS
+    local_test_endpoint = (
+        allow_loopback_http
+        and parsed.scheme == "http"
+        and hostname in _LOOPBACK_HOSTS
+    )
     if (
         not hostname
         or not (secure or local_test_endpoint)
@@ -56,11 +65,16 @@ class OidcJwtCredentialVerifier:
         jwks_url: str,
         clock_skew_seconds: int = 30,
         jwks_cache_seconds: int = 300,
+        allow_loopback_http: bool = False,
     ) -> None:
         if not issuer or not audience.strip() or not jwks_url:
             raise ValueError("OIDC issuer, audience and JWKS URL are required")
-        _validate_trusted_endpoint(issuer, "OIDC issuer")
-        _validate_trusted_endpoint(jwks_url, "OIDC JWKS URL")
+        _validate_trusted_endpoint(
+            issuer, "OIDC issuer", allow_loopback_http=allow_loopback_http
+        )
+        _validate_trusted_endpoint(
+            jwks_url, "OIDC JWKS URL", allow_loopback_http=allow_loopback_http
+        )
         if not 0 <= clock_skew_seconds <= 300:
             raise ValueError("OIDC clock skew must be between 0 and 300 seconds")
         if not 30 <= jwks_cache_seconds <= 600:
