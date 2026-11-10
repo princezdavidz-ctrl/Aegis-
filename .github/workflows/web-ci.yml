@@ -111,6 +111,10 @@ jobs:
         env:
           PGPASSWORD: aegis_ci_migrator_password
         run: psql -h localhost -U aegis_migrator -d aegis_test -v ON_ERROR_STOP=1 -f deploy/postgres/grants.sql
+      - name: Grant test-only audit mutation privileges
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d aegis_test -v ON_ERROR_STOP=1 -c "GRANT SELECT, UPDATE, DELETE ON TABLE audit_events TO aegis_test_mutator"
       - name: Verify tenant RLS and least-privilege audit controls
         run: python -m pytest backend/tests/test_postgres_rls.py -q
 

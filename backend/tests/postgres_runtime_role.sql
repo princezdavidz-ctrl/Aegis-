@@ -15,4 +15,3 @@ ALTER ROLE aegis_test_mutator
     PASSWORD 'aegis_ci_mutator_password';
 GRANT CONNECT ON DATABASE aegis_test TO aegis_test_mutator;
 GRANT USAGE ON SCHEMA public TO aegis_test_mutator;
-GRANT SELECT, UPDATE, DELETE ON TABLE audit_events TO aegis_test_mutator;
