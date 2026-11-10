@@ -23,7 +23,7 @@ def upgrade() -> None:
                 WHERE actor.tenant_id = p_tenant_id AND actor.subject = p_actor_subject
                   AND actor.status = 'active' AND actor.role = 'tenant_admin')
                 THEN RAISE EXCEPTION 'tenant administrator required' USING ERRCODE = '42501'; END IF;
-            RETURN QUERY SELECT member.id, member.subject, member.role, member.status,
+            RETURN QUERY SELECT member.id, member.subject::text, member.role::text, member.status::text,
                 member.created_at, member.invitation_expires_at
                 FROM public.tenant_memberships member WHERE member.tenant_id = p_tenant_id
                 ORDER BY member.created_at, member.subject;
@@ -100,7 +100,7 @@ def upgrade() -> None:
                  resource_type, resource_id, outcome, authorization_reason, correlation_id)
             VALUES (gen_random_uuid(), p_tenant_id, v_now, p_actor_subject, p_actor_type,
                 v_audit_action, 'tenant_membership', v_member.id::text, 'succeeded', 'granted', p_request_id);
-            RETURN QUERY SELECT v_member.id, v_member.subject, v_member.role, v_member.status;
+            RETURN QUERY SELECT v_member.id, v_member.subject::text, v_member.role::text, v_member.status::text;
         END; $function$
     """)
     op.execute("""
