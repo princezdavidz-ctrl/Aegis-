@@ -6,10 +6,9 @@ import asyncio
 import json
 import os
 
+from app.vulnerability_intel.nvd_sync import sync_nvd_catalogue
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-
-from app.vulnerability_intel.nvd_sync import sync_nvd_catalogue
 
 
 async def main() -> None:
