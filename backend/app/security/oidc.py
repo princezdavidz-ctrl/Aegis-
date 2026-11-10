@@ -13,6 +13,7 @@ from app.security.authentication import CredentialVerificationUnavailable
 from app.security.identity import Permission, Principal, PrincipalType
 
 _LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+_JWKS_UNKNOWN_KID_REFRESH_COOLDOWN_SECONDS = 30
 
 
 def _validate_trusted_endpoint(
@@ -88,6 +89,7 @@ class OidcJwtCredentialVerifier:
             cache_jwk_set=True,
             lifespan=jwks_cache_seconds,
             timeout=5,
+            cooldown_duration=_JWKS_UNKNOWN_KID_REFRESH_COOLDOWN_SECONDS,
         )
 
     async def verify(self, token: str, /) -> Principal | None:

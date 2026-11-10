@@ -2,6 +2,7 @@
 
 import json
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import SimpleNamespace
@@ -62,8 +63,10 @@ def jwk_for(public_key, kid):
 def local_jwks_endpoint():
     class Handler(BaseHTTPRequestHandler):
         payload = {"keys": []}
+        requests = 0
 
         def do_GET(self):
+            Handler.requests += 1
             body = json.dumps(self.payload).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -81,8 +84,15 @@ def local_jwks_endpoint():
     def set_keys(*keys):
         Handler.payload = {"keys": list(keys)}
 
+    def request_count():
+        return Handler.requests
+
     try:
-        yield f"http://127.0.0.1:{server.server_port}/.well-known/jwks.json", set_keys
+        yield (
+            f"http://127.0.0.1:{server.server_port}/.well-known/jwks.json",
+            set_keys,
+            request_count,
+        )
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -157,26 +167,36 @@ async def test_real_jwks_rotation_refreshes_new_kid_and_rejects_removed_key(
 ) -> None:
     first_private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     second_private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    jwks_url, set_keys = local_jwks_endpoint
+    jwks_url, set_keys, request_count = local_jwks_endpoint
     set_keys(jwk_for(first_private.public_key(), "key-1"))
     verifier = OidcJwtCredentialVerifier(
         issuer=ISSUER,
         audience=AUDIENCE,
         jwks_url=jwks_url,
-        jwks_cache_seconds=30,
+        jwks_cache_seconds=60,
         allow_loopback_http=True,
     )
 
     first = await verifier.verify(make_token(first_private, kid="key-1"))
     assert first is not None
 
-    # The new key ID is not in the cached document, so the client must refresh JWKS.
+    # A new key ID is not accepted during the anti-abuse refresh cooldown.
     set_keys(jwk_for(second_private.public_key(), "key-2"))
-    second = await verifier.verify(make_token(second_private, kid="key-2"))
-    assert second is not None
+    second_token = make_token(second_private, kid="key-2")
+    assert await verifier.verify(second_token) is None
+    assert request_count() == 1
 
-    # After refresh, a removed key ID must no longer validate.
+    # Once the cooldown has elapsed, the unknown kid triggers one JWKS refresh.
+    verifier._jwks_client._last_successful_fetch = (
+        time.monotonic() - verifier._jwks_client.cooldown_duration - 1
+    )
+    second = await verifier.verify(second_token)
+    assert second is not None
+    assert request_count() == 2
+
+    # The old key is no longer in the refreshed document and cannot validate.
     assert await verifier.verify(make_token(first_private, kid="key-1")) is None
+    assert request_count() == 2
 
 
 def test_oidc_endpoints_require_https_except_loopback() -> None:
