@@ -1,7 +1,13 @@
 """Unit tests for the official NVD CVE feed importer."""
 
+import gzip
+import json
+import tempfile
+from pathlib import Path
+
 import pytest
 from app.vulnerability_intel.nvd_sync import (
+    _iter_vulnerabilities,
     feed_names,
     normalize_cve,
     parse_meta_sha256,
@@ -71,3 +77,21 @@ def test_normalize_cve_parses_zulu_timestamp():
         "nvdcve-2.0-2025",
     )
     assert row["published_at"].isoformat() == "2025-01-02T03:04:05+00:00"
+
+
+def test_feed_entries_are_yielded_from_gzip_incrementally():
+    payload = {
+        "vulnerabilities": [
+            {"cve": {"id": "CVE-2025-10001"}},
+            {"cve": {"id": "CVE-2025-10002"}},
+        ]
+    }
+    with tempfile.NamedTemporaryFile(suffix=".json.gz") as feed:
+        with gzip.open(feed.name, "wt", encoding="utf-8") as compressed:
+            json.dump(payload, compressed)
+        entries = _iter_vulnerabilities(Path(feed.name))
+        first = next(entries)
+        assert first["cve"]["id"] == "CVE-2025-10001"
+        assert next(entries)["cve"]["id"] == "CVE-2025-10002"
+        with pytest.raises(StopIteration):
+            next(entries)
