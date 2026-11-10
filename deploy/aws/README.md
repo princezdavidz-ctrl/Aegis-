@@ -80,7 +80,7 @@ Use the checked-in role separation scripts in `deploy/postgres/`:
 4. Run `grants.sql` as `aegis_migrator` after migrations.
 5. Configure the API task with the `aegis_runtime` connection only.
 
-The runtime role has SELECT access for tenant/membership resolution and SELECT/INSERT for audit events. It cannot update/delete audit rows, create tenants or create memberships. Do not grant additional permissions until the corresponding APIs, RLS policies and integration tests exist. See [PostgreSQL role separation](../deploy/postgres/README.md).
+The runtime role has SELECT access for tenant/membership resolution and SELECT/INSERT for audit events. It cannot update/delete audit rows, create tenants or create memberships. Do not grant additional permissions until the corresponding APIs, RLS policies and integration tests exist. See [PostgreSQL role separation](../postgres/README.md).
 
 ## 6. Run deployment
 

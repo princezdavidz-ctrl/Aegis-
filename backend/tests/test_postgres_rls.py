@@ -127,6 +127,15 @@ async def test_postgres_rls_and_least_privilege_audit_roles() -> None:
             ).one()
             assert table_security == (True, True, "aegis_migrator")
 
+        # Migration owner is also non-superuser and must not bypass RLS.
+        async with admin_factory() as session:
+            migrator = (
+                await session.execute(
+                    text("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = 'aegis_migrator'")
+                )
+            ).one()
+            assert migrator == (False, False)
+
         # Missing transaction-local identity/tenant context exposes no rows.
         async with runtime_factory() as session:
             assert (await session.execute(select(Tenant.id))).scalars().all() == []
