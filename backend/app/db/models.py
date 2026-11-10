@@ -1,34 +1,25 @@
 """Tenant, membership, and immutable audit persistence models."""
-
 from __future__ import annotations
-
 from datetime import datetime, timezone
 from enum import StrEnum
 from uuid import UUID, uuid4
-
 from sqlalchemy import DateTime, ForeignKey, Index, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
-
 from app.db.base import Base
 
-
 class MembershipStatus(StrEnum):
+    PENDING = "pending"
     ACTIVE = "active"
     SUSPENDED = "suspended"
     REVOKED = "revoked"
 
-
 class Tenant(Base):
     __tablename__ = "tenants"
     __table_args__ = (UniqueConstraint("slug", name="uq_tenants_slug"),)
-
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     slug: Mapped[str] = mapped_column(String(63), nullable=False)
     display_name: Mapped[str] = mapped_column(String(160), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
-    )
-
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 class TenantMembership(Base):
     __tablename__ = "tenant_memberships"
@@ -36,18 +27,13 @@ class TenantMembership(Base):
         UniqueConstraint("tenant_id", "subject", name="uq_tenant_memberships_tenant_subject"),
         Index("ix_tenant_memberships_subject_status", "subject", "status"),
     )
-
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
-    tenant_id: Mapped[UUID] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("tenants.id", ondelete="RESTRICT"), nullable=False
-    )
+    tenant_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("tenants.id", ondelete="RESTRICT"), nullable=False)
     subject: Mapped[str] = mapped_column(String(128), nullable=False)
     role: Mapped[str] = mapped_column(String(48), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default=MembershipStatus.ACTIVE.value)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
-    )
-
+    invitation_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 class AuditRecord(Base):
     __tablename__ = "audit_events"
@@ -55,11 +41,8 @@ class AuditRecord(Base):
         Index("ix_audit_events_tenant_occurred", "tenant_id", "occurred_at"),
         Index("ix_audit_events_actor_occurred", "actor_subject", "occurred_at"),
     )
-
     event_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
-    tenant_id: Mapped[UUID] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("tenants.id", ondelete="RESTRICT"), nullable=False
-    )
+    tenant_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("tenants.id", ondelete="RESTRICT"), nullable=False)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     actor_subject: Mapped[str] = mapped_column(String(128), nullable=False)
     actor_type: Mapped[str] = mapped_column(String(16), nullable=False)

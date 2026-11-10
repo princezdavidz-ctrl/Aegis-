@@ -14,6 +14,7 @@ from aegis_ai.providers.openai_compatible import OpenAICompatibleProvider
 
 from app.ai.specialist_service import SpecialistAnalysisAdapter
 from app.api.ai_analysis import router as ai_analysis_router
+from app.api.memberships import router as membership_router
 from app.api.tenants import router as tenant_router
 from app.config import Settings
 from app.db.session import create_session_factory
@@ -107,6 +108,7 @@ def create_app(
     application.include_router(health_router)
     application.include_router(ai_analysis_router)
     application.include_router(tenant_router)
+    application.include_router(membership_router)
     return application
 
 
