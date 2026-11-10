@@ -112,3 +112,8 @@ The security workflow adds:
 - Weekly scheduled security scans.
 
 A passing scan is evidence only for the scanned commit and dependency advisory database at scan time; it does not replace penetration testing or runtime monitoring.
+
+
+## Tenant onboarding boundary
+
+The first platform-level onboarding operation is POST /api/v1/tenants. It requires a verified tenant:provision scope and a separate AEGIS_PROVISIONER_DATABASE_URL connection. Tenant creation, initial tenant_admin membership and the provisioning audit event are committed atomically by a restricted PostgreSQL function. A live identity provider and Neon database are still required before production use.

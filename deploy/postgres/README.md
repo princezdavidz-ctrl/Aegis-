@@ -6,7 +6,7 @@ AEGIS must use distinct database identities for schema migrations and API runtim
 
 - `aegis_migrator`: non-superuser migration identity. Owns tables created by Alembic and has schema CREATE permission. Use only for a separately reviewed migration task.
 - `aegis_runtime`: non-superuser application identity. Has SELECT on tenant/membership and audit tables, plus INSERT on audit events. It has no UPDATE/DELETE permission on audit events and is not a table owner.
-- No production `BYPASSRLS` role is created. Both identities are explicitly set to `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOINHERIT`, and `NOBYPASSRLS`.
+- No production `BYPASSRLS` role is created. All three identities are explicitly set to `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOINHERIT`, and `NOBYPASSRLS`.
 
 ## Provision roles
 

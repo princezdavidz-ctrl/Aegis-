@@ -13,10 +13,11 @@ from aegis_ai.gateway import ModelGateway
 from aegis_ai.providers.openai_compatible import OpenAICompatibleProvider
 
 from app.ai.specialist_service import SpecialistAnalysisAdapter
+from app.api.ai_analysis import router as ai_analysis_router
+from app.api.tenants import router as tenant_router
 from app.config import Settings
 from app.db.session import create_session_factory
 from app.health import router as health_router
-from app.api.ai_analysis import router as ai_analysis_router
 from app.security.authentication import CredentialVerifier
 from app.security.oidc import OidcJwtCredentialVerifier
 
@@ -59,8 +60,10 @@ def create_app(
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         engine = None
+        provisioner_engine = None
         ai_provider = None
         application.state.session_factory = None
+        application.state.provisioner_session_factory = None
         application.state.ai_provider = None
         application.state.specialist_analysis_service = None
         if resolved_settings.database_url is not None:
@@ -68,6 +71,11 @@ def create_app(
                 resolved_settings.database_url.get_secret_value()
             )
             application.state.session_factory = factory
+        if resolved_settings.provisioner_database_url is not None:
+            provisioner_engine, provisioner_factory = create_session_factory(
+                resolved_settings.provisioner_database_url.get_secret_value()
+            )
+            application.state.provisioner_session_factory = provisioner_factory
         ai_settings = AISettings.from_environment()
         if ai_settings.model != "unset" and ai_settings.api_key:
             ai_provider = OpenAICompatibleProvider(ai_settings)
@@ -80,13 +88,15 @@ def create_app(
         finally:
             if ai_provider is not None:
                 await ai_provider.aclose()
+            if provisioner_engine is not None:
+                await provisioner_engine.dispose()
             if engine is not None:
                 await engine.dispose()
 
     is_production = resolved_settings.environment == "production"
     application = FastAPI(
         title=resolved_settings.app_name,
-        version="0.3.0",
+        version="0.4.0",
         docs_url=None if is_production else "/docs",
         redoc_url=None if is_production else "/redoc",
         openapi_url=None if is_production else "/openapi.json",
@@ -96,6 +106,7 @@ def create_app(
     application.state.credential_verifier = resolved_verifier
     application.include_router(health_router)
     application.include_router(ai_analysis_router)
+    application.include_router(tenant_router)
     return application
 
 

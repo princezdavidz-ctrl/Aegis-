@@ -346,3 +346,13 @@ Provision a dedicated Neon development database with separate migration and runt
 - Added a real local HTTP JWKS integration test that signs tokens with two RSA keys, rotates the served JWKS document, verifies automatic refresh for a new `kid`, and rejects a removed signing key after refresh.
 - Added configuration tests for the cache lifetime setting.
 - Live provider configuration remains an external prerequisite; this test proves the verifier's JWKS rotation behavior without selecting or claiming a production IdP.
+
+
+## 2026-11-10 — Controlled tenant provisioning vertical slice in review
+
+- Added a platform-level tenant:provision permission and authenticated POST /api/v1/tenants endpoint.
+- The endpoint rejects client-supplied tenant IDs, derives actor identity from the verified principal, and uses a separate AEGIS_PROVISIONER_DATABASE_URL connection.
+- Added a SECURITY DEFINER PostgreSQL function owned by the non-superuser migration role. It validates input and atomically inserts the tenant, initial tenant_admin membership and append-only audit event.
+- Added a dedicated aegis_provisioner role with no direct table privileges and EXECUTE permission only on the provisioning function. The normal runtime role cannot create tenants or memberships.
+- Added API authorization tests and PostgreSQL integration coverage for function-only provisioning, no direct table access, tenant creation, initial membership and audit provenance.
+- Live OIDC/Neon/AWS setup remains an external prerequisite; CI tests use an ephemeral PostgreSQL service and do not claim a live customer environment.

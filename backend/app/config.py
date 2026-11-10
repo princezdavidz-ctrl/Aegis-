@@ -20,6 +20,7 @@ class Settings(BaseModel):
     environment: Environment = "development"
     log_level: LogLevel = "INFO"
     database_url: SecretStr | None = None
+    provisioner_database_url: SecretStr | None = None
     oidc_issuer: str | None = None
     oidc_audience: str | None = None
     oidc_jwks_url: str | None = None
@@ -58,6 +59,7 @@ class Settings(BaseModel):
         }
         for setting, variable in (
             ("database_url", "AEGIS_DATABASE_URL"),
+            ("provisioner_database_url", "AEGIS_PROVISIONER_DATABASE_URL"),
             ("oidc_issuer", "AEGIS_OIDC_ISSUER"),
             ("oidc_audience", "AEGIS_OIDC_AUDIENCE"),
             ("oidc_jwks_url", "AEGIS_OIDC_JWKS_URL"),
