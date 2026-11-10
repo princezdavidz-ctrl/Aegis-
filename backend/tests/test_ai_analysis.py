@@ -133,7 +133,7 @@ def test_provider_sends_server_credential_and_parses_response() -> None:
         client=client,
     )
     assert asyncio.run(provider.complete(system_prompt="system", user_prompt="user")) == '{"summary":"ok"}'
-    await client.aclose()
+    asyncio.run(client.aclose())
 
 
 def test_provider_hides_upstream_error_body() -> None:
@@ -148,4 +148,4 @@ def test_provider_hides_upstream_error_body() -> None:
     with pytest.raises(AIProviderError, match="model provider request failed") as error:
         asyncio.run(provider.complete(system_prompt="system", user_prompt="user"))
     assert "secret leaked" not in str(error.value)
-    await client.aclose()
+    asyncio.run(client.aclose())
