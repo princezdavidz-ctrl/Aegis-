@@ -115,3 +115,50 @@ test('navigation controls retain a visible keyboard focus indicator', async () =
     'Keyboard focus must be visibly distinguishable',
   );
 });
+
+
+test('overview separates implemented code from live service configuration', () => {
+  const markup = renderToStaticMarkup(React.createElement(App));
+  const expectedCapabilities = [
+    {
+      id: 'api',
+      state: 'code_present',
+      label: 'Code present · deployment unverified',
+    },
+    {
+      id: 'orchestration',
+      state: 'code_present',
+      label: 'Code present · advisory only',
+    },
+    {
+      id: 'model-provider',
+      state: 'not_configured',
+      label: 'Adapter present · not configured',
+    },
+    {
+      id: 'memory',
+      state: 'not_implemented',
+      label: 'Not implemented',
+    },
+  ];
+
+  for (const capability of expectedCapabilities) {
+    assert.ok(
+      markup.includes('data-platform-capability="' + capability.id + '"'),
+      'Expected a readiness row for ' + capability.id,
+    );
+    assert.ok(
+      markup.includes('data-readiness="' + capability.state + '"'),
+      'Expected readiness state ' + capability.state,
+    );
+    assert.ok(
+      markup.includes(capability.label),
+      'Expected explicit status label: ' + capability.label,
+    );
+  }
+
+  assert.match(markup, /Source-code status · not a live health check/);
+  assert.match(markup, /Preview mode/);
+  assert.match(markup, /No live model provider is configured/);
+  assert.match(markup, /No customer-authorized connectors are configured/);
+});

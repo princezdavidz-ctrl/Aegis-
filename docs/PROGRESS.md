@@ -365,3 +365,38 @@ Provision a dedicated Neon development database with separate migration and runt
 - Phase 1 code-level security foundation: PostgreSQL migration/RLS tests, database role separation, security scans, OIDC/JWKS transport and rotation tests, and controlled tenant provisioning are merged.
 - Phase 1 live staging readiness is still incomplete: a real OIDC provider, dedicated Neon development database, AWS resources and a verified AWS OIDC deployment are required.
 - Phase 2 has started with the platform tenant-provisioning vertical slice. Organization lifecycle, member invitations/role management, asset inventory and customer portal workflows remain to be implemented.
+
+
+## 2026-11-10 — Web portal implementation-readiness accuracy
+
+### Repository audit
+
+- Started from the current default branch `main` at `105c813699d16f6b85f7e4f523d9079ce533b0ce`, after the OIDC/JWKS hardening and controlled tenant-provisioning increments were merged.
+- The current source tree contains the `frontend/` portal, FastAPI tenant/authentication/audit boundaries, PostgreSQL migrations/RLS tests, OIDC/JWKS verification, controlled tenant provisioning, and advisory AI gateway/workflows.
+- The older `feat/react-ui-foundation` branch and PR #1 are diverged from the current default branch and are not used as the base for new work. They were left untouched.
+- Re-read the current root README, architecture, roadmap, implementation backlog, progress log, frontend source/tests, backend security and persistence code, and CI workflow.
+
+### Completed
+
+- Added a typed platform-readiness catalog for the overview panel.
+- Replaced stale generic pending labels with explicit source-code states: API code present but deployment unverified; advisory orchestration code present; model adapter present but provider not configured; persistent memory not implemented.
+- Updated overview copy to distinguish implemented code from live identity, database, model, telemetry, and security-tool configuration.
+- Kept operational metrics empty/zero until real authorized data sources exist; no synthetic alerts or investigations were added.
+- Added a UI regression test for readiness distinctions and updated the frontend README to explain that these labels are not live health checks.
+
+### Validation
+
+- The branch CI workflow is triggered by the push. Its final run ID and results will be recorded after completion.
+- No live identity provider, database, model provider, telemetry source, customer data, or security tool was accessed or configured.
+
+### Current pending work
+
+- The web portal remains a preview: sign-in, organization lifecycle, member invitations/role management, customer asset inventory, real API-backed metrics, and operational workflows are not connected.
+- Verify the controlled tenant-provisioning flow against a dedicated Neon development database and a real non-production OIDC provider.
+- Complete Phase 1 staging prerequisites (AWS account/OIDC resources, safe key deactivation confirmation, and staging smoke test).
+- Implement tenant-scoped memory and connect specialist agents only to authorized evidence.
+- Complete browser interaction tests, connector/telemetry workflows, security evaluations, and production deployment.
+
+### Next task
+
+Build the first tenant-scoped customer portal workflow only after the live OIDC and Neon prerequisites are verified. Start with organization/profile and membership views backed by typed API contracts; do not display fabricated tenant data or expose platform-level provisioning to ordinary customer users.
