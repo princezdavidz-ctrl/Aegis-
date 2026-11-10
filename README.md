@@ -13,18 +13,20 @@ Aegis-/
 ├── apps/
 │   └── engineer-desktop/      # Flutter engineer SOC workstation
 ├── services/
-│   └── ai/                    # AI service architecture and initial contracts
-├── docs/                      # Architecture, roadmap, security and progress
-└── .github/workflows/         # Web/API and Flutter CI
+│   └── ai/                    # Provider-neutral AI gateway and specialist workflows
+├── deploy/aws/                # AWS OIDC deployment foundation
+├── docs/                      # Architecture, roadmap, security, progress and backlog
+└── .github/workflows/         # Web, API, AI, Flutter and manual AWS deployment CI
 ```
 
 ## Technology
 
 - **Frontend:** React, TypeScript, Vite and Tailwind CSS; deploy the `frontend/` directory as the Vercel project root.
-- **Backend:** Python 3.11+, FastAPI; deploy the `backend/` application on Render.
+- **Backend:** Python 3.11+, FastAPI; deploy the `backend/` application.
 - **Engineer desktop:** Flutter for Windows, Linux and macOS.
-- **Database target:** Neon PostgreSQL. No live database connection is configured yet.
-- **AI:** provider-independent architecture under `services/ai/`; no live model provider or agent execution is configured yet.
+- **Database target:** Neon PostgreSQL; migrations and RLS are in source but no live database is configured or verified.
+- **AI:** provider-independent gateway and advisory specialist workflows under `services/ai/`; live provider configuration is not confirmed.
+- **AWS:** manual GitHub Actions deployment foundation using short-lived GitHub OIDC credentials; infrastructure provisioning and a successful live deployment are not confirmed.
 
 ## Local development
 
@@ -57,6 +59,24 @@ flutter analyze
 flutter test
 ```
 
+AI service:
+
+```bash
+python -m pip install -e services/ai
+python -m pytest services/ai/tests -q
+```
+
+## Verified implementation status
+
+The repository contains meaningful foundations, but it is not yet a production-ready security platform:
+
+- **API:** FastAPI app factory, health routes, optional OIDC/JWKS verification, server-side membership resolution, tenant-aware SQLAlchemy sessions, PostgreSQL RLS migrations, durable audit adapter boundaries, and authenticated advisory AI analysis endpoint are present. A live IdP/database is not configured; PostgreSQL migrations/RLS are not yet verified against a live database.
+- **Web portal:** frontend foundation and CI are present. Production authentication and customer business workflows are not connected to live APIs.
+- **Flutter desktop:** engineer SOC shell and module navigation are present. Live SOC telemetry and operational workflows are not connected.
+- **AI:** provider-neutral model gateway, OpenAI-compatible adapter, specialist analysis workflows and backend runtime wiring are present. No live model provider or customer evidence retrieval is confirmed.
+- **Telemetry/detection:** real customer connectors, event ingestion, detection and correlation are not yet operational.
+- **AWS:** OIDC deployment workflow and role Terraform foundation are present. AWS resources have not been provisioned and a successful deployment has not been confirmed.
+
 ## Security principles
 
 1. Resolve tenant identity and membership on the server; never trust client-supplied tenant IDs.
@@ -66,15 +86,13 @@ flutter test
 5. Keep customer data isolated across storage, retrieval, prompts, queues, caches and reports.
 6. Treat logs, source code, tickets and tool output as untrusted content; defend against prompt injection.
 7. Never commit secrets or place credentials in prompts or logs.
+8. Use GitHub OIDC for AWS deployment; do not use long-lived AWS access keys.
 
-## Verified implementation status
+## Project planning
 
-This repository now contains the web UI foundation, a modular FastAPI foundation, a Flutter desktop scaffold and AI architecture boundaries. These are early foundations, not a production-ready security platform:
-
-- The API currently exposes health endpoints only. It now includes an optional OIDC/JWKS verifier, tenant-membership resolution, SQLAlchemy persistence models, a tenant-bound audit sink, and PostgreSQL RLS migrations; no identity provider or database is configured, migrations have not been applied to Neon, and no protected business routes are exposed.
-- The web portal is a frontend foundation; production authentication and backend data workflows are not connected.
-- The Flutter workstation is a structural scaffold; live SOC telemetry and operational actions are not connected.
-- The AI service is primarily architecture/contracts; no production model provider, agent orchestration or security-tool execution is connected.
-- Database, telemetry ingestion, customer integrations and production deployment are not configured.
-
-See [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Security model](docs/SECURITY-MODEL.md), and [Progress](docs/PROGRESS.md).
+- [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Implementation backlog and GitHub phase issues](docs/IMPLEMENTATION-BACKLOG.md)
+- [Security model](docs/SECURITY-MODEL.md)
+- [Progress log](docs/PROGRESS.md)
+- [AWS deployment prerequisites](deploy/aws/README.md)
