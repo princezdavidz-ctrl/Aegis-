@@ -95,9 +95,9 @@ data "aws_iam_policy_document" "deploy" {
   }
 
   statement {
-    sid    = "FrontendObjects"
-    effect = "Allow"
-    actions = ["s3:PutObject", "s3:DeleteObject", "s3:AbortMultipartUpload"]
+    sid       = "FrontendObjects"
+    effect    = "Allow"
+    actions   = ["s3:PutObject", "s3:DeleteObject", "s3:AbortMultipartUpload"]
     resources = ["arn:aws:s3:::${var.frontend_bucket}/*"]
   }
 
