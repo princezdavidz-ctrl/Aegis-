@@ -1,6 +1,5 @@
 """Add tenant-admin membership invitation, acceptance and lifecycle operations."""
 from alembic import op
-import sqlalchemy as sa
 
 revision = "0003_membership_lifecycle"
 down_revision = "0002_tenant_provisioning"
