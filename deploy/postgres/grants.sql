@@ -19,3 +19,10 @@ GRANT EXECUTE ON FUNCTION public.aegis_accept_tenant_invitation(text, text, uuid
 GRANT EXECUTE ON FUNCTION
     public.aegis_update_tenant_profile(uuid, text, text, uuid, text, text, text, integer, text)
     TO aegis_provisioner;
+
+GRANT EXECUTE ON FUNCTION
+    public.aegis_create_asset(uuid, text, text, uuid, text, text, text, text, text)
+    TO aegis_provisioner;
+GRANT EXECUTE ON FUNCTION
+    public.aegis_update_asset(uuid, uuid, text, text, uuid, text, text, text, text, text, text)
+    TO aegis_provisioner;
