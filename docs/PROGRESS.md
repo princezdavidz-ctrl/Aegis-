@@ -285,3 +285,27 @@ Implement a durable append-only audit adapter with an explicitly selected persis
 ### Next task
 
 Provision a dedicated Neon development database with separate migration and runtime roles, apply the migration, and add integration tests proving cross-tenant reads/writes and audit immutability are blocked. Then wire an explicitly selected OIDC provider in deployment configuration before adding protected tenant onboarding and asset APIs.
+
+
+## 2026-11-10 — Phase 1 foundation hardening increment
+
+### Completed in this increment
+
+- Added a PostgreSQL integration test that applies the actual Alembic migration, connects through a restricted non-superuser runtime role, and verifies tenant-scoped reads, membership visibility, audit isolation, cross-tenant audit-write denial, and database rejection of audit UPDATE/DELETE.
+- Added a CI-only SQL script that creates a non-superuser runtime role with no BYPASSRLS privilege and grants only the table permissions needed by the integration test.
+- Extended web/API CI with a PostgreSQL 16 migration/RLS integration job, API container build and health smoke test, and Terraform formatting/validation.
+- Added Alembic and the migration files to the API image so a separately reviewed one-off ECS migration task can run from the same immutable image.
+- Corrected AWS documentation: Terraform reads an existing GitHub OIDC provider; it does not create one. Documented the separate migration-owner and restricted runtime database roles.
+
+### Validation status
+
+- Validation is delegated to the pull-request GitHub Actions checks: Python API tests, PostgreSQL migration/RLS integration, frontend tests/typecheck/build, Docker container smoke test, and Terraform fmt/init/validate.
+- No live Neon database, identity provider or AWS infrastructure was accessed or configured in this change.
+- The CI-only database password is not a production credential and must never be reused.
+
+### Remaining Phase 1 work
+
+- Confirm PostgreSQL integration tests pass on the PR head; correct any RLS policy or migration failures before merging.
+- Add production database grants and controlled tenant provisioning design before customer onboarding APIs.
+- Configure a real test OIDC provider and test issuer/audience/key rotation in a non-production environment.
+- Complete AWS staging provisioning only after the AWS administrator confirms the previously exposed access key has been deactivated and supplies the AWS account ID. Continue to use GitHub OIDC only.
