@@ -17,9 +17,8 @@ contains CVE identifiers from earlier years.
    the runtime read-only and ingestor write privileges.
 3. Set `AEGIS_INGESTOR_DATABASE_URL` to a PostgreSQL/asyncpg connection for
    the `aegis_ingestor` role. Do not use the runtime or migrator credentials.
-4. Optionally set `NVD_API_KEY` to an NVD API key. The importer uses official
-   bulk feeds and does not require a key, but the key can be used for future
-   API-based incremental sync.
+4. Keep the ingestor database credential in your secret manager. No NVD API
+   key is required for the official bulk feeds.
 
 ### Run
 
@@ -36,7 +35,7 @@ stable identifier, each feed is marked complete only after its rows have been
 written, and unchanged feeds are skipped on later runs. The modified feed is
 always processed after yearly feeds.
 
-The command prints a summary of feeds imported/skipped and rows upserted. A
+The command prints a summary of feeds imported/skipped and CVE rows processed. A
 successful code merge does not itself populate a live database: run this
 command against the configured production database and verify the resulting
 row count before describing the catalogue as fully populated.
