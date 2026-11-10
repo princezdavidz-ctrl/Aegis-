@@ -26,3 +26,8 @@ GRANT EXECUTE ON FUNCTION
 GRANT EXECUTE ON FUNCTION
     public.aegis_update_asset(uuid, uuid, text, text, uuid, text, text, text, text, text, text)
     TO aegis_provisioner;
+
+
+-- Public CVE catalogue: runtime read-only, dedicated ingestion writer only.
+GRANT SELECT ON TABLE public.cve_catalog, public.nvd_feed_sync TO aegis_runtime;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.cve_catalog, public.nvd_feed_sync TO aegis_ingestor;

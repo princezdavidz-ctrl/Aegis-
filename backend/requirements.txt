@@ -5,3 +5,4 @@ SQLAlchemy[asyncio]==2.0.48
 asyncpg==0.31.0
 PyJWT[crypto]==2.15.1
 alembic==1.16.5
+ijson==3.3.0
