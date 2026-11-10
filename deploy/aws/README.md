@@ -95,3 +95,8 @@ The workflow fails closed if required variables or AWS resources are missing. Re
 - Do not run database migrations automatically in the web deployment job. Use a separately reviewed one-off migration task with a controlled release window.
 - The AI gateway remains disabled unless a provider and key are explicitly configured.
 - Review AWS service availability and pricing in `af-south-1` before provisioning. ECS, ALB, RDS, NAT, S3 and CloudFront can incur charges.
+
+
+## Separate tenant-provisioning database credential
+
+The API uses two database connections. AEGIS_DATABASE_URL uses the restricted aegis_runtime role. AEGIS_PROVISIONER_DATABASE_URL uses the separate aegis_provisioner role, which has no direct table privileges and can execute only the audited tenant-provisioning function. Set independent credentials in Secrets Manager. Do not use the migration-owner credential in the API.

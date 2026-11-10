@@ -21,9 +21,10 @@ from app.security.identity import PrincipalType
 ADMIN_URL = os.getenv("AEGIS_TEST_ADMIN_DATABASE_URL")
 RUNTIME_URL = os.getenv("AEGIS_TEST_DATABASE_URL")
 MUTATOR_URL = os.getenv("AEGIS_TEST_MUTATOR_DATABASE_URL")
+PROVISIONER_URL = os.getenv("AEGIS_TEST_PROVISIONER_DATABASE_URL")
 
 pytestmark = pytest.mark.skipif(
-    not ADMIN_URL or not RUNTIME_URL or not MUTATOR_URL,
+    not ADMIN_URL or not RUNTIME_URL or not MUTATOR_URL or not PROVISIONER_URL,
     reason="PostgreSQL integration URLs are not configured",
 )
 
@@ -230,4 +231,101 @@ async def test_postgres_rls_and_least_privilege_audit_roles() -> None:
         # The CI database is ephemeral. Keep the append-only audit trail intact.
         await mutator_engine.dispose()
         await runtime_engine.dispose()
+        await admin_engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_controlled_tenant_provisioning_is_audited_and_uses_function_only_role() -> None:
+    admin_engine = create_async_engine(ADMIN_URL)
+    provisioner_engine = create_async_engine(PROVISIONER_URL)
+    admin_factory = async_sessionmaker(admin_engine, expire_on_commit=False)
+    provisioner_factory = async_sessionmaker(provisioner_engine, expire_on_commit=False)
+    request_id = uuid4()
+    slug = f"provisioned-{request_id.hex[:10]}"
+
+    try:
+        async with provisioner_factory() as session:
+            role = (
+                await session.execute(
+                    text(
+                        """
+                        SELECT current_user, rolsuper, rolbypassrls,
+                               has_table_privilege(current_user, 'tenants', 'SELECT'),
+                               has_table_privilege(current_user, 'tenants', 'INSERT'),
+                               has_function_privilege(
+                                   current_user,
+                                   'public.aegis_provision_tenant(text,text,text,text,text,uuid)',
+                                   'EXECUTE'
+                               )
+                        FROM pg_roles WHERE rolname = current_user
+                        """
+                    )
+                )
+            ).one()
+            assert role == ("aegis_provisioner", False, False, False, False, True)
+
+            # The provisioner cannot read tenant tables directly.
+            with pytest.raises(DBAPIError):
+                await session.execute(select(Tenant.id))
+            await session.rollback()
+
+            row = (
+                await session.execute(
+                    text(
+                        """
+                        SELECT tenant_id, tenant_slug
+                        FROM public.aegis_provision_tenant(
+                            :slug, :display_name, :initial_admin_subject,
+                            :actor_subject, :actor_type, :request_id
+                        )
+                        """
+                    ),
+                    {
+                        "slug": slug,
+                        "display_name": "Provisioned Customer",
+                        "initial_admin_subject": "oidc|customer-admin",
+                        "actor_subject": "oidc|platform-admin",
+                        "actor_type": "user",
+                        "request_id": request_id,
+                    },
+                )
+            ).one()
+            await session.commit()
+
+        tenant_id, returned_slug = row
+        assert returned_slug == slug
+
+        # The function creates tenant, initial admin membership and audit event
+        # atomically; the admin connection verifies the durable result.
+        async with admin_factory() as session:
+            tenant = await session.get(Tenant, tenant_id)
+            membership = (
+                await session.execute(
+                    select(TenantMembership).where(
+                        TenantMembership.tenant_id == tenant_id,
+                        TenantMembership.subject == "oidc|customer-admin",
+                    )
+                )
+            ).scalar_one()
+            audit = (
+                await session.execute(
+                    select(AuditRecord).where(
+                        AuditRecord.tenant_id == tenant_id,
+                        AuditRecord.correlation_id == request_id,
+                    )
+                )
+            ).scalar_one()
+
+            assert tenant is not None
+            assert tenant.slug == slug
+            assert tenant.display_name == "Provisioned Customer"
+            assert membership.role == "tenant_admin"
+            assert membership.status == "active"
+            assert audit.actor_subject == "oidc|platform-admin"
+            assert audit.actor_type == "user"
+            assert audit.action == "tenant.provision"
+            assert audit.resource_id == str(tenant_id)
+            assert audit.outcome == "succeeded"
+    finally:
+        await provisioner_engine.dispose()
         await admin_engine.dispose()

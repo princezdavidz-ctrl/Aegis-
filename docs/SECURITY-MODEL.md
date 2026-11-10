@@ -89,3 +89,8 @@ A release that handles customer data must not proceed unless:
 - AI/tool execution cannot bypass policy or approval.
 - Operational alerts exist for ingestion failure and audit pipeline failure.
 - Backup and rollback procedures are documented for the changed components.
+
+
+## Tenant provisioning boundary
+
+Tenant provisioning is a platform-level operation. The API requires a verified principal with the exact tenant:provision scope and uses a separate AEGIS_PROVISIONER_DATABASE_URL connection. The aegis_provisioner database role has no direct table privileges and can execute only a fixed SECURITY DEFINER function owned by the non-superuser migration role. The function validates input, inserts the tenant and initial tenant_admin membership, and appends an audit event in the same transaction. The normal runtime role cannot create tenants or memberships. This trust boundary assumes the API OIDC verifier and provisioner credential remain protected; the database function does not independently validate external JWTs.

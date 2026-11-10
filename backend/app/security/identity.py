@@ -1,8 +1,4 @@
-"""Trusted identity and narrowly scoped permission value objects.
-
-These models describe identities supplied by a future trusted authentication
-adapter. Constructing a Principal does not authenticate a caller.
-"""
+"""Trusted identity and narrowly scoped permission value objects."""
 
 from __future__ import annotations
 
@@ -23,6 +19,7 @@ class Permission(StrEnum):
     INVESTIGATION_CREATE = "investigation:create"
     TELEMETRY_READ = "telemetry:read"
     TOOL_EXECUTE = "tool:execute"
+    TENANT_PROVISION = "tenant:provision"
 
 
 class Principal(BaseModel):
