@@ -6,6 +6,7 @@ import asyncio
 import json
 import os
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.vulnerability_intel.nvd_sync import sync_nvd_catalogue
@@ -22,7 +23,14 @@ async def main() -> None:
     factory = async_sessionmaker(engine, expire_on_commit=False)
     try:
         summary = await sync_nvd_catalogue(factory)
-        print(json.dumps(summary, indent=2))
+        async with factory() as session:
+            summary["catalogue_total"] = await session.scalar(
+                text("SELECT count(*) FROM public.cve_catalog")
+            )
+            summary["completed_feed_count"] = await session.scalar(
+                text("SELECT count(*) FROM public.nvd_feed_sync")
+            )
+        print(json.dumps(summary, indent=2, default=str))
     finally:
         await engine.dispose()
 
