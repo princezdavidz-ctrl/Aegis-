@@ -39,6 +39,11 @@ class AppConfig {
       scheme: uri.scheme.toLowerCase(),
       path: uri.path.replaceFirst(RegExp(r'/+$'), ''),
     );
-    return AppConfig(apiBaseUrl: normalized.toString().replaceFirst(RegExp(r'/+$'), ''));
+    return AppConfig(
+      apiBaseUrl: normalized.toString().replaceFirst(RegExp(r'/+
+  }
+}
+), ''),
+    );
   }
 }
