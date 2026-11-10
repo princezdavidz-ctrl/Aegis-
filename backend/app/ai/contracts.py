@@ -85,18 +85,6 @@ class AnalysisResult(BaseModel):
     limitations: tuple[str, ...] = Field(max_length=12)
     requires_human_review: bool = True
 
-    @model_validator(mode="after")
-    def findings_must_reference_supplied_evidence(self) -> AnalysisResult:
-        supplied_ids = set(self._context_evidence_ids)
-        for finding in self.findings:
-            if not set(finding.evidence_ids).issubset(supplied_ids):
-                raise ValueError("findings may reference only supplied evidence IDs")
-        return self
-
-    # Populated only by validate_analysis_result below; excluded from JSON schema.
-    _context_evidence_ids: frozenset[str] = frozenset()
-
-
 def validate_analysis_result(payload: object, request: AnalysisRequest) -> AnalysisResult:
     """Validate model output and enforce evidence references against this request."""
 
