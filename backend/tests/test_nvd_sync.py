@@ -1,13 +1,12 @@
 """Unit tests for the official NVD CVE feed importer."""
 
-from app.vulnerability_intel.nvd_sync import (
+import pytest
 
+from app.vulnerability_intel.nvd_sync import (
     feed_names,
     normalize_cve,
     parse_meta_sha256,
 )
-
-import pytest
 
 
 def test_feed_names_cover_historical_years_and_modified_feed():
@@ -65,3 +64,11 @@ def test_normalize_cve_preserves_full_source_payload():
 def test_normalize_cve_rejects_invalid_identifiers(identifier):
     with pytest.raises(ValueError):
         normalize_cve({"cve": {"id": identifier}}, "feed")
+
+
+def test_normalize_cve_parses_zulu_timestamp():
+    row = normalize_cve(
+        {"cve": {"id": "CVE-2025-54321", "published": "2025-01-02T03:04:05.000Z"}},
+        "nvdcve-2.0-2025",
+    )
+    assert row["published_at"].isoformat() == "2025-01-02T03:04:05+00:00"
