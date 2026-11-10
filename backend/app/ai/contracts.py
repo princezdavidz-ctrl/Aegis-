@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -83,7 +84,7 @@ class AnalysisResult(BaseModel):
     summary: str = Field(min_length=1, max_length=2000)
     findings: tuple[SecurityFinding, ...] = Field(max_length=20)
     limitations: tuple[str, ...] = Field(max_length=12)
-    requires_human_review: bool = True
+    requires_human_review: Literal[True] = True
 
 def validate_analysis_result(payload: object, request: AnalysisRequest) -> AnalysisResult:
     """Validate model output and enforce evidence references against this request."""
