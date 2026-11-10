@@ -339,20 +339,29 @@ Provision a dedicated Neon development database with separate migration and runt
 - Production tenant/membership provisioning remains intentionally unimplemented until a controlled, audited provisioning boundary is designed.
 
 
-## 2026-11-10 — Phase 1 OIDC/JWKS hardening increment in review
+## 2026-11-10 — Phase 1 OIDC/JWKS hardening merged (PR #30)
 
 - Added an explicit bounded JWKS cache lifetime setting (`AEGIS_OIDC_JWKS_CACHE_SECONDS`, default 300 seconds, allowed range 30–600).
 - Restricted OIDC issuer and JWKS endpoints to HTTPS. HTTP loopback JWKS endpoints are permitted only in development/test environments for local integration tests.
-- Added a real local HTTP JWKS integration test that signs tokens with two RSA keys, rotates the served JWKS document, verifies automatic refresh for a new `kid`, and rejects a removed signing key after refresh.
+- Added a local HTTP JWKS integration test with two RSA keys. It verifies the 30-second unknown-key refresh cooldown, refresh for a newly published `kid` after cooldown, and rejection of a removed signing key after refresh.
+- Merged PR #30 into `main` at `cf4014b87bfe5881409f8ae91f1883de7c8b1393`.
 - Added configuration tests for the cache lifetime setting.
 - Live provider configuration remains an external prerequisite; this test proves the verifier's JWKS rotation behavior without selecting or claiming a production IdP.
 
 
-## 2026-11-10 — Controlled tenant provisioning vertical slice in review
+## 2026-11-10 — Controlled tenant provisioning vertical slice merged (PR #31)
 
 - Added a platform-level tenant:provision permission and authenticated POST /api/v1/tenants endpoint.
 - The endpoint rejects client-supplied tenant IDs, derives actor identity from the verified principal, and uses a separate AEGIS_PROVISIONER_DATABASE_URL connection.
 - Added a SECURITY DEFINER PostgreSQL function owned by the non-superuser migration role. It validates input and atomically inserts the tenant, initial tenant_admin membership and append-only audit event.
 - Added a dedicated aegis_provisioner role with no direct table privileges and EXECUTE permission only on the provisioning function. The normal runtime role cannot create tenants or memberships.
 - Added API authorization tests and PostgreSQL integration coverage for function-only provisioning, no direct table access, tenant creation, initial membership and audit provenance.
+- Merged PR #31 into `main` at `08847cce208478be83c44780e51fa6bef7e3f470`.
 - Live OIDC/Neon/AWS setup remains an external prerequisite; CI tests use an ephemeral PostgreSQL service and do not claim a live customer environment.
+
+
+## Current phase status
+
+- Phase 1 code-level security foundation: PostgreSQL migration/RLS tests, database role separation, security scans, OIDC/JWKS transport and rotation tests, and controlled tenant provisioning are merged.
+- Phase 1 live staging readiness is still incomplete: a real OIDC provider, dedicated Neon development database, AWS resources and a verified AWS OIDC deployment are required.
+- Phase 2 has started with the platform tenant-provisioning vertical slice. Organization lifecycle, member invitations/role management, asset inventory and customer portal workflows remain to be implemented.
