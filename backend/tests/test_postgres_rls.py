@@ -67,6 +67,11 @@ async def test_postgres_rls_isolates_tenants_and_audit_is_append_only() -> None:
                         role="analyst",
                         status="active",
                     ),
+                ]
+            )
+            await session.flush()
+            session.add_all(
+                [
                     AuditRecord(
                         event_id=audit_a,
                         tenant_id=tenant_a,

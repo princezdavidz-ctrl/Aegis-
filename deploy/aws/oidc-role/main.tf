@@ -56,8 +56,8 @@ data "aws_iam_policy_document" "deploy" {
   }
 
   statement {
-    sid    = "EcsRelease"
-    effect = "Allow"
+    sid     = "EcsRelease"
+    effect  = "Allow"
     actions = ["ecs:DescribeClusters", "ecs:DescribeServices", "ecs:UpdateService"]
     resources = [
       "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:cluster/${var.ecs_cluster}",
@@ -73,9 +73,9 @@ data "aws_iam_policy_document" "deploy" {
   }
 
   statement {
-    sid       = "PassEcsTaskRoles"
-    effect    = "Allow"
-    actions   = ["iam:PassRole"]
+    sid     = "PassEcsTaskRoles"
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
     resources = [
       "arn:aws:iam::${var.aws_account_id}:role/aegis-ecs-task-execution",
       "arn:aws:iam::${var.aws_account_id}:role/aegis-ecs-task"
