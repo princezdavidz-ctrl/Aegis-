@@ -337,3 +337,12 @@ Provision a dedicated Neon development database with separate migration and runt
 - Alembic migrations now run in CI as the dedicated migration owner. A separate test-only role verifies that the database trigger rejects audit UPDATE/DELETE even when those SQL privileges are granted.
 - All PR checks passed: PostgreSQL migration/RLS integration, Python API tests, web tests/typecheck/build, Docker smoke test, Terraform validation, Gitleaks, pip-audit, npm audit, CodeQL Python/TypeScript, and Flutter format/analyze/widget tests.
 - Production tenant/membership provisioning remains intentionally unimplemented until a controlled, audited provisioning boundary is designed.
+
+
+## 2026-11-10 — Phase 1 OIDC/JWKS hardening increment in review
+
+- Added an explicit bounded JWKS cache lifetime setting (`AEGIS_OIDC_JWKS_CACHE_SECONDS`, default 300 seconds, allowed range 30–600).
+- Restricted OIDC issuer and JWKS endpoints to HTTPS. HTTP loopback JWKS endpoints are permitted only in development/test environments for local integration tests.
+- Added a real local HTTP JWKS integration test that signs tokens with two RSA keys, rotates the served JWKS document, verifies automatic refresh for a new `kid`, and rejects a removed signing key after refresh.
+- Added configuration tests for the cache lifetime setting.
+- Live provider configuration remains an external prerequisite; this test proves the verifier's JWKS rotation behavior without selecting or claiming a production IdP.

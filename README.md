@@ -28,6 +28,8 @@ Aegis-/
 - **AI:** provider-independent gateway and advisory specialist workflows under `services/ai/`; live provider configuration is not confirmed.
 - **AWS:** manual GitHub Actions deployment foundation using short-lived GitHub OIDC credentials; infrastructure provisioning and a successful live deployment are not confirmed.
 
+OIDC configuration uses `AEGIS_OIDC_ISSUER`, `AEGIS_OIDC_AUDIENCE` and `AEGIS_OIDC_JWKS_URL` together. Optional `AEGIS_OIDC_CLOCK_SKEW_SECONDS` defaults to 30 seconds. Optional `AEGIS_OIDC_JWKS_CACHE_SECONDS` defaults to 300 seconds and is bounded from 30 to 600 seconds. Production OIDC endpoints must use HTTPS; loopback HTTP is allowed only in development/test environments.
+
 ## Local development
 
 Web portal:

@@ -194,6 +194,13 @@ def test_oidc_endpoints_require_https_except_loopback() -> None:
             jwks_url="https://identity.example.test/jwks.json",
         )
 
+    with pytest.raises(ValueError, match="HTTPS"):
+        OidcJwtCredentialVerifier(
+            issuer=ISSUER,
+            audience=AUDIENCE,
+            jwks_url="http://127.0.0.1:9000/jwks.json",
+        )
+
 
 def test_jwks_cache_lifetime_is_bounded() -> None:
     with pytest.raises(ValueError, match="30 and 600"):
