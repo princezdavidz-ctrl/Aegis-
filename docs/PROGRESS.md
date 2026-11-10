@@ -385,10 +385,19 @@ Provision a dedicated Neon development database with separate migration and runt
 - The region and retention values are customer preferences/configuration metadata, not a claim that data residency or automated deletion enforcement is already implemented.
 
 
-## 2026-11-10 — Tenant asset inventory increment in review
+## 2026-11-10 — Tenant asset inventory increment merged (PR #36)
 
 - Added tenant-scoped asset inventory records for cloud accounts, endpoints, servers, domains, repositories, networks, applications, databases and identities.
 - Added paginated tenant-member asset reads and tenant-admin/security-manager create, update and archive operations.
 - Asset writes are routed through restricted SECURITY DEFINER functions with server-derived tenant context and append-only audit records.
 - PostgreSQL RLS scopes runtime reads; the provisioner role receives function EXECUTE only and no direct asset table privileges.
 - Initial manual inventory only; connector-based discovery, synchronization, evidence provenance and ingestion pipelines remain later work.
+
+
+## 2026-11-10 — Integration authorization registry increment in review
+
+- Adds tenant-scoped integration requests for GitHub, AWS, Azure, GCP, Wazuh, Suricata, Trivy and Semgrep.
+- Scope requests are allowlisted read-only capabilities; broad or write scopes are rejected.
+- Tenant admins explicitly approve a subset of requested scopes. Approval remains `approved_pending_verification`; no integration is marked active until a future connector verifies provider authorization.
+- Raw API keys, access tokens and refresh tokens are not accepted or stored. The connector runtime and external secret-vault binding remain separate tasks.
+- Integration requests, approvals and revocations use restricted database functions and append-only audit records.

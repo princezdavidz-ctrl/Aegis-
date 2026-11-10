@@ -26,3 +26,13 @@ GRANT EXECUTE ON FUNCTION
 GRANT EXECUTE ON FUNCTION
     public.aegis_update_asset(uuid, uuid, text, text, uuid, text, text, text, text, text, text)
     TO aegis_provisioner;
+
+GRANT EXECUTE ON FUNCTION
+    public.aegis_request_integration(uuid, text, text, text, json, uuid)
+    TO aegis_provisioner;
+GRANT EXECUTE ON FUNCTION
+    public.aegis_approve_integration(uuid, uuid, text, json, uuid)
+    TO aegis_provisioner;
+GRANT EXECUTE ON FUNCTION
+    public.aegis_revoke_integration(uuid, uuid, text, uuid)
+    TO aegis_provisioner;
