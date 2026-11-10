@@ -18,8 +18,7 @@ class AppConfig {
   /// Validates and normalizes an absolute HTTP(S) API URL.
   ///
   /// Credentials, query strings and fragments are rejected so secrets and
-  /// endpoint-specific state are not accidentally embedded in application
-  /// configuration.
+  /// endpoint-specific state are not embedded in application configuration.
   factory AppConfig.fromBaseUrl(String value) {
     final uri = Uri.tryParse(value.trim());
     if (uri == null ||
@@ -35,15 +34,14 @@ class AppConfig {
       );
     }
 
+    var path = uri.path;
+    while (path.endsWith('/')) {
+      path = path.substring(0, path.length - 1);
+    }
     final normalized = uri.replace(
       scheme: uri.scheme.toLowerCase(),
-      path: uri.path.replaceFirst(RegExp(r'/+$'), ''),
+      path: path,
     );
-    return AppConfig(
-      apiBaseUrl: normalized.toString().replaceFirst(RegExp(r'/+
-  }
-}
-), ''),
-    );
+    return AppConfig(apiBaseUrl: normalized.toString());
   }
 }
