@@ -51,6 +51,8 @@ def test_normalize_cve_preserves_full_source_payload():
         "nvdcve-2.0-2025",
     )
     assert row["cve_id"] == "CVE-2025-12345"
+    assert row["published_at"].isoformat() == "2025-01-02T03:04:05+00:00"
+    assert row["published_at"].utcoffset().total_seconds() == 0
     assert row["source_feed"] == "nvdcve-2.0-2025"
     assert '"A test vulnerability"' in row["descriptions"]
     assert '"cvssMetricV31"' in row["metrics"]
