@@ -1,9 +1,4 @@
-"""Live PostgreSQL row-level security and audit trigger integration tests.
-
-Run after applying migrations and granting the aegis_runtime role the table
-privileges in postgres_runtime_role.sql. These tests intentionally use separate
-admin and restricted runtime connections.
-"""
+"""Live PostgreSQL RLS and least-privilege audit integration tests."""
 
 from __future__ import annotations
 
@@ -25,19 +20,22 @@ from app.security.identity import PrincipalType
 
 ADMIN_URL = os.getenv("AEGIS_TEST_ADMIN_DATABASE_URL")
 RUNTIME_URL = os.getenv("AEGIS_TEST_DATABASE_URL")
+MUTATOR_URL = os.getenv("AEGIS_TEST_MUTATOR_DATABASE_URL")
 
 pytestmark = pytest.mark.skipif(
-    not ADMIN_URL or not RUNTIME_URL,
+    not ADMIN_URL or not RUNTIME_URL or not MUTATOR_URL,
     reason="PostgreSQL integration URLs are not configured",
 )
 
 
 @pytest.mark.asyncio
-async def test_postgres_rls_isolates_tenants_and_audit_is_append_only() -> None:
+async def test_postgres_rls_and_least_privilege_audit_roles() -> None:
     admin_engine = create_async_engine(ADMIN_URL)
     runtime_engine = create_async_engine(RUNTIME_URL)
+    mutator_engine = create_async_engine(MUTATOR_URL)
     admin_factory = async_sessionmaker(admin_engine, expire_on_commit=False)
     runtime_factory = async_sessionmaker(runtime_engine, expire_on_commit=False)
+    mutator_factory = async_sessionmaker(mutator_engine, expire_on_commit=False)
 
     tenant_a = uuid4()
     tenant_b = uuid4()
@@ -100,20 +98,43 @@ async def test_postgres_rls_isolates_tenants_and_audit_is_append_only() -> None:
             )
             await session.commit()
 
-        # The application connection is a restricted role, never a superuser
-        # or a BYPASSRLS role. Confirm FORCE ROW LEVEL SECURITY is active.
+        # The API role is not a superuser, BYPASSRLS role or table owner.
         async with runtime_factory() as session:
-            role = (await session.execute(
-                text("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user")
-            )).one()
-            assert role == (False, False)
-            table_security = (await session.execute(
-                text("""
-                    SELECT relrowsecurity, relforcerowsecurity
-                    FROM pg_class WHERE relname = 'audit_events'
-                """)
-            )).one()
-            assert table_security == (True, True)
+            role = (
+                await session.execute(
+                    text(
+                        """
+                        SELECT current_user, rolsuper, rolbypassrls,
+                               has_table_privilege(current_user, 'audit_events', 'UPDATE'),
+                               has_table_privilege(current_user, 'audit_events', 'DELETE')
+                        FROM pg_roles WHERE rolname = current_user
+                        """
+                    )
+                )
+            ).one()
+            assert role == ("aegis_runtime", False, False, False, False)
+
+            table_security = (
+                await session.execute(
+                    text(
+                        """
+                        SELECT relrowsecurity, relforcerowsecurity,
+                               pg_get_userbyid(relowner)
+                        FROM pg_class WHERE relname = 'audit_events'
+                        """
+                    )
+                )
+            ).one()
+            assert table_security == (True, True, "aegis_migrator")
+
+        # Migration owner is also non-superuser and must not bypass RLS.
+        async with admin_factory() as session:
+            migrator = (
+                await session.execute(
+                    text("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = 'aegis_migrator'")
+                )
+            ).one()
+            assert migrator == (False, False)
 
         # Missing transaction-local identity/tenant context exposes no rows.
         async with runtime_factory() as session:
@@ -127,8 +148,7 @@ async def test_postgres_rls_isolates_tenants_and_audit_is_append_only() -> None:
             visible_memberships = (
                 await session.execute(select(TenantMembership.subject))
             ).scalars().all()
-            assert len(visible_tenants) == 1
-            assert visible_tenants[0].startswith("tenant-")
+            assert visible_tenants == [f"tenant-{tenant_a.hex[:8]}"]
             assert visible_memberships == ["subject-a"]
 
         # Audit visibility is restricted to the active transaction's tenant.
@@ -139,7 +159,7 @@ async def test_postgres_rls_isolates_tenants_and_audit_is_append_only() -> None:
             ).scalars().all()
             assert visible_audits == [audit_a]
 
-        # The production adapter can append for the server-resolved tenant.
+        # The production adapter can append, but cannot mutate or delete audit rows.
         event = AuditEvent(
             tenant_id=tenant_a,
             actor_subject="subject-a",
@@ -178,8 +198,18 @@ async def test_postgres_rls_isolates_tenants_and_audit_is_append_only() -> None:
                 )
             await session.rollback()
 
-        # The database trigger rejects UPDATE and DELETE even for the owning tenant.
-        async with runtime_factory() as session:
+        # A test-only role has UPDATE/DELETE grants to prove the database trigger
+        # rejects mutations independently of the production runtime's lack of grants.
+        async with mutator_factory() as session:
+            role = (
+                await session.execute(
+                    text(
+                        "SELECT current_user, rolsuper, rolbypassrls "
+                        "FROM pg_roles WHERE rolname = current_user"
+                    )
+                )
+            ).one()
+            assert role == ("aegis_test_mutator", False, False)
             await apply_database_context(session, subject="subject-a", tenant_id=tenant_a)
             with pytest.raises(DBAPIError):
                 await session.execute(
@@ -188,7 +218,7 @@ async def test_postgres_rls_isolates_tenants_and_audit_is_append_only() -> None:
                 )
             await session.rollback()
 
-        async with runtime_factory() as session:
+        async with mutator_factory() as session:
             await apply_database_context(session, subject="subject-a", tenant_id=tenant_a)
             with pytest.raises(DBAPIError):
                 await session.execute(
@@ -198,5 +228,6 @@ async def test_postgres_rls_isolates_tenants_and_audit_is_append_only() -> None:
             await session.rollback()
     finally:
         # The CI database is ephemeral. Keep the append-only audit trail intact.
+        await mutator_engine.dispose()
         await runtime_engine.dispose()
         await admin_engine.dispose()
