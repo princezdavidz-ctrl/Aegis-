@@ -1,0 +1,114 @@
+name: AEGIS security checks
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - "feat/**"
+    paths:
+      - "backend/**"
+      - "services/ai/**"
+      - "frontend/**"
+      - ".github/workflows/security.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - "services/ai/**"
+      - "frontend/**"
+      - ".github/workflows/security.yml"
+  schedule:
+    - cron: "23 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    name: Scan repository for exposed secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect secrets with Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-audit:
+    name: Audit Python and npm dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install pip-audit
+        run: python -m pip install --disable-pip-version-check pip-audit
+      - name: Audit backend runtime dependencies
+        run: pip-audit -r backend/requirements.txt
+      - name: Audit AI service dependencies
+        run: pip-audit -r services/ai/requirements.txt
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Audit frontend dependencies
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+  nvd-catalogue:
+    name: Test NVD CVE catalogue importer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install backend and AI dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -r backend/requirements-dev.txt
+          python -m pip install -e services/ai ruff
+      - name: Lint NVD importer
+        run: ruff check backend/app/vulnerability_intel backend/scripts/sync_nvd_cves.py backend/tests/test_nvd_sync.py
+      - name: Test NVD importer
+        env:
+          PYTHONPATH: backend
+        run: pytest -q backend/tests/test_nvd_sync.py
+
+  codeql:
+    name: CodeQL static analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+      - name: Analyze code
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

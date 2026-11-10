@@ -1,0 +1,1 @@
+"""Stable interface for model completion, embeddings and structured outputs. Provider selection, redaction, budget limits, retries and fallback belong here; agents must not hard-code vendor SDK calls."""
