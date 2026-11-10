@@ -1,1 +1,0 @@
-"""AEGIS API application package."""
