@@ -109,6 +109,7 @@ class EndpointEnrollmentInvitation(Base):
         Index("ix_endpoint_invites_tenant_expiry", "tenant_id", "expires_at"),
         CheckConstraint("platform IN ('windows', 'linux', 'macos')", name="ck_endpoint_invite_platform"),
         CheckConstraint("length(token_digest) = 64", name="ck_endpoint_invite_digest_length"),
+        CheckConstraint("length(btrim(created_by)) BETWEEN 1 AND 128", name="ck_endpoint_invite_creator"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -131,9 +132,12 @@ class EndpointDevice(Base):
         Index("ix_endpoint_devices_tenant_last_seen", "tenant_id", "last_seen_at"),
         CheckConstraint("platform IN ('windows', 'linux', 'macos')", name="ck_endpoint_device_platform"),
         CheckConstraint("status IN ('active', 'revoked')", name="ck_endpoint_device_status"),
-        CheckConstraint("last_sequence >= 0", name="ck_endpoint_device_last_sequence"),
+        CheckConstraint("last_sequence >= 0", name="ck_endpoint_device_sequence"),
         CheckConstraint("length(public_key_b64) BETWEEN 40 AND 64", name="ck_endpoint_device_public_key_length"),
         CheckConstraint("length(public_key_fingerprint) = 64", name="ck_endpoint_device_fingerprint_length"),
+        CheckConstraint("length(btrim(hostname)) BETWEEN 1 AND 255", name="ck_endpoint_device_hostname"),
+        CheckConstraint("length(btrim(agent_version)) BETWEEN 1 AND 64", name="ck_endpoint_device_agent_version"),
+        UniqueConstraint("invitation_id", name="uq_endpoint_device_invitation"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
