@@ -309,3 +309,21 @@ Provision a dedicated Neon development database with separate migration and runt
 - Add production database grants and controlled tenant provisioning design before customer onboarding APIs.
 - Configure a real test OIDC provider and test issuer/audience/key rotation in a non-production environment.
 - Complete AWS staging provisioning only after the AWS administrator confirms the previously exposed access key has been deactivated and supplies the AWS account ID. Continue to use GitHub OIDC only.
+
+
+## 2026-11-10 — Phase 1 PostgreSQL and deployment hardening merged
+
+- Merged [PR #27](https://github.com/princezdavidz-ctrl/Aegis-/pull/27) into `main` at `b2b45ff66e90bdd51037280f753c72ddd93f7cfa`.
+- Added a PostgreSQL 16 CI job that applies the Alembic migration from an empty database and verifies tenant-scoped reads, self-membership visibility, missing-context denial, cross-tenant audit-write denial, tenant-scoped audit visibility, and database-enforced audit UPDATE/DELETE rejection using a non-superuser, non-BYPASSRLS runtime role.
+- Added API Docker build/smoke checks for `/health/live` and `/health/ready`.
+- Included Alembic and migration sources in the API image for separately reviewed one-off migration tasks.
+- Added Terraform fmt/init/validate checks and corrected the AWS OIDC provider documentation.
+- PR checks passed: web tests/typecheck/build, Python API tests/compile, PostgreSQL migration/RLS integration, Docker smoke test, Terraform validation and Flutter format/analyze/widget tests.
+- Phase 1 issue #17 was reopened after the merge because live OIDC, production database role/grant design, security scanning and AWS staging deployment remain outstanding. The code increment is merged; Phase 1 is not yet complete.
+
+
+### Security scan finding and dependency remediation
+
+- Initial dependency audit identified published vulnerabilities in the pinned PyJWT 2.10.1 and resolved Starlette 0.50.0 dependency tree.
+- Updated the API runtime pins to FastAPI 0.162.2 and PyJWT 2.15.1. FastAPI now resolves a newer Starlette release through its supported dependency range.
+- The dependency audit must pass on the final PR commit; no vulnerability is treated as resolved solely because a version string was changed.
