@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import StrEnum
 from uuid import UUID, uuid4
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, Uuid
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, JSON, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
@@ -68,6 +68,38 @@ class Asset(Base):
     criticality: Mapped[str] = mapped_column(String(16), nullable=False, default="medium", server_default="medium")
     source: Mapped[str] = mapped_column(String(16), nullable=False, default="manual", server_default="manual")
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="active", server_default="active")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+
+class Integration(Base):
+    __tablename__ = "integrations"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "provider", "external_account_id", name="uq_integrations_tenant_provider_account"),
+        Index("ix_integrations_tenant_status", "tenant_id", "status"),
+        CheckConstraint("provider IN ('github','aws','azure','gcp','wazuh','suricata','trivy','semgrep')", name="ck_integrations_provider"),
+        CheckConstraint("status IN ('requested','approved_pending_verification','active','suspended','revoked','error')", name="ck_integrations_status"),
+        CheckConstraint("access_mode = 'read_only'", name="ck_integrations_access_mode"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    tenant_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("tenants.id", ondelete="RESTRICT"), nullable=False
+    )
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    external_account_id: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default="requested", server_default="requested")
+    access_mode: Mapped[str] = mapped_column(String(16), nullable=False, default="read_only", server_default="read_only")
+    requested_scopes: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    approved_scopes: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    approved_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )

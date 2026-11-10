@@ -117,7 +117,7 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d aegis_test -v ON_ERROR_STOP=1 -c "GRANT SELECT, UPDATE, DELETE ON TABLE audit_events TO aegis_test_mutator"
       - name: Verify tenant RLS, provisioning function and least-privilege roles
-        run: python -m pytest backend/tests/test_postgres_rls.py backend/tests/test_postgres_memberships.py backend/tests/test_postgres_tenant_profile.py backend/tests/test_postgres_assets.py -q
+        run: python -m pytest backend/tests/test_postgres_rls.py backend/tests/test_postgres_memberships.py backend/tests/test_postgres_tenant_profile.py backend/tests/test_postgres_assets.py backend/tests/test_postgres_integrations.py -q
 
   container-smoke:
     name: Build and smoke-test API container
