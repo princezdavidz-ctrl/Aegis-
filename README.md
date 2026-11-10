@@ -96,3 +96,17 @@ The repository contains meaningful foundations, but it is not yet a production-r
 - [Security model](docs/SECURITY-MODEL.md)
 - [Progress log](docs/PROGRESS.md)
 - [AWS deployment prerequisites](deploy/aws/README.md)
+
+
+## Continuous integration and security checks
+
+Pull requests are validated with frontend tests/typechecking/build, Python API tests, PostgreSQL migration and row-level security integration tests, API container smoke tests, Flutter format/analyze/widget tests, and AWS Terraform formatting/validation.
+
+The security workflow adds:
+- Gitleaks secret scanning across repository history.
+- Python dependency vulnerability audits for backend and AI runtime requirements.
+- npm dependency audit for the locked frontend dependency tree.
+- CodeQL static analysis for Python and JavaScript/TypeScript.
+- Weekly scheduled security scans.
+
+A passing scan is evidence only for the scanned commit and dependency advisory database at scan time; it does not replace penetration testing or runtime monitoring.
