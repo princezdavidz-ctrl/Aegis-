@@ -320,3 +320,10 @@ Provision a dedicated Neon development database with separate migration and runt
 - Added Terraform fmt/init/validate checks and corrected the AWS OIDC provider documentation.
 - PR checks passed: web tests/typecheck/build, Python API tests/compile, PostgreSQL migration/RLS integration, Docker smoke test, Terraform validation and Flutter format/analyze/widget tests.
 - Phase 1 issue #17 was reopened after the merge because live OIDC, production database role/grant design, security scanning and AWS staging deployment remain outstanding. The code increment is merged; Phase 1 is not yet complete.
+
+
+### Security scan finding and dependency remediation
+
+- Initial dependency audit identified published vulnerabilities in the pinned PyJWT 2.10.1 and resolved Starlette 0.50.0 dependency tree.
+- Updated the API runtime pins to FastAPI 0.162.2 and PyJWT 2.15.1. FastAPI now resolves a newer Starlette release through its supported dependency range.
+- The dependency audit must pass on the final PR commit; no vulnerability is treated as resolved solely because a version string was changed.
