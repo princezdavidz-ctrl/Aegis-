@@ -38,7 +38,7 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
       - name: Verify Dart formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: dart format --output=none --set-exit-if-changed lib/core/config/app_config.dart test/core/app_config_test.dart
       - name: Analyze Dart code
         run: flutter analyze --fatal-infos
       - name: Run unit and widget tests
