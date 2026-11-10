@@ -1,17 +1,22 @@
 """Immutable contracts for approved security knowledge and retrieval provenance."""
+
 from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import StrEnum
 from urllib.parse import urlparse
+
 
 class KnowledgeClassification(StrEnum):
     PUBLIC = "public"
     INTERNAL = "internal"
     RESTRICTED = "restricted"
 
+
 @dataclass(frozen=True, slots=True)
 class KnowledgeDocument:
     """A document submitted by a trusted ingestion adapter."""
+
     tenant_id: str
     document_id: str
     title: str
@@ -37,9 +42,11 @@ class KnowledgeDocument:
             if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
                 raise ValueError("source_uri must be an HTTPS URL without embedded credentials")
 
+
 @dataclass(frozen=True, slots=True)
 class KnowledgeChunk:
     """A bounded document fragment with stable provenance."""
+
     tenant_id: str
     chunk_id: str
     document_id: str
@@ -59,21 +66,27 @@ class KnowledgeChunk:
         if self.chunk_index < 0:
             raise ValueError("chunk_index cannot be negative")
 
+
 @dataclass(frozen=True, slots=True)
 class KnowledgeMatch:
     """A retrieved chunk and its retrieval score."""
+
     chunk: KnowledgeChunk
     score: float
+
     def __post_init__(self) -> None:
         if not 0.0 <= self.score <= 1.0:
             raise ValueError("retrieval score must be between 0 and 1")
 
+
 @dataclass(frozen=True, slots=True)
 class RetrievalRequest:
     """A query whose tenant scope must come from authenticated server context."""
+
     tenant_id: str
     query: str
     top_k: int = 5
+
     def __post_init__(self) -> None:
         if not self.tenant_id.strip():
             raise ValueError("tenant_id is required")
