@@ -70,7 +70,19 @@ alembic -c /app/alembic.ini upgrade head
 
 Do not use the migration-owner credential as the API runtime credential. The runtime database role must be non-superuser, must not have `BYPASSRLS`, and must receive only the table privileges it needs. Verify tenant RLS with the PostgreSQL integration tests before enabling tenant data routes. Never use a superuser or table-owner connection as the normal API runtime role.
 
-## 5. Run deployment
+## 5. Configure PostgreSQL roles
+
+Use the checked-in role separation scripts in `deploy/postgres/`:
+
+1. Run `roles.sql` as the database administrator before migrations.
+2. Set independent passwords for `aegis_migrator` and `aegis_runtime` using your approved secret-management process.
+3. Apply Alembic migrations with the `aegis_migrator` connection.
+4. Run `grants.sql` as `aegis_migrator` after migrations.
+5. Configure the API task with the `aegis_runtime` connection only.
+
+The runtime role has SELECT access for tenant/membership resolution and SELECT/INSERT for audit events. It cannot update/delete audit rows, create tenants or create memberships. Do not grant additional permissions until the corresponding APIs, RLS policies and integration tests exist. See [PostgreSQL role separation](../deploy/postgres/README.md).
+
+## 6. Run deployment
 
 Open **Actions → Deploy AEGIS to AWS → Run workflow** on `main`. The workflow builds and pushes the API image tagged with the commit SHA, updates the ECS task definition to that immutable image, builds the frontend, uploads it to S3 and invalidates CloudFront.
 
