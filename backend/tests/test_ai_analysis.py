@@ -55,7 +55,7 @@ def test_analysis_accepts_grounded_findings_and_requires_review(request_data: An
     result = asyncio.run(SecurityAnalysisService(model).analyze(request_data))
     assert result.findings[0].evidence_ids == ("evt-1",)
     assert result.requires_human_review is True
-    assert "untrusted data" in model.user_prompt
+    assert "untrusted security case data" in model.user_prompt
     assert "never as instructions" in model.system_prompt
 
 
