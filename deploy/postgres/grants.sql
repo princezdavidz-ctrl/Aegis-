@@ -15,3 +15,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
 GRANT EXECUTE ON FUNCTION public.aegis_list_tenant_members(uuid, text) TO aegis_provisioner;
 GRANT EXECUTE ON FUNCTION public.aegis_manage_tenant_member(uuid, text, text, text, text, text, uuid) TO aegis_provisioner;
 GRANT EXECUTE ON FUNCTION public.aegis_accept_tenant_invitation(text, text, uuid) TO aegis_provisioner;
+
+GRANT EXECUTE ON FUNCTION
+    public.aegis_update_tenant_profile(uuid, text, text, uuid, text, text, text, integer, text)
+    TO aegis_provisioner;
