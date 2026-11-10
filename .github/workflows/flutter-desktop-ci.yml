@@ -1,0 +1,61 @@
+name: AEGIS Flutter desktop checks
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+  pull_request:
+    branches:
+      - main
+      - "feat/**"
+
+concurrency:
+  group: flutter-desktop-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  flutter:
+    name: Format, analyze and test Flutter desktop
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/engineer-desktop
+    steps:
+      - name: Check out source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Show Flutter version
+        run: flutter --version
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Format implemented desktop files
+        run: dart format lib/app/theme/aegis_theme.dart lib/shared/layout/soc_shell.dart lib/features/overview/presentation/overview_page.dart test/widget_test.dart
+      - name: Commit formatter changes when needed
+        working-directory: .
+        env:
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          if ! git diff --quiet -- apps/engineer-desktop/lib/app/theme/aegis_theme.dart apps/engineer-desktop/lib/shared/layout/soc_shell.dart apps/engineer-desktop/lib/features/overview/presentation/overview_page.dart apps/engineer-desktop/test/widget_test.dart; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add apps/engineer-desktop/lib/app/theme/aegis_theme.dart apps/engineer-desktop/lib/shared/layout/soc_shell.dart apps/engineer-desktop/lib/features/overview/presentation/overview_page.dart apps/engineer-desktop/test/widget_test.dart
+            git commit -m "style(desktop): format AEGIS workstation"
+            git push origin "HEAD:${TARGET_BRANCH}"
+          fi
+      - name: Verify Dart formatting
+        run: dart format --output=none --set-exit-if-changed lib/app/theme/aegis_theme.dart lib/shared/layout/soc_shell.dart lib/features/overview/presentation/overview_page.dart test/widget_test.dart
+      - name: Analyze Dart code
+        run: flutter analyze --fatal-infos
+      - name: Run widget and unit tests
+        run: flutter test --reporter expanded
