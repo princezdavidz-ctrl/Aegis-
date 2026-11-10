@@ -376,10 +376,19 @@ Provision a dedicated Neon development database with separate migration and runt
 - Added API validation/authorization tests and PostgreSQL integration coverage. Email/IdP invitation delivery is explicitly not implemented; invitations require a known subject and are accepted after the invitee authenticates.
 
 
-## 2026-11-10 — Tenant profile increment in review
+## 2026-11-10 — Tenant profile increment merged (PR #35)
 
 - Added tenant profile fields for industry, organization size, region, retention preference and policy profile.
 - Added a tenant-scoped profile read endpoint that uses the active membership and PostgreSQL RLS context.
 - Added tenant-admin-only profile updates through a restricted SECURITY DEFINER function; the provisioner role receives EXECUTE only, not direct tenant table UPDATE.
 - Profile changes are audited transactionally. Retention is constrained to 30–3650 days; policy profiles are baseline, strict or regulated.
 - The region and retention values are customer preferences/configuration metadata, not a claim that data residency or automated deletion enforcement is already implemented.
+
+
+## 2026-11-10 — Tenant asset inventory increment in review
+
+- Added tenant-scoped asset inventory records for cloud accounts, endpoints, servers, domains, repositories, networks, applications, databases and identities.
+- Added paginated tenant-member asset reads and tenant-admin/security-manager create, update and archive operations.
+- Asset writes are routed through restricted SECURITY DEFINER functions with server-derived tenant context and append-only audit records.
+- PostgreSQL RLS scopes runtime reads; the provisioner role receives function EXECUTE only and no direct asset table privileges.
+- Initial manual inventory only; connector-based discovery, synchronization, evidence provenance and ingestion pipelines remain later work.
