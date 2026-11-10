@@ -1,12 +1,13 @@
 """Unit tests for the official NVD CVE feed importer."""
 
-import pytest
-
 from app.vulnerability_intel.nvd_sync import (
+
     feed_names,
     normalize_cve,
     parse_meta_sha256,
 )
+
+import pytest
 
 
 def test_feed_names_cover_historical_years_and_modified_feed():
