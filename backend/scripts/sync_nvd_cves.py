@@ -21,10 +21,7 @@ async def main() -> None:
     engine = create_async_engine(database_url, pool_pre_ping=True)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     try:
-        summary = await sync_nvd_catalogue(
-            factory,
-            api_key=os.getenv("NVD_API_KEY") or None,
-        )
+        summary = await sync_nvd_catalogue(factory)
         print(json.dumps(summary, indent=2))
     finally:
         await engine.dispose()
