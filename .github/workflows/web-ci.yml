@@ -103,6 +103,26 @@ jobs:
       - name: Compile Windows agent
         run: python -m compileall -q agents/windows
 
+
+  macos-agent:
+    name: Test macOS endpoint agent
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install agent dependencies
+        run: python -m pip install --disable-pip-version-check -r agents/macos/requirements.txt
+      - name: Run macOS native agent tests
+        working-directory: agents/macos
+        run: python -m unittest discover -s tests -v
+      - name: Compile macOS agent
+        run: python -m compileall -q agents/macos
+
   postgres-integration:
     name: PostgreSQL migration and least-privilege RLS integration
     runs-on: ubuntu-latest
