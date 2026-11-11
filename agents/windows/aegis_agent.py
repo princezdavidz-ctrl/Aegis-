@@ -91,6 +91,8 @@ def protect_private_key(raw: bytes) -> bytes:
         raise AgentError("Windows DPAPI is available only on Windows")
     crypt32 = ctypes.WinDLL("crypt32", use_last_error=True)
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.LocalFree.argtypes = [ctypes.c_void_p]
+    kernel32.LocalFree.restype = ctypes.c_void_p
     source, keepalive = _blob(raw)
     destination = DATA_BLOB()
     crypt32.CryptProtectData.argtypes = [
@@ -114,6 +116,8 @@ def unprotect_private_key(protected: bytes) -> bytes:
         raise AgentError("Windows DPAPI is available only on Windows")
     crypt32 = ctypes.WinDLL("crypt32", use_last_error=True)
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.LocalFree.argtypes = [ctypes.c_void_p]
+    kernel32.LocalFree.restype = ctypes.c_void_p
     source, keepalive = _blob(protected)
     destination = DATA_BLOB()
     description = wintypes.LPWSTR()
