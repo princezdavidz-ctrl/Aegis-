@@ -10,7 +10,7 @@ This backlog is based on an inspection of the current `main` branch. It separate
 
 | Area | Current state | Remaining proof or work |
 |---|---|---|
-| React portal | UI foundation and build/test workflow exist | Authenticated routes and real tenant APIs are not connected |
+| React portal | Responsive shell, Organization profile preview and typed tenant-profile client exist | OIDC browser session adapter, profile editing, member UI and asset UI remain unconnected |
 | FastAPI | App factory, health routes, optional OIDC verifier and advisory AI analysis route exist | Live IdP/database configuration, PostgreSQL integration proof and business APIs |
 | Tenant security | Membership resolution, tenant context and PostgreSQL RLS migration exist | Run migrations against PostgreSQL and prove RLS under production-like roles |
 | Audit | Append-only audit model/sink and database migration protections exist | Verify durable writes and database immutability on PostgreSQL |
