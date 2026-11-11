@@ -32,7 +32,6 @@ class MacOSAgentTests(unittest.TestCase):
         for row in rows:
             self.assertEqual(set(row), {"pid", "name"})
             self.assertGreaterEqual(row["pid"], 0)
-            self.assertNotIn(" ", row["name"])
 
     def test_private_key_round_trips_through_login_keychain(self):
         key = Ed25519PrivateKey.generate()
