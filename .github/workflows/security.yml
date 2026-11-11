@@ -10,6 +10,7 @@ on:
       - "backend/**"
       - "agents/linux/**"
       - "agents/windows/**"
+      - "agents/macos/**"
       - "services/ai/**"
       - "frontend/**"
       - ".github/workflows/security.yml"
@@ -20,6 +21,7 @@ on:
       - "backend/**"
       - "agents/linux/**"
       - "agents/windows/**"
+      - "agents/macos/**"
       - "services/ai/**"
       - "frontend/**"
       - ".github/workflows/security.yml"
@@ -61,6 +63,8 @@ jobs:
         run: pip-audit -r agents/linux/requirements.txt
       - name: Audit Windows endpoint agent dependencies
         run: pip-audit -r agents/windows/requirements.txt
+      - name: Audit macOS endpoint agent dependencies
+        run: pip-audit -r agents/macos/requirements.txt
       - name: Audit AI service dependencies
         run: pip-audit -r services/ai/requirements.txt
       - name: Set up Node.js
