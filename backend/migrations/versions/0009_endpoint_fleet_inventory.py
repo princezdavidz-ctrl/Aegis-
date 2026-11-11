@@ -10,6 +10,21 @@ depends_on = None
 
 def upgrade() -> None:
     op.execute("""
+      CREATE POLICY audit_events_endpoint_migrator_append ON public.audit_events
+      FOR INSERT TO aegis_migrator
+      WITH CHECK (
+        (resource_type='endpoint_invitation' AND EXISTS (
+          SELECT 1 FROM public.endpoint_enrollment_invitations i
+          WHERE i.id::text=audit_events.resource_id AND i.tenant_id=audit_events.tenant_id
+        ))
+        OR
+        (resource_type='endpoint_device' AND EXISTS (
+          SELECT 1 FROM public.endpoint_devices d
+          WHERE d.id::text=audit_events.resource_id AND d.tenant_id=audit_events.tenant_id
+        ))
+      )
+    """)
+    op.execute("""
       CREATE FUNCTION public.aegis_endpoint_list_devices(
         p_tenant_id uuid, p_actor text, p_limit integer
       ) RETURNS TABLE(
@@ -50,5 +65,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.execute("DROP POLICY IF EXISTS audit_events_endpoint_migrator_append ON public.audit_events")
     op.execute("REVOKE ALL ON FUNCTION public.aegis_endpoint_list_devices(uuid,text,integer) FROM PUBLIC,aegis_provisioner")
     op.execute("DROP FUNCTION IF EXISTS public.aegis_endpoint_list_devices(uuid,text,integer)")
