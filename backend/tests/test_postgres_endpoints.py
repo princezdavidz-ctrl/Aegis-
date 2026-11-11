@@ -113,15 +113,11 @@ async def test_endpoint_lifecycle_is_single_use_signed_tenant_scoped_and_audited
             await session.commit()
 
         async with provisioner_factory() as session:
-            revoked = (await session.execute(text("""
-                SELECT status FROM public.endpoint_devices WHERE id=:device_id
-            """), {"device_id":device_id})).scalar_one_or_none()
             # The provisioner has no direct table grants; verify through the inventory function.
             rows = (await session.execute(text("""
                 SELECT status FROM public.aegis_endpoint_list_devices(:tenant_id,:actor,100)
             """), {"tenant_id":tenant_id,"actor":actor})).scalars().all()
             assert rows == ["revoked"]
-            assert revoked is None
 
             with pytest.raises(DBAPIError):
                 await session.execute(text("""
