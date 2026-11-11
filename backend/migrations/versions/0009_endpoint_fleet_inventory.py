@@ -44,7 +44,7 @@ def upgrade() -> None:
             AND m.role IN ('tenant_admin','security_manager'))
         THEN RAISE EXCEPTION 'endpoint manager role required' USING ERRCODE='42501'; END IF;
         RETURN QUERY
-          SELECT d.id,d.platform::text,d.hostname,d.agent_version,d.status::text,
+          SELECT d.id,d.platform::text,d.hostname::text,d.agent_version::text,d.status::text,
             d.enrolled_at,d.last_seen_at,d.last_sequence,d.revoked_at,
             recent.event_type,recent.received_at
           FROM public.endpoint_devices d
