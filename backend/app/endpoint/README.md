@@ -12,6 +12,7 @@
 - `POST /api/v1/endpoints/invitations` — authenticated tenant manager; returns the raw invitation token once.
 - `POST /api/v1/endpoints/enroll` — redeems a token and binds an Ed25519 public key to its tenant.
 - `POST /api/v1/endpoints/events` — verifies the event signature against the active registered key, then atomically enforces sequence and persists the event.
+- `GET /api/v1/endpoints/devices?limit=100` — authenticated tenant manager; returns only devices belonging to the verified tenant, including enrollment state and last-seen/event health metadata (limit 1–500).
 - `POST /api/v1/endpoints/{device_id}/revoke` — authenticated tenant manager; revokes only a device belonging to the selected tenant.
 
 The event signature is Ed25519 over the deterministic canonical JSON bytes of the complete `EndpointTelemetryEnvelope`. The signature is sent separately as `signature_b64`. The device ID in the signed envelope is checked against the registered key; tenant identity is always resolved from the database record, never from the client payload.

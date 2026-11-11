@@ -74,3 +74,20 @@ async def revoke_device(factory: async_sessionmaker[AsyncSession], *, tenant_id:
         """), {"tenant_id":tenant_id,"device_id":device_id,"actor":actor,
           "actor_type":actor_type,"request_id":request_id})
         await session.commit()
+
+
+async def list_devices(factory: async_sessionmaker[AsyncSession], *, tenant_id: UUID,
+    actor: str, limit: int = 100) -> list[dict[str, object]]:
+    async with factory() as session:
+        rows = (await session.execute(text("""
+          SELECT device_id,platform,hostname,agent_version,status,enrolled_at,last_seen_at,
+            last_sequence,revoked_at,last_event_type,last_event_received_at
+          FROM public.aegis_endpoint_list_devices(:tenant_id,:actor,:limit)
+        """), {"tenant_id":tenant_id,"actor":actor,"limit":limit})).all()
+        return [{
+          "device_id":row.device_id,"platform":row.platform,"hostname":row.hostname,
+          "agent_version":row.agent_version,"status":row.status,"enrolled_at":row.enrolled_at,
+          "last_seen_at":row.last_seen_at,"last_sequence":row.last_sequence,
+          "revoked_at":row.revoked_at,"last_event_type":row.last_event_type,
+          "last_event_received_at":row.last_event_received_at,
+        } for row in rows]
