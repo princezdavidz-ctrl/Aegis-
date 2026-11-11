@@ -1,0 +1,12 @@
+[Unit]
+Description=Run AEGIS Linux Endpoint Collector periodically
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=60s
+AccuracySec=15s
+Persistent=true
+Unit=aegis-agent.service
+
+[Install]
+WantedBy=timers.target
