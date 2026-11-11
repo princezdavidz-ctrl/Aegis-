@@ -1,1 +1,1 @@
-cryptography>=44,<47\n
+cryptography>=44,<47
