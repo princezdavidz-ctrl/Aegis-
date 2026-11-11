@@ -17,6 +17,7 @@ Use a dedicated unprivileged service account. The systemd unit uses `StateDirect
 sudo useradd --system --home-dir /var/lib/aegis-agent --shell /usr/sbin/nologin aegis-agent
 sudo python3 -m venv /opt/aegis-agent
 sudo /opt/aegis-agent/bin/pip install -r requirements.txt
+sudo install -m 0755 aegis_agent.py /opt/aegis-agent/aegis_agent.py
 sudo install -m 0644 aegis-agent.service aegis-agent.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 ```
