@@ -70,19 +70,6 @@ function isNullableString(value: unknown): value is string | null {
 function isTenantProfile(value: unknown): value is TenantProfile {
   if (!isRecord(value)) return false;
 
-  const allowedKeys = new Set([
-    'id',
-    'slug',
-    'display_name',
-    'industry',
-    'organization_size',
-    'region',
-    'data_retention_days',
-    'policy_profile',
-    'created_at',
-  ]);
-  if (Object.keys(value).some((key) => !allowedKeys.has(key))) return false;
-
   return (
     typeof value.id === 'string' &&
     UUID_PATTERN.test(value.id) &&

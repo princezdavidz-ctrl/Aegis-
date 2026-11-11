@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Activity, ArrowRight, BrainCircuit, Building2, CloudOff, Database, Fingerprint, PlugZap, Radar, Server, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Activity, ArrowRight, BrainCircuit, CloudOff, Database, Fingerprint, PlugZap, Radar, Server, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { MetricCard } from './components/MetricCard';
 import { Sidebar } from './components/Sidebar';
 import { navigationItems } from './data/navigation.js';
