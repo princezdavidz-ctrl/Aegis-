@@ -25,7 +25,7 @@ sudo systemctl daemon-reload
 Create an enrollment invitation in the AEGIS tenant console, then run enrollment interactively as the service account. The token is read with a hidden prompt and is not stored.
 
 ```sh
-sudo -u aegis-agent /opt/aegis-agent/bin/python aegis_agent.py --state-dir /var/lib/aegis-agent enroll --server https://aegis.example.com
+sudo -u aegis-agent /opt/aegis-agent/bin/python /opt/aegis-agent/aegis_agent.py --state-dir /var/lib/aegis-agent enroll --server https://aegis.example.com
 ```
 
 Enable periodic collection after successful enrollment:
