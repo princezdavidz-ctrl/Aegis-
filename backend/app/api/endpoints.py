@@ -6,7 +6,7 @@ import hashlib
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.endpoint.identity import create_enrollment_token, verify_endpoint_event_signature
 from app.endpoint.schemas import EndpointPlatform, EndpointTelemetryEnvelope
 from app.repositories.endpoint_devices import (
-    accept_event, create_invitation, get_active_device_key, redeem_invitation, revoke_device,
+    accept_event, create_invitation, get_active_device_key, list_devices, redeem_invitation, revoke_device,
 )
 from app.security.authentication import get_current_principal
 from app.security.identity import Principal
@@ -63,6 +63,27 @@ class EnrollmentOutput(BaseModel):
     enrolled_at: datetime
 
 
+class EndpointDeviceSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    device_id: UUID
+    platform: EndpointPlatform
+    hostname: str
+    agent_version: str
+    status: str
+    enrolled_at: datetime
+    last_seen_at: datetime | None
+    last_sequence: int
+    revoked_at: datetime | None
+    last_event_type: str | None
+    last_event_received_at: datetime | None
+
+
+class EndpointFleetOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    items: list[EndpointDeviceSummary]
+    limit: int
+
+
 class SignedEventInput(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     event: EndpointTelemetryEnvelope
@@ -100,6 +121,21 @@ def _database_error(exc: DBAPIError) -> HTTPException:
     if state == "22023":
         return HTTPException(status_code=422, detail="invalid_endpoint_request")
     return HTTPException(status_code=503, detail="endpoint_service_unavailable")
+
+
+@router.get("/devices", response_model=EndpointFleetOutput)
+async def endpoint_fleet(request: Request, limit: int = Query(default=100, ge=1, le=500),
+    tenant: TenantContext = Depends(get_tenant_context),
+    principal: Principal = Depends(get_current_principal)) -> EndpointFleetOutput:
+    _require_endpoint_manager(tenant)
+    try:
+        rows = await list_devices(_provisioner_factory(request), tenant_id=tenant.tenant_id,
+            actor=principal.subject, limit=limit)
+    except DBAPIError as exc:
+        raise _database_error(exc) from None
+    except SQLAlchemyError:
+        raise HTTPException(status_code=503, detail="endpoint_service_unavailable") from None
+    return EndpointFleetOutput(items=[EndpointDeviceSummary(**row) for row in rows], limit=limit)
 
 
 @router.post("/invitations", response_model=InvitationOutput, status_code=status.HTTP_201_CREATED)
