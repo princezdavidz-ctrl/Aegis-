@@ -1,0 +1,27 @@
+[Unit]
+Description=AEGIS Linux Endpoint Collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=aegis-agent
+Group=aegis-agent
+ExecStart=/opt/aegis-agent/bin/python /opt/aegis-agent/aegis_agent.py --state-dir /var/lib/aegis-agent run-once
+StateDirectory=aegis-agent
+StateDirectoryMode=0700
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadOnlyPaths=/proc
+
+[Install]
+WantedBy=multi-user.target
