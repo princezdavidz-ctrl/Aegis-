@@ -1,14 +1,11 @@
 """Unit tests for the Linux endpoint collector."""
 import base64
-import json
 import os
 import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
-
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from aegis_agent import (
     AgentError, _atomic_write, build_signed_event, canonical_event_bytes,
