@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import json
 from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -58,7 +59,7 @@ async def accept_event(factory: async_sessionmaker[AsyncSession], *, device_id: 
             :device_id,:sequence,:event_id,:event_type,:observed_at,CAST(:payload AS jsonb))
         """), {"device_id":device_id,"sequence":sequence,"event_id":event_id,
           "event_type":event_type,"observed_at":observed_at,
-          "payload":__import__("json").dumps(payload,separators=(",",":"),allow_nan=False)})).one()
+          "payload":json.dumps(payload,separators=(",",":"),allow_nan=False)})).one()
         await session.commit()
         return {"device_id":row.device_id,"tenant_id":row.tenant_id,
           "event_id":row.event_id,"sequence":row.sequence,"received_at":row.received_at}
