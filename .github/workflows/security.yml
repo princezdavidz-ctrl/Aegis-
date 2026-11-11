@@ -17,6 +17,7 @@ on:
       - main
     paths:
       - "backend/**"
+      - "agents/linux/**"
       - "services/ai/**"
       - "frontend/**"
       - ".github/workflows/security.yml"
