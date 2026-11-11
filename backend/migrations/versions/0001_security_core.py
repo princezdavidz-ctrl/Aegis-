@@ -13,7 +13,17 @@ depends_on = None
 
 def upgrade() -> None:
     bind = op.get_bind()
-    Base.metadata.create_all(bind=bind)
+    # Only create tables owned by this initial migration. Creating all current
+    # metadata here would also create tables introduced by later migrations,
+    # causing those migrations to fail with DuplicateTableError.
+    Base.metadata.create_all(
+        bind=bind,
+        tables=[
+            models.Tenant.__table__,
+            models.TenantMembership.__table__,
+            models.AuditRecord.__table__,
+        ],
+    )
 
     op.execute("ALTER TABLE tenants ENABLE ROW LEVEL SECURITY")
     op.execute("ALTER TABLE tenants FORCE ROW LEVEL SECURITY")
@@ -81,4 +91,11 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute("DROP TRIGGER IF EXISTS audit_events_append_only ON audit_events")
     op.execute("DROP FUNCTION IF EXISTS aegis_reject_audit_mutation()")
-    Base.metadata.drop_all(bind=op.get_bind())
+    Base.metadata.drop_all(
+        bind=op.get_bind(),
+        tables=[
+            models.AuditRecord.__table__,
+            models.TenantMembership.__table__,
+            models.Tenant.__table__,
+        ],
+    )

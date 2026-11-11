@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import StrEnum
 from uuid import UUID, uuid4
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, Uuid
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
@@ -93,3 +93,63 @@ class AuditRecord(Base):
     outcome: Mapped[str] = mapped_column(String(16), nullable=False)
     authorization_reason: Mapped[str] = mapped_column(String(32), nullable=False)
     correlation_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+
+
+class EndpointDeviceStatus(StrEnum):
+    ACTIVE = "active"
+    REVOKED = "revoked"
+
+
+class EndpointEnrollmentInvitation(Base):
+    """One-time tenant-bound endpoint enrollment invitation; digest only."""
+
+    __tablename__ = "endpoint_enrollment_invitations"
+    __table_args__ = (
+        UniqueConstraint("token_digest", name="uq_endpoint_invitation_token_digest"),
+        Index("ix_endpoint_invites_tenant_expiry", "tenant_id", "expires_at"),
+        CheckConstraint("platform IN ('windows', 'linux', 'macos')", name="ck_endpoint_invite_platform"),
+        CheckConstraint("length(token_digest) = 64", name="ck_endpoint_invite_digest_length"),
+        CheckConstraint("length(trim(created_by)) BETWEEN 1 AND 128", name="ck_endpoint_invite_creator"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    tenant_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("tenants.id", ondelete="RESTRICT"), nullable=False)
+    token_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    platform: Mapped[str] = mapped_column(String(16), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+
+class EndpointDevice(Base):
+    """Tenant-bound endpoint public identity and replay/revocation state."""
+
+    __tablename__ = "endpoint_devices"
+    __table_args__ = (
+        UniqueConstraint("public_key_fingerprint", name="uq_endpoint_device_key_fingerprint"),
+        Index("ix_endpoint_devices_tenant_status", "tenant_id", "status"),
+        Index("ix_endpoint_devices_tenant_last_seen", "tenant_id", "last_seen_at"),
+        CheckConstraint("platform IN ('windows', 'linux', 'macos')", name="ck_endpoint_device_platform"),
+        CheckConstraint("status IN ('active', 'revoked')", name="ck_endpoint_device_status"),
+        CheckConstraint("last_sequence >= 0", name="ck_endpoint_device_sequence"),
+        CheckConstraint("length(public_key_b64) BETWEEN 40 AND 64", name="ck_endpoint_device_public_key_length"),
+        CheckConstraint("length(public_key_fingerprint) = 64", name="ck_endpoint_device_fingerprint_length"),
+        CheckConstraint("length(trim(hostname)) BETWEEN 1 AND 255", name="ck_endpoint_device_hostname"),
+        CheckConstraint("length(trim(agent_version)) BETWEEN 1 AND 64", name="ck_endpoint_device_agent_version"),
+        UniqueConstraint("invitation_id", name="uq_endpoint_device_invitation"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    tenant_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("tenants.id", ondelete="RESTRICT"), nullable=False)
+    invitation_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("endpoint_enrollment_invitations.id", ondelete="RESTRICT"), nullable=False)
+    public_key_b64: Mapped[str] = mapped_column(String(64), nullable=False)
+    public_key_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    platform: Mapped[str] = mapped_column(String(16), nullable=False)
+    hostname: Mapped[str] = mapped_column(String(255), nullable=False)
+    agent_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default=EndpointDeviceStatus.ACTIVE.value)
+    last_sequence: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
+    enrolled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
