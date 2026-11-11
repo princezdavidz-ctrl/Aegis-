@@ -392,3 +392,38 @@ Provision a dedicated Neon development database with separate migration and runt
 - Asset writes are routed through restricted SECURITY DEFINER functions with server-derived tenant context and append-only audit records.
 - PostgreSQL RLS scopes runtime reads; the provisioner role receives function EXECUTE only and no direct asset table privileges.
 - Initial manual inventory only; connector-based discovery, synchronization, evidence provenance and ingestion pipelines remain later work.
+
+## 2026-11-11 — Customer organization profile UI foundation
+
+### Repository audit
+
+- Re-inspected `main` at `6576a380b42f74c4ecef5eeec5bbf81204fc3c54`, the root README, architecture, roadmap, implementation backlog, progress log, frontend shell and tests, FastAPI route registration, tenant-profile contract, membership/asset APIs, and the current Phase 2 issue.
+- Confirmed that tenant profile, membership lifecycle and manual asset inventory APIs are already present in the backend. The React portal still had only a static overview and generic module placeholders.
+- Started `feat/customer-organization-profile-ui` from current `main`; no divergent historical branch was merged or rewritten.
+
+### Completed
+
+- Added an Organization navigation entry and a customer organization profile page.
+- Added a typed tenant-profile API client for `GET /api/v1/tenants/profile`. It requires a short-lived token supplied by a future trusted session adapter, sends the selected tenant slug in `X-AEGIS-Tenant`, and never accepts or sends a client-selected tenant UUID.
+- Enforced HTTPS API origins (loopback HTTP only for development), bounded token/tenant inputs, no cookie credentials, no redirects, no token persistence, and runtime response-shape validation.
+- Added honest authentication-required, API-not-configured, loading, error/retry and no-data states. The current page receives no session because frontend OIDC integration is not yet configured; no organization data is fabricated.
+- Corrected the overview readiness panel to distinguish source-code presence, CI verification, unconfigured model provider and unimplemented persistent memory. These labels are not live health checks.
+- Changed the header label from Demo mode to Preview mode and updated the frontend setup/security documentation.
+- Added UI and API-client regression tests without introducing dependencies.
+
+### Validation
+
+- Pending hosted GitHub Actions on this branch. Do not treat the UI or API as live until a verified OIDC session adapter and configured backend are available.
+
+### Remaining Phase 2 work
+
+- Connect a real OIDC browser session adapter and verified sign-in/sign-out lifecycle.
+- Add organization profile editing for tenant administrators with validation and explicit save/error states.
+- Add tenant member management and invitation UI.
+- Add asset inventory list/create/update/archive UI using the existing tenant-scoped API.
+- Add browser-driven responsive and keyboard interaction tests.
+- Configure and verify a non-production identity provider and database before claiming an end-to-end customer workflow.
+
+### Next task
+
+Add the tenant-scoped asset inventory UI (list, filter, pagination and role-aware manual registration) using the existing API contract. Keep the page read-only/unavailable until a verified OIDC session is provided, and test that the UI never accepts a tenant UUID from the browser.

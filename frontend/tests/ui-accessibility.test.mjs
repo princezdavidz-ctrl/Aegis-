@@ -8,6 +8,7 @@ import { createServer } from 'vite';
 
 const expectedLabels = [
   'Overview',
+  'Organization',
   'Investigations',
   'AI agents',
   'Integrations',
@@ -18,6 +19,8 @@ const expectedLabels = [
 let vite;
 let App;
 let Sidebar;
+let OrganizationPage;
+let platformReadiness;
 
 before(async () => {
   vite = await createServer({
@@ -29,6 +32,8 @@ before(async () => {
 
   ({ default: App } = await vite.ssrLoadModule('/src/App.tsx'));
   ({ Sidebar } = await vite.ssrLoadModule('/src/components/Sidebar.tsx'));
+  ({ OrganizationPage } = await vite.ssrLoadModule('/src/pages/OrganizationPage.tsx'));
+  ({ platformReadiness } = await vite.ssrLoadModule('/src/data/platformReadiness.ts'));
 });
 
 after(async () => {
@@ -84,7 +89,7 @@ test('dashboard exposes separately named desktop and mobile navigation landmarks
 test('Sidebar exposes the selected section through aria-current', () => {
   const markup = renderToStaticMarkup(
     React.createElement(Sidebar, {
-      activeSection: 'memory',
+      activeSection: 'organization',
       onNavigate: () => {},
     }),
   );
@@ -97,7 +102,7 @@ test('Sidebar exposes the selected section through aria-current', () => {
     1,
   );
   assert.match(
-    buttons.find(({ label }) => label === 'Memory').attributes,
+    buttons.find(({ label }) => label === 'Organization').attributes,
     /\baria-current="page"/,
   );
   assert.doesNotMatch(
@@ -113,5 +118,32 @@ test('navigation controls retain a visible keyboard focus indicator', async () =
     stylesheet,
     /button:focus-visible\s*\{[^}]*outline:\s*2px[^}]*outline-offset:\s*3px/s,
     'Keyboard focus must be visibly distinguishable',
+  );
+});
+
+test('organization page explains the missing verified session without showing sample data', () => {
+  const markup = renderToStaticMarkup(React.createElement(OrganizationPage));
+
+  assert.match(markup, /Connect your organization account/);
+  assert.match(markup, /trusted sign-in and server-side membership check/);
+  assert.match(markup, /no sample organization data is displayed/);
+  assert.doesNotMatch(markup, /Example Corp|Acme Security|example\.com/);
+});
+
+test('overview distinguishes implemented code, CI evidence and unconfigured services', () => {
+  const markup = renderToStaticMarkup(React.createElement(App));
+
+  assert.match(markup, /Code present/);
+  assert.match(markup, /CI verified/);
+  assert.match(markup, /Provider unconfigured/);
+  assert.match(markup, /Not implemented/);
+  assert.match(markup, /not live service health/);
+  assert.doesNotMatch(markup, />Pending<\/span>/);
+});
+
+test('platform readiness labels match the implementation catalog', () => {
+  assert.deepEqual(
+    platformReadiness.map(({ status }) => status),
+    ['Code present', 'CI verified', 'Provider unconfigured', 'Not implemented'],
   );
 });
