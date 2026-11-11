@@ -14,7 +14,6 @@ from aegis_agent import (
     AgentError, _atomic_write, build_signed_event, canonical_event_bytes,
     collect_processes, require_https,
 )
-from cryptography.hazmat.primitives import serialization
 
 
 class LinuxAgentTests(unittest.TestCase):
