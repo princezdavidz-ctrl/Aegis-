@@ -73,7 +73,7 @@ python -m pytest services/ai/tests -q
 The repository contains meaningful foundations, but it is not yet a production-ready security platform:
 
 - **API:** FastAPI app factory, health routes, optional OIDC/JWKS verification, server-side membership resolution, tenant-aware SQLAlchemy sessions, PostgreSQL RLS migrations, durable audit adapter boundaries, and authenticated advisory AI analysis endpoint are present. A live IdP/database is not configured; PostgreSQL migrations/RLS are not yet verified against a live database.
-- **Web portal:** frontend foundation and CI are present. Production authentication and customer business workflows are not connected to live APIs.
+- **Web portal:** React/TypeScript/Tailwind foundation, implementation-readiness panel and a read-only Organization profile preview are present. A typed tenant-profile client is prepared, but no browser OIDC session adapter or live customer API connection is configured.
 - **Flutter desktop:** engineer SOC shell and module navigation are present. Live SOC telemetry and operational workflows are not connected.
 - **AI:** provider-neutral model gateway, OpenAI-compatible adapter, specialist analysis workflows and backend runtime wiring are present. No live model provider or customer evidence retrieval is confirmed.
 - **Telemetry/detection:** real customer connectors, event ingestion, detection and correlation are not yet operational.

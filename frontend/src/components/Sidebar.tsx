@@ -2,6 +2,7 @@ import {
   Activity,
   Bot,
   BrainCircuit,
+  Building2,
   LayoutDashboard,
   PlugZap,
   ScanSearch,
@@ -20,6 +21,7 @@ interface SidebarProps {
 
 const sectionIcons: Record<SectionId, LucideIcon> = {
   overview: LayoutDashboard,
+  organization: Building2,
   investigations: ScanSearch,
   agents: Bot,
   integrations: PlugZap,
@@ -74,7 +76,7 @@ export function Sidebar({ activeSection, onNavigate }: SidebarProps) {
           Local preview
         </div>
         <p className="mt-2 text-xs leading-5 text-slate-500">
-          Services and security connectors are not configured yet.
+          Authentication and live customer services are not connected in this preview.
         </p>
         <div className="mt-4 h-1 overflow-hidden rounded-full bg-slate-800">
           <div className="h-full w-1/5 rounded-full bg-cyan-300/70" />

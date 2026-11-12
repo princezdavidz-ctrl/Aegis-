@@ -392,3 +392,55 @@ Provision a dedicated Neon development database with separate migration and runt
 - Asset writes are routed through restricted SECURITY DEFINER functions with server-derived tenant context and append-only audit records.
 - PostgreSQL RLS scopes runtime reads; the provisioner role receives function EXECUTE only and no direct asset table privileges.
 - Initial manual inventory only; connector-based discovery, synchronization, evidence provenance and ingestion pipelines remain later work.
+
+## 2026-11-11 — Customer organization profile UI foundation
+
+### Repository audit
+
+- Re-inspected `main` at `6576a380b42f74c4ecef5eeec5bbf81204fc3c54`, the root README, architecture, roadmap, implementation backlog, progress log, frontend shell and tests, FastAPI route registration, tenant-profile contract, membership/asset APIs, and the current Phase 2 issue.
+- Confirmed that tenant profile, membership lifecycle and manual asset inventory APIs are already present in the backend. The React portal still had only a static overview and generic module placeholders.
+- Started `feat/customer-organization-profile-ui` from current `main`; no divergent historical branch was merged or rewritten.
+
+### Completed
+
+- Added an Organization navigation entry and a customer organization profile page.
+- Added a typed tenant-profile API client for `GET /api/v1/tenants/profile`. It requires a short-lived token supplied by a future trusted session adapter, sends the selected tenant slug in `X-AEGIS-Tenant`, and never accepts or sends a client-selected tenant UUID.
+- Enforced HTTPS API origins (loopback HTTP only for development), bounded token/tenant inputs, no cookie credentials, no redirects, no token persistence, and runtime response-shape validation.
+- Added honest authentication-required, API-not-configured, loading, error/retry and no-data states. The current page receives no session because frontend OIDC integration is not yet configured; no organization data is fabricated.
+- Corrected the overview readiness panel to distinguish source-code presence, CI verification, unconfigured model provider and unimplemented persistent memory. These labels are not live health checks.
+- Changed the header label from Demo mode to Preview mode and updated the frontend setup/security documentation.
+- Added UI and API-client regression tests without introducing dependencies.
+
+### Validation
+
+- Pending hosted GitHub Actions on this branch. Do not treat the UI or API as live until a verified OIDC session adapter and configured backend are available.
+
+### Remaining Phase 2 work
+
+- Connect a real OIDC browser session adapter and verified sign-in/sign-out lifecycle.
+- Add organization profile editing for tenant administrators with validation and explicit save/error states.
+- Add tenant member management and invitation UI.
+- Add asset inventory list/create/update/archive UI using the existing tenant-scoped API.
+- Add browser-driven responsive and keyboard interaction tests.
+- Configure and verify a non-production identity provider and database before claiming an end-to-end customer workflow.
+
+### Next task
+
+Add the tenant-scoped asset inventory UI (list, filter, pagination and role-aware manual registration) using the existing API contract. Keep the page read-only/unavailable until a verified OIDC session is provided, and test that the UI never accepts a tenant UUID from the browser.
+
+
+### Final validation — 2026-11-11
+
+- Frontend: `npm ci --no-audit --no-fund` passed; `npm test` passed (**13 tests**); TypeScript typecheck and production build passed.
+- The first two push attempts exposed test-maintenance issues (the navigation fixture did not include the new item, the response validator allowed an extra field, and one unused import failed TypeScript). Those issues were corrected in follow-up commits and the final tested head is recorded below.
+- Full push workflows passed on `a7d6ba3e9b85915d14649aa04f64a9ab68ea831b`:
+  - [AEGIS checks #43015597070](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43015597070): web, API, PostgreSQL RLS integration, API container smoke test and Terraform validation passed.
+  - [Security checks #43015597045](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43015597045): secret scan, Python/npm dependency audits, NVD catalogue tests and Python/TypeScript CodeQL passed.
+  - [Flutter checks #43015597351](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43015597351): format, analysis and tests passed.
+- No new dependencies, secrets, credentials, customer records or live integrations were added.
+
+### Current Phase 2 position
+
+- Backend tenant provisioning, tenant profile, membership lifecycle and manual asset inventory APIs are present in `main`.
+- The Organization page and typed profile client are now present on this development branch, but the page remains in its explicit sign-in-required state until a trusted browser OIDC session adapter and API deployment are configured.
+- Member management and asset inventory customer screens remain the next UI slices.
