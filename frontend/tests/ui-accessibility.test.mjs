@@ -9,6 +9,7 @@ import { createServer } from 'vite';
 const expectedLabels = [
   'Overview',
   'Organization',
+  'Assets',
   'Investigations',
   'AI agents',
   'Integrations',

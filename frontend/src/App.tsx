@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { navigationItems } from './data/navigation.js';
 import { platformReadiness } from './data/platformReadiness';
 import { OrganizationPage } from './pages/OrganizationPage';
+import { AssetInventoryPage } from './pages/AssetInventoryPage';
 
 type SectionId = (typeof navigationItems)[number]['id'];
 
@@ -129,6 +130,8 @@ export default function App() {
               </>
             ) : active === 'organization' ? (
               <OrganizationPage />
+            ) : active === 'assets' ? (
+              <AssetInventoryPage />
             ) : (
               <section className="mx-auto flex min-h-[420px] max-w-3xl flex-col items-center justify-center rounded-2xl border border-white/[0.07] bg-[#101722] p-8 text-center">
                 <CloudOff size={28} className="text-cyan-200" aria-hidden="true" />

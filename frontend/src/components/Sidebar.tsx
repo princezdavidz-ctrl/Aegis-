@@ -3,6 +3,7 @@ import {
   Bot,
   BrainCircuit,
   Building2,
+  Boxes,
   LayoutDashboard,
   PlugZap,
   ScanSearch,
@@ -22,6 +23,7 @@ interface SidebarProps {
 const sectionIcons: Record<SectionId, LucideIcon> = {
   overview: LayoutDashboard,
   organization: Building2,
+  assets: Boxes,
   investigations: ScanSearch,
   agents: Bot,
   integrations: PlugZap,

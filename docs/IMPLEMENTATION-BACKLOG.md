@@ -1,8 +1,8 @@
 # AEGIS implementation backlog
 
 **Repository:** `princezdavidz-ctrl/Aegis-`  
-**Baseline:** `main` at `46a45696e3276297a2f5765a06705010fefaad45`  
-**Planning date:** 2026-11-10
+**Baseline:** `main` at `75d375dcc1fa2cabca24c48a16c40183d7ab29f3`  
+**Planning date:** 2026-11-12
 
 This backlog is based on an inspection of the current `main` branch. It separates implemented foundations from live, externally configured capabilities. A feature is not considered operational merely because a UI screen, interface, schema or deployment workflow exists.
 
@@ -10,8 +10,8 @@ This backlog is based on an inspection of the current `main` branch. It separate
 
 | Area | Current state | Remaining proof or work |
 |---|---|---|
-| React portal | Responsive shell, Organization profile preview and typed tenant-profile client exist | OIDC browser session adapter, profile editing, member UI and asset UI remain unconnected |
-| FastAPI | App factory, health routes, optional OIDC verifier and advisory AI analysis route exist | Live IdP/database configuration, PostgreSQL integration proof and business APIs |
+| React portal | Responsive shell, Organization profile preview, typed tenant-profile client, Asset Inventory screen and typed asset client exist | Trusted browser OIDC session adapter is not configured; pages remain sign-in-required; profile editing and member management UI remain pending |
+| FastAPI | App factory, OIDC verifier, tenant/profile/membership/manual asset APIs, endpoint fleet API and advisory AI analysis route exist | Live IdP/database configuration, non-production identity verification and production deployment proof |
 | Tenant security | Membership resolution, tenant context and PostgreSQL RLS migration exist | Run migrations against PostgreSQL and prove RLS under production-like roles |
 | Audit | Append-only audit model/sink and database migration protections exist | Verify durable writes and database immutability on PostgreSQL |
 | AI | Provider-neutral gateway, OpenAI-compatible adapter, four advisory specialist workflows and backend wiring exist | Live provider config, tenant evidence retrieval, evaluation and operational governance |
@@ -50,7 +50,7 @@ This backlog is based on an inspection of the current `main` branch. It separate
 
 ## Phase 1 execution order
 
-Phase 1 is the active priority. Execute in this order:
+Phase 1 code-level security foundations are merged and covered by CI. Live staging readiness remains an external prerequisite; Phase 2 customer workflows are the active application-development priority. Complete the remaining Phase 1 staging tasks when the required account and identity-provider configuration is available:
 
 1. Reconcile README and deployment documentation with the current API implementation.
 2. Verify Alembic migrations against a disposable PostgreSQL database.

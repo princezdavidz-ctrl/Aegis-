@@ -444,3 +444,44 @@ Add the tenant-scoped asset inventory UI (list, filter, pagination and role-awar
 - Backend tenant provisioning, tenant profile, membership lifecycle and manual asset inventory APIs are present in `main`.
 - The Organization page and typed profile client are now present on this development branch, but the page remains in its explicit sign-in-required state until a trusted browser OIDC session adapter and API deployment are configured.
 - Member management and asset inventory customer screens remain the next UI slices.
+
+## 2026-11-12 — Customer asset inventory UI increment
+
+### Repository audit
+
+- Re-inspected main at 75d375dcc1fa2cabca24c48a16c40183d7ab29f3, the root README, implementation backlog, progress log, frontend navigation/tests, Organization page and tenant-profile client, FastAPI application registration, asset API/repository, asset API tests and PostgreSQL asset isolation tests.
+- Confirmed that main.py registers the tenant-scoped /api/v1/assets router. The API supports paginated reads, manual registration, updates and archive/restore; writes are restricted to tenant administrators and security managers and are audited by database functions.
+- The Organization UI work from PR #48 was preserved and its branch was synchronized with the latest main using merge commit 3b73dfcad7aabdbbe48b434988f0b7d111c8b52e. Main's endpoint-agent/API/workflow changes were retained; the six commits on main did not modify the files changed by the Organization UI branch.
+- A conventional local clone remains blocked because the execution environment cannot resolve github.com. Hosted GitHub Actions is the available full build/test environment.
+
+### Completed
+
+- Added an Assets navigation item and a responsive Asset Inventory page alongside the existing Organization profile page.
+- Added a typed asset API client for GET /api/v1/assets, POST /api/v1/assets and PATCH /api/v1/assets/{asset_id}.
+- Implemented offset pagination (50 records per page), page-local search, asset-type/environment filters and archived-record visibility. The UI explicitly notes that the backend does not yet return a total count and that filters apply only to the current page.
+- Added manual asset registration fields matching the backend contract: name, type, external identifier, environment and criticality.
+- Added archive/restore actions. The UI displays management controls only when a future trusted session adapter supplies a server-resolved tenant_admin or security_manager role; the API independently enforces authorization for every write.
+- Kept tenant identity server-derived. Requests carry the short-lived bearer token and tenant slug; no tenant UUID is sent in query parameters or request bodies.
+- Enforced HTTPS API origins (loopback HTTP only for development), bounded token and pagination inputs, no cookie credentials, no redirects, strict response-shape validation and sanitized errors.
+- Preserved the explicit sign-in-required state. The current application does not inject an OIDC session, so no sample assets or customer data are displayed.
+- Updated the root README, frontend README, implementation backlog and this progress log. No new dependencies, credentials, secrets or private customer data were added.
+
+### Validation
+
+- Pending hosted GitHub Actions for the asset-inventory commit.
+- Local execution of git clone failed with "Could not resolve host: github.com"; no local test result is claimed.
+- Added API-client tests for fixed tenant-scoped routes, transport defaults, invalid tenant context, pagination bounds, secure origins, create/update payloads, rejection of tenant UUID fields, strict response validation and sanitized errors.
+- Added a server-rendered page test confirming that the page requires a trusted session and does not render fabricated records.
+
+### Remaining Phase 2 work
+
+- Implement tenant member management UI for listing members, invitations, role changes, suspension and revocation using the existing API.
+- Add the trusted browser OIDC session adapter and verified sign-in/sign-out lifecycle.
+- Add organization profile editing for tenant administrators.
+- Add browser-driven keyboard, responsive viewport and authenticated workflow tests.
+- Configure a non-production identity provider and database before claiming an end-to-end customer workflow.
+- Connector-based asset discovery, synchronization and evidence provenance remain unimplemented.
+
+### Next task
+
+Build the tenant member management UI with a typed client and role-aware presentation, keeping all operations unavailable until a verified browser session is supplied. Then integrate the selected OIDC provider when its non-production issuer, audience and JWKS configuration are available.
