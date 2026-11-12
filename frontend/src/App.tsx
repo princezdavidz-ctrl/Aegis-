@@ -2,9 +2,18 @@ import { useState } from 'react';
 import { Activity, ArrowRight, BrainCircuit, CloudOff, Database, Fingerprint, PlugZap, Radar, Server, ShieldAlert, ShieldCheck, Workflow } from 'lucide-react';
 import { MetricCard } from './components/MetricCard';
 import { Sidebar } from './components/Sidebar';
+import { AssetInventoryPage } from './pages/AssetInventoryPage';
+import type { TenantSession } from './api/tenantSession';
 import { navigationItems } from './data/navigation.js';
 
 type SectionId = (typeof navigationItems)[number]['id'];
+
+interface AppProps {
+  /** Supplied only by a future verified OIDC browser session adapter. */
+  session?: TenantSession;
+}
+
+const apiBaseUrl = import.meta.env.VITE_AEGIS_API_BASE_URL?.trim() ?? '';
 
 const metrics = [
   { label: 'Alerts today', value: '—', hint: 'Awaiting an authorized event source', icon: ShieldAlert, accent: 'amber' as const },
@@ -19,7 +28,7 @@ const platform = [
   { label: 'Memory store', detail: 'Controlled retention', icon: Database },
 ];
 
-export default function App() {
+export default function App({ session }: AppProps = {}) {
   const [active, setActive] = useState<SectionId>('overview');
   const current = navigationItems.find((item) => item.id === active) ?? navigationItems[0];
   return (
@@ -30,14 +39,14 @@ export default function App() {
           <header className="border-b border-white/[0.07] bg-[#0b1018] px-5 py-5 sm:px-8 lg:px-10">
             <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
               <div><p className="text-[11px] uppercase tracking-[0.17em] text-slate-500">AEGIS / {current.label}</p><h1 className="mt-2 text-2xl font-semibold text-white">{active === 'overview' ? 'Security overview' : current.label}</h1><p className="mt-1 hidden text-sm text-slate-500 sm:block">{current.description}</p></div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/15 bg-amber-300/[0.07] px-3 py-2 text-[11px] text-amber-200"><CloudOff size={13} /> Demo mode</span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/15 bg-amber-300/[0.07] px-3 py-2 text-[11px] text-amber-200"><CloudOff size={13} /> Preview mode</span>
             </div>
             <nav aria-label="Mobile navigation" className="mt-5 flex gap-2 overflow-x-auto lg:hidden">
               {navigationItems.map((item) => <button key={item.id} type="button" onClick={() => setActive(item.id)} aria-current={active === item.id ? 'page' : undefined} className={active === item.id ? 'shrink-0 rounded-full border border-cyan-200/20 bg-cyan-300/10 px-3 py-2 text-xs text-cyan-200' : 'shrink-0 rounded-full border border-white/[0.07] px-3 py-2 text-xs text-slate-400'}>{item.label}</button>)}
             </nav>
           </header>
           <div className="surface-grid mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10">
-            {active === 'overview' ? <>
+            {active === 'assets' ? <AssetInventoryPage session={session} apiBaseUrl={apiBaseUrl} /> : active === 'overview' ? <>
               <section className="rounded-2xl border border-cyan-200/[0.12] bg-gradient-to-br from-[#12212b] to-[#111522] p-6">
                 <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
                   <div className="max-w-2xl"><span className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-200"><ShieldCheck size={13} /> Defensive workspace</span><h2 className="mt-3 text-xl font-semibold text-white">Your security workspace is taking shape.</h2><p className="mt-2 text-sm leading-6 text-slate-400">The interface foundation is ready for the API, agent runtime, and approved integrations. No live telemetry or active security operations are connected in this preview.</p></div>

@@ -6,6 +6,7 @@ import {
   PlugZap,
   ScanSearch,
   ScrollText,
+  Server,
   ShieldCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -20,6 +21,7 @@ interface SidebarProps {
 
 const sectionIcons: Record<SectionId, LucideIcon> = {
   overview: LayoutDashboard,
+  assets: Server,
   investigations: ScanSearch,
   agents: Bot,
   integrations: PlugZap,

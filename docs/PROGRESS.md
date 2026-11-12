@@ -392,3 +392,49 @@ Provision a dedicated Neon development database with separate migration and runt
 - Asset writes are routed through restricted SECURITY DEFINER functions with server-derived tenant context and append-only audit records.
 - PostgreSQL RLS scopes runtime reads; the provisioner role receives function EXECUTE only and no direct asset table privileges.
 - Initial manual inventory only; connector-based discovery, synchronization, evidence provenance and ingestion pipelines remain later work.
+
+
+## 2026-11-12 — Customer asset inventory UI foundation
+
+### Repository state at start
+
+- Re-inspected the current default branch `main` at `75d375dcc1fa2cabca24c48a16c40183d7ab29f3`, the root README, implementation backlog, progress log, frontend source/tests, FastAPI asset route, repository query, tenant-context dependency and PostgreSQL asset-isolation tests.
+- The tenant-scoped `GET /api/v1/assets` API and its PostgreSQL/RLS coverage already exist on `main`; this increment does not duplicate or modify backend asset functionality.
+- The customer web portal on `main` had no Assets navigation entry or inventory page. The Organization profile UI from PR #48 remains unmerged and is not assumed to be present on `main`.
+- Created `feat/customer-asset-inventory-ui` from the inspected `main` commit. Existing branches and pull requests were left unchanged.
+
+### Completed in this increment
+
+- Added an Assets entry to the React/TypeScript navigation and connected it to a dedicated asset inventory page.
+- Added a shared ephemeral `TenantSession` contract for a future trusted OIDC browser adapter. The page does not construct identities or supply a tenant UUID.
+- Added a typed client for `GET /api/v1/assets` with server-side membership selection through `X-AEGIS-Tenant`, bearer-token injection, HTTPS-only remote origins, bounded pagination, no cookies, no redirects, no cache, and strict response validation.
+- Added inventory search over loaded records, asset-type and criticality filters, an include-archived option, summary counts derived only from API records, and bounded load-more pagination.
+- Added explicit sign-in-required, API-not-configured, invalid-configuration, loading, error/retry and empty states. No sample customer assets are displayed.
+- Kept the page read-only. Asset creation, updates and archiving remain disabled until the trusted session adapter and role-aware customer workflow are implemented.
+- Added API-client and server-rendered page regression tests; updated navigation/accessibility expectations.
+- Added `frontend/.env.example` and updated frontend setup documentation.
+
+### Security and scope
+
+- The browser sends only a tenant slug as a selector; the backend resolves tenant ID and role from the verified principal and active membership.
+- The API response's tenant UUID is validated as data but is never used to select a tenant or construct a request.
+- Access tokens are accepted only as runtime session input; they are not stored, logged, or configured through Vite variables.
+- No backend route, database schema, credentials, customer records, or new package dependencies were changed.
+- The page is not live until a real OIDC browser session adapter and API origin are configured.
+
+### Validation
+
+- Hosted GitHub Actions validation is required because this execution environment does not provide a checked-out repository or a local dependency installation. The pushed branch's CI result will be recorded here after completion.
+- Required checks: `npm ci`, frontend tests, TypeScript typecheck and production build, plus the repository's existing backend, PostgreSQL, Docker, Terraform, Flutter and security workflows.
+
+### Pending
+
+- Implement and verify the browser OIDC session adapter against a selected non-production identity provider.
+- Connect the Organization profile page from its separate draft PR after reviewing its base/branch divergence.
+- Add role-aware asset registration, editing and archival UI only after session roles and API authorization are available.
+- Add customer member-management UI and connector authorization wizard.
+- Complete live IdP/database/AWS staging prerequisites; no production integration is claimed.
+
+### Next task
+
+Implement the trusted browser OIDC session adapter (configuration-only until a non-production issuer/client is selected), then connect the Organization and Asset pages through the same session contract. Keep customer mutations disabled until role claims and backend authorization are verified.

@@ -1,8 +1,8 @@
 # AEGIS implementation backlog
 
 **Repository:** `princezdavidz-ctrl/Aegis-`  
-**Baseline:** `main` at `46a45696e3276297a2f5765a06705010fefaad45`  
-**Planning date:** 2026-11-10
+**Baseline:** `main` at `75d375dcc1fa2cabca24c48a16c40183d7ab29f3`  
+**Planning date:** 2026-11-12
 
 This backlog is based on an inspection of the current `main` branch. It separates implemented foundations from live, externally configured capabilities. A feature is not considered operational merely because a UI screen, interface, schema or deployment workflow exists.
 
@@ -10,7 +10,7 @@ This backlog is based on an inspection of the current `main` branch. It separate
 
 | Area | Current state | Remaining proof or work |
 |---|---|---|
-| React portal | UI foundation and build/test workflow exist | Authenticated routes and real tenant APIs are not connected |
+| React portal | React/TypeScript shell and a read-only tenant asset inventory UI/client are present on the active development branch | Browser OIDC session adapter and live API connection are not configured; customer mutations remain disabled |
 | FastAPI | App factory, health routes, optional OIDC verifier and advisory AI analysis route exist | Live IdP/database configuration, PostgreSQL integration proof and business APIs |
 | Tenant security | Membership resolution, tenant context and PostgreSQL RLS migration exist | Run migrations against PostgreSQL and prove RLS under production-like roles |
 | Audit | Append-only audit model/sink and database migration protections exist | Verify durable writes and database immutability on PostgreSQL |
@@ -79,3 +79,11 @@ For every phase, attach:
 - No cross-tenant model context or customer-data training by default.
 - No claim that the platform is monitoring continuously until ingestion, alerting and staffing are operational.
 - No production AWS deployment until the exposed AWS access key incident is confirmed remediated and the account is configured for OIDC-only deployment.
+
+
+## 2026-11-12 customer portal increment
+
+- The current `main` branch already contains the tenant-scoped asset inventory API and PostgreSQL isolation tests.
+- Development branch `feat/customer-asset-inventory-ui` adds the corresponding read-only React page and a strict API client. It is not considered operational until the trusted browser OIDC session adapter and API origin are configured.
+- The page uses the server-verified tenant membership flow; the browser supplies only the selected tenant slug and never supplies a tenant UUID.
+- The next portal dependency is a verified browser OIDC session adapter. Asset mutations and member administration remain gated on session roles and existing backend authorization.
