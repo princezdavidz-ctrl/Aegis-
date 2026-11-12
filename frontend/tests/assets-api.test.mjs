@@ -11,7 +11,7 @@ before(async () => {
   vite = await createServer({
     configFile: false,
     plugins: [react()],
-    server: { middlewareMode: true, hmr: false },
+    server: { middlewareMode: true, hmr: { port: 0 } },
     optimizeDeps: { noDiscovery: true },
     appType: 'custom',
   });
