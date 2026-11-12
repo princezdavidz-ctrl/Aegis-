@@ -11,7 +11,8 @@ before(async () => {
   vite = await createServer({
     configFile: false,
     plugins: [react()],
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: false },
+    optimizeDeps: { noDiscovery: true },
     appType: 'custom',
   });
   ({ createAssetInventoryClient, AssetInventoryApiError } = await vite.ssrLoadModule('/src/api/assets.ts'));

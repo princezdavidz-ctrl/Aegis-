@@ -12,7 +12,8 @@ before(async () => {
   vite = await createServer({
     configFile: false,
     plugins: [react()],
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: false },
+    optimizeDeps: { noDiscovery: true },
     appType: 'custom',
   });
   ({ AssetInventoryPage } = await vite.ssrLoadModule('/src/pages/AssetInventoryPage.tsx'));
