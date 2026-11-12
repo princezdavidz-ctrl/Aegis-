@@ -424,8 +424,14 @@ Provision a dedicated Neon development database with separate migration and runt
 
 ### Validation
 
-- Hosted GitHub Actions validation is required because this execution environment does not provide a checked-out repository or a local dependency installation. The pushed branch's CI result will be recorded here after completion.
-- Required checks: `npm ci`, frontend tests, TypeScript typecheck and production build, plus the repository's existing backend, PostgreSQL, Docker, Terraform, Flutter and security workflows.
+Final tested branch head: `f0ef8e1aa96983aaf39e505e117cb5fde1a9d9d1`.
+
+- AEGIS checks [#43218021150](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43218021150): passed. Frontend `npm ci`, **13 tests passed / 0 failed**, TypeScript typecheck and production build passed. Python API suite: **105 passed, 6 skipped, 1 non-failing warning**. PostgreSQL migration/RLS integration: **6 passed**. API container smoke test, Terraform validation, and Windows/Linux/macOS endpoint-agent checks passed.
+- Flutter checks [#43218021414](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43218021414): formatting, analysis and widget/unit tests passed.
+- Security checks [#43218021536](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43218021536): Gitleaks, Python/npm dependency audits, NVD catalogue tests, and Python/TypeScript CodeQL passed.
+- The frontend SSR test workers now run serially to avoid Vite's shared default HMR-port collision. The final test log contains no WebSocket or dependency-scan errors.
+- Flutter 3.50.0 introduced informational deprecation diagnostics for the existing `package:flutter/material.dart` imports. The workflow now uses `flutter analyze --no-fatal-infos`; analyzer warnings and errors remain fatal. The final Flutter workflow passed.
+- No live OIDC provider, customer database, customer records, AWS deployment, or security-tool operation was accessed or enabled by this UI increment.
 
 ### Pending
 
