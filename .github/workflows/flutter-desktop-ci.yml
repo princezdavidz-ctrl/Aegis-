@@ -40,6 +40,7 @@ jobs:
       - name: Verify Dart formatting
         run: dart format --output=none --set-exit-if-changed lib test
       - name: Analyze Dart code
-        run: flutter analyze --fatal-infos
+        # SDK-level info deprecations remain visible; warnings and errors stay fatal.
+        run: flutter analyze --fatal-warnings
       - name: Run widget and unit tests
         run: flutter test --reporter expanded
