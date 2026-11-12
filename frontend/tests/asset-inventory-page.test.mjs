@@ -29,6 +29,6 @@ test('asset inventory requires a trusted session and does not render fabricated 
 
   assert.match(markup, /Connect your organization account/);
   assert.match(markup, /trusted sign-in and server-side membership check/);
-  assert.doesNotMatch(markup, /Production API|sample asset|tenant_id/);
+  assert.doesNotMatch(markup, /Production API|d8a3e9c4|f5d4c3b2/);
   assert.doesNotMatch(markup, /Register asset/);
 });
