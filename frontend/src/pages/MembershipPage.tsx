@@ -125,6 +125,7 @@ export function MembershipPage({ session }: MembershipPageProps) {
     if (!session || !canManage || clientConfig.state !== 'ready' || !contextKey) {
       setMembers([]);
       setLoadedContext(null);
+      setPendingAction(null);
       setLoading(false);
       return;
     }
@@ -132,11 +133,6 @@ export function MembershipPage({ session }: MembershipPageProps) {
     let active = true;
     setMembers([]);
     setLoadedContext(null);
-    setPendingAction(null);
-    setSelectedRoles({});
-    setBusySubject(null);
-    setFeedback(null);
-    setInviteSubject('');
     setLoading(true);
     setError(null);
 
@@ -159,6 +155,14 @@ export function MembershipPage({ session }: MembershipPageProps) {
       active = false;
     };
   }, [session, canManage, clientConfig, contextKey, retryCount]);
+
+  useEffect(() => {
+    setPendingAction(null);
+    setSelectedRoles({});
+    setBusySubject(null);
+    setFeedback(null);
+    setInviteSubject('');
+  }, [contextKey]);
 
   async function inviteMember(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
