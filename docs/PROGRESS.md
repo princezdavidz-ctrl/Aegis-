@@ -485,3 +485,45 @@ Add the tenant-scoped asset inventory UI (list, filter, pagination and role-awar
 ### Next task
 
 Build the tenant member management UI with a typed client and role-aware presentation, keeping all operations unavailable until a verified browser session is supplied. Then integrate the selected OIDC provider when its non-production issuer, audience and JWKS configuration are available.
+
+
+## 2026-11-13 — Tenant member management UI increment
+
+### Repository audit
+
+- Started from current `main` after Organization and Asset Inventory portal PR #48 was merged at `dd7b10425a4df5d4ef9e426b9ee3b9867a9b047d`.
+- Re-read the implementation backlog, progress log, frontend navigation and API-client conventions, FastAPI membership routes, membership repository, PostgreSQL lifecycle function and membership API documentation.
+- Confirmed the existing API contract: tenant-admin-only member listing; invitations to known OIDC subjects with `security_manager`, `analyst` or `viewer` roles; and role-change, suspend and revoke actions. The backend rejects self-management and protects the last active tenant administrator.
+
+### Completed
+
+- Added a Members navigation item and connected a dedicated React membership-management page.
+- Added a typed client for `GET /api/v1/tenants/members`, `POST /api/v1/tenants/members/invitations` and `PATCH /api/v1/tenants/members/{subject}`.
+- Added member listing, pending-invitation expiry display, role changes, and explicit confirmation before suspension or revocation.
+- Restricted the UI to a trusted session whose server-resolved role is `tenant_admin`; the backend remains authoritative and independently rechecks the role for every operation.
+- Suppressed self-management controls using the verified OIDC subject. The backend also rejects attempts to modify the caller's own membership.
+- Enforced HTTPS API origins (loopback HTTP only for development), bounded token/tenant/subject inputs, encoded opaque OIDC subjects in the route, omitted cookie credentials and redirects, disabled caching, validated response schemas, and sanitized HTTP errors.
+- Explained that invitations target existing OIDC subjects and do not send email or create IdP accounts. Explicitly disclosed that the current API has no reactivation, restore or re-invitation operation after suspension/revocation.
+- Added API-client tests, signed-out/non-admin page tests, and navigation/accessibility regression coverage.
+- Updated the frontend README, root README, implementation backlog and progress log. No new dependencies, credentials, secrets or customer records were added.
+
+### Validation
+
+- Final code head `21ede4e4d61d7c2193e0245757b399c149255ce3` passed all three hosted GitHub Actions workflows.
+- Frontend: locked dependency install passed; **29 tests passed, 0 failed**; TypeScript typecheck and production build passed.
+- API tests, PostgreSQL migration/RLS integration, API container smoke test, Terraform validation, Linux/Windows/macOS endpoint-agent tests, secret scanning, Python/npm dependency audits, NVD catalogue tests, Python/TypeScript CodeQL, and Flutter format/analysis/tests all passed.
+- Evidence: [AEGIS checks #43421929404](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43421929404), [AEGIS security checks #43421929385](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43421929385), and [AEGIS Flutter checks #43421929314](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43421929314).
+- The local environment cannot clone from `github.com`; no local test/build result is claimed. Hosted CI is the verification evidence.
+
+### Remaining Phase 2 work
+
+- Implement the trusted browser OIDC Authorization Code + PKCE session lifecycle and sign-in/sign-out UX.
+- Select and configure a non-production OIDC issuer, client ID, audience and redirect URI; no provider credentials or configuration are currently available.
+- Add organization profile editing for tenant administrators.
+- Add browser-driven keyboard, responsive viewport and authenticated workflow tests.
+- Add a safe reactivation/re-invitation lifecycle only after the backend state machine and audit semantics are designed; the current API does not support these actions.
+- Connect the member page to a deployed API only after the trusted session adapter and non-production IdP are verified.
+
+### Next task
+
+Implement a provider-neutral browser OIDC session adapter using Authorization Code + PKCE, with in-memory access-token handling and strict state/nonce/issuer/audience validation. Keep live sign-in disabled until the non-production IdP configuration and redirect URI are supplied and verified.

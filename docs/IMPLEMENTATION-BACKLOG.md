@@ -1,8 +1,8 @@
 # AEGIS implementation backlog
 
 **Repository:** `princezdavidz-ctrl/Aegis-`  
-**Baseline:** `main` at `75d375dcc1fa2cabca24c48a16c40183d7ab29f3`  
-**Planning date:** 2026-11-12
+**Baseline:** `main` at `dd7b10425a4df5d4ef9e426b9ee3b9867a9b047d`  
+**Planning date:** 2026-11-13
 
 This backlog is based on an inspection of the current `main` branch. It separates implemented foundations from live, externally configured capabilities. A feature is not considered operational merely because a UI screen, interface, schema or deployment workflow exists.
 
@@ -10,8 +10,8 @@ This backlog is based on an inspection of the current `main` branch. It separate
 
 | Area | Current state | Remaining proof or work |
 |---|---|---|
-| React portal | Responsive shell, Organization profile preview, typed tenant-profile client, Asset Inventory screen and typed asset client exist | Trusted browser OIDC session adapter is not configured; pages remain sign-in-required; profile editing and member management UI remain pending |
-| FastAPI | App factory, OIDC verifier, tenant/profile/membership/manual asset APIs, endpoint fleet API and advisory AI analysis route exist | Live IdP/database configuration, non-production identity verification and production deployment proof |
+| React portal | Responsive shell, Organization profile, Asset Inventory and Members screens with typed tenant API clients and regression tests exist | Trusted browser OIDC session adapter is not configured; pages remain sign-in-required; organization profile editing and browser-driven authenticated tests remain pending |
+| FastAPI | App factory, OIDC verifier, tenant/profile/membership/manual asset APIs, endpoint enrollment/fleet APIs and advisory AI analysis route exist | Live IdP/database configuration, non-production identity verification and production deployment proof |
 | Tenant security | Membership resolution, tenant context and PostgreSQL RLS migration exist | Run migrations against PostgreSQL and prove RLS under production-like roles |
 | Audit | Append-only audit model/sink and database migration protections exist | Verify durable writes and database immutability on PostgreSQL |
 | AI | Provider-neutral gateway, OpenAI-compatible adapter, four advisory specialist workflows and backend wiring exist | Live provider config, tenant evidence retrieval, evaluation and operational governance |

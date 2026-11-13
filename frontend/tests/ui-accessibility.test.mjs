@@ -9,6 +9,7 @@ import { createServer } from 'vite';
 const expectedLabels = [
   'Overview',
   'Organization',
+  'Members',
   'Assets',
   'Investigations',
   'AI agents',
@@ -21,6 +22,7 @@ let vite;
 let App;
 let Sidebar;
 let OrganizationPage;
+let MembershipPage;
 let platformReadiness;
 
 before(async () => {
@@ -35,6 +37,7 @@ before(async () => {
   ({ default: App } = await vite.ssrLoadModule('/src/App.tsx'));
   ({ Sidebar } = await vite.ssrLoadModule('/src/components/Sidebar.tsx'));
   ({ OrganizationPage } = await vite.ssrLoadModule('/src/pages/OrganizationPage.tsx'));
+  ({ MembershipPage } = await vite.ssrLoadModule('/src/pages/MembershipPage.tsx'));
   ({ platformReadiness } = await vite.ssrLoadModule('/src/data/platformReadiness.ts'));
 });
 
@@ -91,7 +94,7 @@ test('dashboard exposes separately named desktop and mobile navigation landmarks
 test('Sidebar exposes the selected section through aria-current', () => {
   const markup = renderToStaticMarkup(
     React.createElement(Sidebar, {
-      activeSection: 'organization',
+      activeSection: 'members',
       onNavigate: () => {},
     }),
   );
@@ -104,7 +107,7 @@ test('Sidebar exposes the selected section through aria-current', () => {
     1,
   );
   assert.match(
-    buttons.find(({ label }) => label === 'Organization').attributes,
+    buttons.find(({ label }) => label === 'Members').attributes,
     /\baria-current="page"/,
   );
   assert.doesNotMatch(
@@ -148,4 +151,13 @@ test('platform readiness labels match the implementation catalog', () => {
     platformReadiness.map(({ status }) => status),
     ['Code present', 'CI verified', 'Provider unconfigured', 'Not implemented'],
   );
+});
+
+
+test('members page exposes only the authentication-required state without a verified session', () => {
+  const markup = renderToStaticMarkup(React.createElement(MembershipPage));
+
+  assert.match(markup, /Connect your organization account/);
+  assert.match(markup, /server-side membership resolution/);
+  assert.doesNotMatch(markup, /Create invitation|Suspend|Revoke/);
 });

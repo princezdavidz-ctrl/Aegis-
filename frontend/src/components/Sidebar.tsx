@@ -9,6 +9,7 @@ import {
   ScanSearch,
   ScrollText,
   ShieldCheck,
+  Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { navigationItems } from '../data/navigation.js';
@@ -23,6 +24,7 @@ interface SidebarProps {
 const sectionIcons: Record<SectionId, LucideIcon> = {
   overview: LayoutDashboard,
   organization: Building2,
+  members: Users,
   assets: Boxes,
   investigations: ScanSearch,
   agents: Bot,
