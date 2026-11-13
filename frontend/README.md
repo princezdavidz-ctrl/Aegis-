@@ -18,7 +18,7 @@ The production build is generated in `dist/`.
 
 Configure Vercel with **Root Directory = `frontend`**. Use `npm install` or `npm ci` for installation and `npm run build` for the build command. The output directory is `dist`.
 
-The portal includes an overview, a read-only Organization profile page and an Asset Inventory page. The typed clients are prepared for existing tenant-scoped APIs, but authentication and live tenant-backed data remain unavailable until a trusted browser OIDC session adapter and API deployment are configured.
+The portal includes an overview, read-only Organization profile, Asset Inventory and tenant Member Management pages. The typed clients are prepared for existing tenant-scoped APIs, but authentication and live tenant-backed data remain unavailable until a trusted browser OIDC session adapter and API deployment are configured.
 
 ## Customer organization profile
 
@@ -57,3 +57,21 @@ checks every write.
 The page intentionally remains sign-in-required in the current preview. It does
 not invent asset records, and it does not claim connector-based discovery or
 automatic synchronization.
+
+
+## Tenant member management
+
+The Members navigation item uses the existing tenant membership API:
+- GET /api/v1/tenants/members
+- POST /api/v1/tenants/members/invitations
+- PATCH /api/v1/tenants/members/{subject}
+
+The page supports member listing, invitations to known OIDC subjects, role changes,
+suspension and revocation. Invitations create pending grants and do not send email
+or create identity-provider accounts. The page requires a trusted session carrying
+the server-resolved tenant-admin role and verified subject; the backend independently
+rechecks tenant-admin authority and protects the last active administrator.
+
+Suspension and revocation are shown with explicit confirmation because the current
+API has no reactivation, restore or re-invitation operation. The page remains
+sign-in-required in the current preview and does not display sample identities.
