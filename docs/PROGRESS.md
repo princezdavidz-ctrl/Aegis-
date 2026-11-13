@@ -636,3 +636,10 @@ Final commit: `2e9fe57f1e2fd88051e8f144bc06a70ee1116d30`
 ### Next task
 
 Add the server-verified membership bootstrap contract and frontend client. It must resolve tenant membership from the API using the authenticated access token and return only active memberships/roles; the browser may select a returned membership slug but must never submit or trust a tenant UUID or role.
+
+
+### Review packaging
+
+- Opened draft PR #56 against main with the OIDC adapter and React session-provider work together in one independently reviewable change set. The earlier PR #55 remains open and unchanged; PR #56 is the complete superset, so review should avoid merging both separately.
+- PR #56 is mergeable and targets main. A new branch commit after retargeting is used to trigger the main-targeted pull-request workflows.
+- Local clone/test execution was attempted in the container but blocked by DNS resolution for github.com. No local test result is claimed; hosted GitHub Actions must provide the final test/typecheck/build evidence.
