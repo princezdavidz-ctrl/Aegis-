@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   createOidcSessionAdapter,
@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [config]);
   const adapter = adapterState.value;
   const [session, setSession] = useState<OidcSession | null>(null);
+  const callbackStarted = useRef(false);
   const [status, setStatus] = useState<AuthStatus>(
     config.error || adapterState.error ? 'error' : adapter ? 'checking' : 'unconfigured',
   );
@@ -64,6 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (callbackStarted.current) return;
+    callbackStarted.current = true;
     let active = true;
     setStatus('checking');
     adapter.completeSignIn(window.location.href)
