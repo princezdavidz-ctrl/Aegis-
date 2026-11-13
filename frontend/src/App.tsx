@@ -89,13 +89,13 @@ export default function App() {
                 ) : (
                   <button
                     type="button"
-                    disabled={auth.status === 'unconfigured' || auth.status === 'authenticating' || auth.status === 'checking'}
+                    disabled={!auth.configured || auth.status === 'authenticating' || auth.status === 'checking'}
                     onClick={() => void auth.signIn()}
-                    title={auth.status === 'unconfigured' ? 'Configure a trusted OIDC provider to enable sign-in.' : undefined}
+                    title={!auth.configured ? 'Configure a trusted OIDC provider to enable sign-in.' : undefined}
                     className="rounded-xl border border-cyan-200/20 bg-cyan-300/[0.07] px-3 py-2 text-[11px] text-cyan-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {auth.status === 'authenticating' || auth.status === 'checking' ? 'Signing in…' :
-                      auth.status === 'unconfigured' ? 'Sign-in unavailable' : 'Sign in'}
+                      !auth.configured ? 'Sign-in unavailable' : 'Sign in'}
                   </button>
                 )}
                 <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/15 bg-amber-300/[0.07] px-3 py-2 text-[11px] text-amber-200">
