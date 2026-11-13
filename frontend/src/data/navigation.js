@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * @typedef {{ id: 'overview' | 'organization' | 'assets' | 'investigations' | 'agents' | 'integrations' | 'memory' | 'audit', label: string, description: string }} NavigationItem
+ * @typedef {{ id: 'overview' | 'organization' | 'members' | 'assets' | 'investigations' | 'agents' | 'integrations' | 'memory' | 'audit', label: string, description: string }} NavigationItem
  */
 
 /** @type {readonly NavigationItem[]} */
@@ -15,6 +15,11 @@ export const navigationItems = Object.freeze([
     id: 'organization',
     label: 'Organization',
     description: 'View your organization profile and security settings.',
+  },
+  {
+    id: 'members',
+    label: 'Members',
+    description: 'Manage organization membership and access roles.',
   },
   {
     id: 'assets',
