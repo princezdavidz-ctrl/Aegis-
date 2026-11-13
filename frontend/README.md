@@ -18,7 +18,7 @@ The production build is generated in `dist/`.
 
 Configure Vercel with **Root Directory = `frontend`**. Use `npm install` or `npm ci` for installation and `npm run build` for the build command. The output directory is `dist`.
 
-The portal includes an overview, Organization profile, Asset Inventory and tenant Member Management pages. A React OIDC session provider now wires the browser adapter into the shell, handles the callback route, and exposes sign-in/local sign-out state. Sign-in remains disabled until a complete public identity-provider configuration is supplied. Identity verification does not grant tenant access; the API must resolve membership before customer data is shown.
+The portal includes an overview, Organization profile, Asset Inventory and tenant Member Management pages. A React OIDC session provider now wires the browser adapter into the shell, handles the callback route, exposes sign-in/local sign-out state, and clears the React session when the access-token expiry boundary is reached. Sign-in remains disabled until a complete public identity-provider configuration is supplied. Identity verification does not grant tenant access; the API must resolve membership before customer data is shown.
 
 ## Customer organization profile
 
