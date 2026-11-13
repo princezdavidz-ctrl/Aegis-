@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from './auth/AuthProvider';
 import { Activity, ArrowRight, BrainCircuit, CloudOff, Database, Fingerprint, PlugZap, Radar, Server, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { MetricCard } from './components/MetricCard';
 import { Sidebar } from './components/Sidebar';
@@ -35,6 +36,27 @@ export default function App() {
   const [active, setActive] = useState<SectionId>('overview');
   const current = navigationItems.find((item) => item.id === active) ?? navigationItems[0];
 
+  if (isCallbackRoute) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#090d14] px-5 text-slate-100">
+        <section aria-live="polite" className="w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#101722] p-8 text-center">
+          <ShieldCheck size={28} className="mx-auto text-cyan-200" aria-hidden="true" />
+          <h1 className="mt-4 text-xl font-semibold text-white">Completing AEGIS sign-in</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            {auth.status === 'checking' ? 'Verifying the identity provider response…' :
+              auth.status === 'authenticated' ? 'Identity verified. Returning to your workspace…' :
+              auth.error ?? 'Sign-in is not configured. Return to the AEGIS portal.'}
+          </p>
+          {auth.status === 'error' && (
+            <button type="button" onClick={() => window.location.assign('/')} className="mt-5 rounded-xl border border-cyan-200/20 px-4 py-2 text-xs text-cyan-100">
+              Return to AEGIS
+            </button>
+          )}
+        </section>
+      </main>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#090d14] text-slate-100">
       <div className="flex min-h-screen">
@@ -47,9 +69,28 @@ export default function App() {
                 <h1 className="mt-2 text-2xl font-semibold text-white">{active === 'overview' ? 'Security overview' : current.label}</h1>
                 <p className="mt-1 hidden text-sm text-slate-500 sm:block">{current.description}</p>
               </div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/15 bg-amber-300/[0.07] px-3 py-2 text-[11px] text-amber-200">
-                <CloudOff size={13} aria-hidden="true" /> Preview mode
-              </span>
+              <div className="flex items-center gap-2">
+                {auth.status === 'authenticated' ? (
+                  <>
+                    <span className="hidden max-w-40 truncate text-[10px] text-emerald-200 sm:inline" title={auth.session?.subject}>Identity verified</span>
+                    <button type="button" onClick={auth.signOut} className="rounded-xl border border-white/10 px-3 py-2 text-[11px] text-slate-200 hover:bg-white/5">Sign out</button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={auth.status === 'unconfigured' || auth.status === 'authenticating' || auth.status === 'checking'}
+                    onClick={() => void auth.signIn()}
+                    title={auth.status === 'unconfigured' ? 'Configure a trusted OIDC provider to enable sign-in.' : undefined}
+                    className="rounded-xl border border-cyan-200/20 bg-cyan-300/[0.07] px-3 py-2 text-[11px] text-cyan-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {auth.status === 'authenticating' || auth.status === 'checking' ? 'Signing in…' :
+                      auth.status === 'unconfigured' ? 'Sign-in unavailable' : 'Sign in'}
+                  </button>
+                )}
+                <span className="inline-flex items-center gap-2 rounded-full border border-amber-300/15 bg-amber-300/[0.07] px-3 py-2 text-[11px] text-amber-200">
+                  <CloudOff size={13} aria-hidden="true" /> Preview mode
+                </span>
+              </div>
             </div>
             <nav aria-label="Mobile navigation" className="mt-5 flex gap-2 overflow-x-auto lg:hidden">
               {navigationItems.map((item) => (
@@ -69,6 +110,14 @@ export default function App() {
           </header>
 
           <div className="surface-grid mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10">
+            {auth.error && (
+              <p role="alert" className="mb-5 rounded-xl border border-amber-200/15 bg-amber-300/[0.05] px-4 py-3 text-xs text-amber-100">{auth.error}</p>
+            )}
+            {auth.status === 'authenticated' && (
+              <p role="status" className="mb-5 rounded-xl border border-emerald-200/15 bg-emerald-300/[0.04] px-4 py-3 text-xs leading-5 text-emerald-100">
+                Identity verified for this browser session. Organization access remains locked until the API resolves an active tenant membership; no tenant role is inferred from the identity token.
+              </p>
+            )}
             {active === 'overview' ? (
               <>
                 <section className="rounded-2xl border border-cyan-200/[0.12] bg-gradient-to-br from-[#12212b] to-[#111522] p-6">
