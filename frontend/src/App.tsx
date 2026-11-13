@@ -33,6 +33,17 @@ const readinessStyles = {
 } as const;
 
 export default function App() {
+  const auth = useAuth();
+  const callbackPath = (() => {
+    try {
+      return import.meta.env.VITE_AEGIS_OIDC_REDIRECT_URI
+        ? new URL(import.meta.env.VITE_AEGIS_OIDC_REDIRECT_URI).pathname
+        : '/auth/callback';
+    } catch {
+      return '/auth/callback';
+    }
+  })();
+  const isCallbackRoute = typeof window !== 'undefined' && window.location.pathname === callbackPath;
   const [active, setActive] = useState<SectionId>('overview');
   const current = navigationItems.find((item) => item.id === active) ?? navigationItems[0];
 
