@@ -527,3 +527,58 @@ Build the tenant member management UI with a typed client and role-aware present
 ### Next task
 
 Implement a provider-neutral browser OIDC session adapter using Authorization Code + PKCE, with in-memory access-token handling and strict state/nonce/issuer/audience validation. Keep live sign-in disabled until the non-production IdP configuration and redirect URI are supplied and verified.
+
+
+## 2026-11-13 — Provider-neutral browser OIDC PKCE adapter
+
+### Repository audit
+
+- Re-inspected current `main` at `63121a85e595cbc79370584d869fddd76023d292`, the root README, implementation backlog, full progress log, security model, architecture, frontend package/lockfile, current customer pages/API clients/tests, and the backend OIDC verifier/configuration.
+- Confirmed that the backend already verifies RS256 bearer JWTs against configured issuer, audience and JWKS; the customer portal had no browser OIDC adapter and remained intentionally sign-in-required.
+- Created `feat/browser-oidc-pkce-session` from the inspected main commit. No existing source or open pull request was changed.
+
+### Completed
+
+- Added `frontend/src/auth/oidc.ts`, a provider-neutral OIDC Authorization Code + PKCE S256 adapter using browser Web Crypto and no additional package.
+- Added exact issuer discovery checks and strict HTTPS endpoint validation; loopback HTTP is permitted only when the caller explicitly enables development mode.
+- Added random state, nonce and PKCE verifier generation, SHA-256 code challenge, a 10-minute one-time transaction in sessionStorage, exact callback-origin/path checks, state validation and callback URL scrubbing.
+- Added RS256 ID-token signature verification against issuer JWKS, requiring a public RSA key of at least 2048 bits and checking issuer, client audience, `azp`, expiry, issue/not-before times and nonce.
+- Added bounded Bearer access-token validation and short-lived in-memory session handling. Access/ID tokens are not written to browser storage; refresh tokens are ignored. Expired sessions are discarded and local sign-out clears the in-memory session and pending transaction.
+- Added `readOidcClientConfig`; configuration stays disabled until issuer, public client ID and exact redirect URI are all present. A public client secret variable is explicitly rejected.
+- Added commented, non-secret OIDC placeholders to `frontend/.env.example`; updated the root README, frontend README, implementation backlog and this progress log.
+- Added `frontend/tests/oidc-session.test.mjs` with 20 passing test cases covering PKCE, state, nonce, signature, issuer/audience/`azp`, expiry, malformed tokens, discovery requirements, same-origin redirects, session expiry and local sign-out.
+- No new dependencies, client secrets, signing keys, access tokens, customer identities or live provider configuration were added.
+
+### Validation
+
+- Local strict TypeScript check of the new adapter passed with TypeScript 5.8.3:
+  `tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM frontend/src/auth/oidc.ts`.
+- Local isolated Node.js 22.16.0 Web Crypto test harness: **20 passed, 0 failed**. The harness compiled the exact adapter with TypeScript and exercised real RSA-2048 signatures using generated ephemeral test keys.
+- The local execution environment cannot clone the repository from `github.com` and has no cached Vite/React project dependencies. Therefore the full repository `npm ci`, `npm test`, `npm run typecheck` and `npm run build` are not claimed locally; hosted GitHub Actions on the pushed commit are required for full-tree verification.
+- No live IdP flow was attempted because no issuer, public client ID, registered redirect URI, API audience or provider CORS configuration has been supplied.
+
+### Security and scope notes
+
+- This adapter is implemented but not wired into the React shell. Customer pages remain sign-in-required; no live login button or authenticated workflow is enabled.
+- The browser verifies the ID token for the client session, but the API must independently verify the access token against its own configured issuer, JWKS and API audience. The adapter does not grant tenant roles or select a tenant.
+- Only RS256 ID-token signing is currently supported, matching the backend verifier. The selected provider must advertise RS256 and PKCE S256.
+- The provider must permit browser CORS access to discovery, JWKS and token endpoints. Refresh-token rotation and remote identity-provider logout are not implemented; session expiry requires a fresh sign-in, and sign-out is local only.
+
+### Remaining Phase 2 work
+
+- Wire the adapter into the React shell with callback handling, session state and sign-in/local sign-out controls. Keep live sign-in disabled until all provider configuration is present.
+- Select and configure a non-production OIDC provider, public SPA client, exact redirect URI, CORS allowlist and access-token API audience; then verify a real sign-in against the backend.
+- Add a server-verified membership bootstrap so tenant slug and role come from API responses, never from browser assertions.
+- Add organization profile editing and browser-driven authenticated/responsive tests.
+- Continue with connector authorization and endpoint telemetry only after the customer identity/session boundary is operational.
+
+### Next task
+
+Add a React OIDC session provider and callback route that consumes this adapter, exposes a sign-in/local sign-out state to the Organization, Assets and Members pages, and keeps all controls disabled when OIDC configuration is absent. Then validate it against a non-production IdP once its issuer, public client ID, callback URI and API audience are supplied.
+
+
+### CI-driven corrections after the first push
+
+- Hosted GitHub Actions ran the full frontend suite: **49 tests passed**. The first hosted TypeScript check then exposed a DOM `BufferSource` generic mismatch at the Web Crypto signature verification boundary; the adapter now copies signature and signed-input bytes into explicit `ArrayBuffer` instances.
+- Gitleaks correctly flagged a hard-coded JWT-shaped negative-test fixture even though it was synthetic and contained no credential. The test now creates a second ephemeral RSA-2048 key at runtime and signs a deliberately untrusted token, removing the static JWT-looking fixture rather than suppressing the scanner.
+- Re-ran the local strict TypeScript check and isolated Node/Web Crypto suite after both corrections: **20 passed, 0 failed**. The follow-up hosted push and pull-request workflows are required to confirm the full repository checks are green.

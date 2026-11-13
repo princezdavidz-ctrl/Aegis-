@@ -18,7 +18,7 @@ The production build is generated in `dist/`.
 
 Configure Vercel with **Root Directory = `frontend`**. Use `npm install` or `npm ci` for installation and `npm run build` for the build command. The output directory is `dist`.
 
-The portal includes an overview, read-only Organization profile, Asset Inventory and tenant Member Management pages. The typed clients are prepared for existing tenant-scoped APIs, but authentication and live tenant-backed data remain unavailable until a trusted browser OIDC session adapter and API deployment are configured.
+The portal includes an overview, Organization profile, Asset Inventory and tenant Member Management pages. A provider-neutral browser OIDC session adapter is implemented, but it is not yet wired into the React shell and no non-production identity provider is configured. Customer pages therefore remain sign-in-required.
 
 ## Customer organization profile
 
@@ -75,3 +75,38 @@ rechecks tenant-admin authority and protects the last active administrator.
 Suspension and revocation are shown with explicit confirmation because the current
 API has no reactivation, restore or re-invitation operation. The page remains
 sign-in-required in the current preview and does not display sample identities.
+
+
+## Browser OIDC session adapter
+
+`src/auth/oidc.ts` implements a provider-neutral OpenID Connect Authorization Code
+flow with PKCE S256. It discovers the issuer metadata, requires the exact configured
+issuer, HTTPS endpoints (loopback HTTP only when explicitly enabled for development),
+and provider support for authorization code, PKCE S256 and RS256 ID-token signatures.
+
+The adapter verifies the ID-token RS256 signature against the issuer JWKS and checks
+issuer, client audience, authorized party (`azp` when multiple audiences are present),
+expiry, issue/not-before times and the transaction nonce. The API must independently
+verify the access token using its configured issuer, JWKS and API audience; a browser
+ID-token check is not API authorization and the browser never assigns tenant roles.
+
+The PKCE verifier, state and nonce are held in `sessionStorage` for a maximum
+10-minute redirect transaction. Access and ID tokens are kept in memory only;
+refresh tokens are ignored and never persisted. The in-memory session expires with
+the access token and requires a new sign-in. `signOut()` clears the local session
+only; remote identity-provider single sign-out is not implemented yet.
+
+The adapter is not connected to the app shell yet. To prepare a public SPA client,
+register the exact callback URI with the chosen provider and configure these public
+Vite variables:
+
+- `VITE_AEGIS_OIDC_ISSUER`
+- `VITE_AEGIS_OIDC_CLIENT_ID`
+- `VITE_AEGIS_OIDC_REDIRECT_URI`
+
+All three must be present; otherwise configuration remains disabled. The browser
+client rejects a `VITE_AEGIS_OIDC_CLIENT_SECRET` rather than accepting a secret in
+the public bundle. The provider must allow the portal origin to access its discovery,
+JWKS and token endpoints via CORS and issue an access token for the API audience
+configured on the backend. No provider, client ID, redirect registration or API
+audience has been configured for AEGIS yet. See `.env.example` for safe placeholders.
