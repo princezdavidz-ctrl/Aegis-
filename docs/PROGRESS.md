@@ -611,6 +611,7 @@ Final commit: `2e9fe57f1e2fd88051e8f144bc06a70ee1116d30`
 - Added callback-route handling for the exact configured redirect path, with a safe fallback route when callback configuration is malformed.
 - Callback handling verifies through the existing OIDC adapter, scrubs the authorization response URL, and returns to the validated same-origin path.
 - Added a React StrictMode guard so a callback code is not exchanged twice during development effect replay.
+- Added an expiry timer aligned with the adapter's 60-second clock-skew boundary so React authenticated UI state is cleared when the short-lived access token is no longer accepted.
 - Kept access tokens in memory only. The provider does not write credentials to localStorage/sessionStorage and does not treat an OIDC subject as a tenant membership or role.
 - Customer Organization, Assets and Members pages remain locked. A server-verified membership bootstrap is still required before passing a session/tenant slug/role to those pages.
 - Added an SSR regression test proving sign-in remains disabled when no public OIDC provider configuration is present.
