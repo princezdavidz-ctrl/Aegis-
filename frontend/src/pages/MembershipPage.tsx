@@ -60,7 +60,7 @@ function requestErrorMessage(error: unknown): string {
     return 'Tenant administrator access is required, or your membership has changed.';
   }
   if (error instanceof MembershipApiError && error.status === 409) {
-    return 'The membership change conflicts with the current organization state. The last active administrator is protected.';
+    return 'The membership change conflicts with existing organization state. The subject may already have a membership, or the last active administrator is protected.';
   }
   return 'The membership service is unavailable. Check the connection and try again.';
 }
@@ -104,7 +104,8 @@ export function MembershipPage({ session }: MembershipPageProps) {
     }
   }, []);
 
-  const canManage = session?.membershipRole === 'tenant_admin' && session.subject.trim().length > 0;
+  const hasVerifiedSubject = typeof session?.subject === 'string' && session.subject.trim().length > 0;
+  const canManage = session?.membershipRole === 'tenant_admin' && hasVerifiedSubject;
   const contextKey = session ? JSON.stringify([session.tenantSlug, session.subject]) : null;
 
   const [members, setMembers] = useState<TenantMember[]>([]);
@@ -244,7 +245,7 @@ export function MembershipPage({ session }: MembershipPageProps) {
     );
   }
 
-  if (!session.subject.trim()) {
+  if (!hasVerifiedSubject) {
     return (
       <StatePanel
         title="Verified identity is unavailable"
@@ -274,7 +275,7 @@ export function MembershipPage({ session }: MembershipPageProps) {
     );
   }
 
-  if (loading || loadedContext !== contextKey) {
+  if (loading) {
     return (
       <section aria-live="polite" className="flex min-h-[320px] items-center justify-center gap-3 text-sm text-slate-400">
         <RefreshCw size={17} className="animate-spin text-cyan-200" aria-hidden="true" />
@@ -291,6 +292,15 @@ export function MembershipPage({ session }: MembershipPageProps) {
         <button type="button" onClick={() => setRetryCount((value) => value + 1)} className="mt-5 inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-200 hover:bg-white/5">
           <RefreshCw size={13} aria-hidden="true" /> Retry
         </button>
+      </section>
+    );
+  }
+
+  if (loadedContext !== contextKey) {
+    return (
+      <section aria-live="polite" className="flex min-h-[320px] items-center justify-center gap-3 text-sm text-slate-400">
+        <RefreshCw size={17} className="animate-spin text-cyan-200" aria-hidden="true" />
+        Loading organization members…
       </section>
     );
   }
