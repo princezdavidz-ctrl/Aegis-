@@ -593,3 +593,45 @@ Final commit: `2e9fe57f1e2fd88051e8f144bc06a70ee1116d30`
 - Push — [Flutter desktop checks #43425225214](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425225214): formatting, analysis and tests passed.
 - Pull request — [AEGIS checks #43425232019](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425232019), [security checks #43425231973](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425231973) and [Flutter checks #43425232648](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425232648): all passed.
 - Pull request [#55](https://github.com/princezdavidz-ctrl/Aegis-/pull/55) is open, draft, and mergeable. It has one commit based directly on the inspected `main`; it has not been merged.
+
+
+## 2026-11-13 — React OIDC session provider and callback integration
+
+### Repository audit
+
+- Inspected current main, the complete open PR #55 diff, README.md, docs/PROGRESS.md, implementation backlog, OIDC adapter, React shell, tenant API clients and customer pages.
+- Continued from the exact reviewed PR #55 head c774197c60290a296351ea4b4ba567a07eec0ec8 on a new branch, feat/react-oidc-session-provider; PR #55 was left unchanged and unmerged.
+- Confirmed the OIDC adapter was not present on main; it exists on PR #55. This branch therefore builds on the PR #55 head rather than silently assuming that draft work is already merged.
+
+### Completed
+
+- Added frontend/src/auth/AuthProvider.tsx to wrap the React application and expose typed authentication state, sign-in and local sign-out.
+- Wired the provider into frontend/src/main.tsx.
+- Connected the dashboard header to show sign-in, disabled sign-in when public OIDC configuration is absent/invalid, identity-verified state and local sign-out.
+- Added callback-route handling for the exact configured redirect path, with a safe fallback route when callback configuration is malformed.
+- Callback handling verifies through the existing OIDC adapter, scrubs the authorization response URL, and returns to the validated same-origin path.
+- Added a React StrictMode guard so a callback code is not exchanged twice during development effect replay.
+- Kept access tokens in memory only. The provider does not write credentials to localStorage/sessionStorage and does not treat an OIDC subject as a tenant membership or role.
+- Customer Organization, Assets and Members pages remain locked. A server-verified membership bootstrap is still required before passing a session/tenant slug/role to those pages.
+- Added an SSR regression test proving sign-in remains disabled when no public OIDC provider configuration is present.
+- Updated root/frontend READMEs and the implementation backlog to reflect the actual integration boundary.
+
+### Validation and limitations
+
+- Changes are pushed to feat/react-oidc-session-provider; full repository CI is required to validate Vite SSR tests, strict TypeScript, production build and all backend/agent/security workflows.
+- The current environment did not provide a local clone or installed frontend dependency tree, so no local full-suite result is claimed.
+- No IdP issuer, public client ID, registered redirect URI, API audience or provider CORS configuration is available. Therefore no live sign-in was attempted and the sign-in control remains disabled by default.
+- No secrets, tokens, private keys, customer data or new dependencies were added.
+- The callback guard is intentionally one-shot for the page lifetime; if a callback fails, the user returns to the portal and must initiate a fresh sign-in.
+
+### Remaining work
+
+- Run and fix hosted frontend tests, typecheck and production build; then verify all repository CI workflows.
+- Implement a server-verified membership bootstrap endpoint/client that resolves the verified subject's active tenant memberships and role. Do not infer tenant or role from ID-token claims.
+- Configure a non-production OIDC provider, SPA public client, exact callback URI, provider CORS allowlist and API access-token audience.
+- Only after the above, pass the verified access token plus server-resolved tenant slug/role into the existing Organization, Assets and Members API clients.
+- Add browser-driven callback, sign-in and sign-out tests against a controlled test IdP.
+
+### Next task
+
+Add the server-verified membership bootstrap contract and frontend client. It must resolve tenant membership from the API using the authenticated access token and return only active memberships/roles; the browser may select a returned membership slug but must never submit or trust a tenant UUID or role.
