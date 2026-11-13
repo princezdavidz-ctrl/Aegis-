@@ -10,7 +10,7 @@ This backlog is based on an inspection of the current `main` branch. It separate
 
 | Area | Current state | Remaining proof or work |
 |---|---|---|
-| React portal | Responsive shell, Organization profile, Asset Inventory and Members screens with typed tenant API clients and regression tests exist; provider-neutral OIDC Authorization Code + PKCE adapter verifies RS256 ID tokens | Adapter is not wired into the app and no non-production IdP/client/redirect/API audience is configured; pages remain sign-in-required; organization profile editing and browser-driven authenticated tests remain pending |
+| React portal | Responsive shell, Organization profile, Asset Inventory and Members screens with typed tenant API clients and regression tests exist; React session provider wires the provider-neutral OIDC Authorization Code + PKCE adapter, handles callback, and exposes sign-in/local sign-out | No non-production IdP/client/redirect/API audience is configured, so sign-in remains disabled; server-verified membership bootstrap is still required before customer data pages can receive a session; organization profile editing and browser-driven authenticated tests remain pending |
 | FastAPI | App factory, OIDC verifier, tenant/profile/membership/manual asset APIs, endpoint enrollment/fleet APIs and advisory AI analysis route exist | Live IdP/database configuration, non-production identity verification and production deployment proof |
 | Tenant security | Membership resolution, tenant context and PostgreSQL RLS migration exist | Run migrations against PostgreSQL and prove RLS under production-like roles |
 | Audit | Append-only audit model/sink and database migration protections exist | Verify durable writes and database immutability on PostgreSQL |
