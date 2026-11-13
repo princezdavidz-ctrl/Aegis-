@@ -8,6 +8,7 @@ test('navigation exposes each planned workspace module once', () => {
   assert.deepEqual(ids, [
     'overview',
     'organization',
+    'members',
     'assets',
     'investigations',
     'agents',
