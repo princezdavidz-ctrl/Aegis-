@@ -581,4 +581,15 @@ Add a React OIDC session provider and callback route that consumes this adapter,
 
 - Hosted GitHub Actions ran the full frontend suite: **49 tests passed**. The first hosted TypeScript check then exposed a DOM `BufferSource` generic mismatch at the Web Crypto signature verification boundary; the adapter now copies signature and signed-input bytes into explicit `ArrayBuffer` instances.
 - Gitleaks correctly flagged a hard-coded JWT-shaped negative-test fixture even though it was synthetic and contained no credential. The test now creates a second ephemeral RSA-2048 key at runtime and signs a deliberately untrusted token, removing the static JWT-looking fixture rather than suppressing the scanner.
-- Re-ran the local strict TypeScript check and isolated Node/Web Crypto suite after both corrections: **20 passed, 0 failed**. The follow-up hosted push and pull-request workflows are required to confirm the full repository checks are green.
+- Re-ran the local strict TypeScript check and isolated Node/Web Crypto suite after both corrections: **20 passed, 0 failed**. The final hosted push and pull-request workflows on commit `2e9fe57f1e2fd88051e8f144bc06a70ee1116d30` all passed; no workflow failures remain.
+
+
+### Final hosted verification — all green
+
+Final commit: `2e9fe57f1e2fd88051e8f144bc06a70ee1116d30`
+
+- Push — [AEGIS checks #43425225088](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425225088): frontend 49 tests, TypeScript typecheck, production build, Python API tests, Windows/Linux/macOS endpoint-agent tests, PostgreSQL migration/RLS integration, API Docker smoke test and AWS OIDC Terraform validation all passed.
+- Push — [AEGIS security checks #43425225102](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425225102): Gitleaks, Python and TypeScript CodeQL, dependency audits and NVD catalogue tests all passed.
+- Push — [Flutter desktop checks #43425225214](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425225214): formatting, analysis and tests passed.
+- Pull request — [AEGIS checks #43425232019](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425232019), [security checks #43425231973](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425231973) and [Flutter checks #43425232648](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425232648): all passed.
+- Pull request [#55](https://github.com/princezdavidz-ctrl/Aegis-/pull/55) is open, draft, and mergeable. It has one commit based directly on the inspected `main`; it has not been merged.
