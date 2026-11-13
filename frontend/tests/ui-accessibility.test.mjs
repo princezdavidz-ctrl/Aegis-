@@ -20,6 +20,7 @@ const expectedLabels = [
 
 let vite;
 let App;
+let AuthProvider;
 let Sidebar;
 let OrganizationPage;
 let MembershipPage;
@@ -35,6 +36,7 @@ before(async () => {
   });
 
   ({ default: App } = await vite.ssrLoadModule('/src/App.tsx'));
+  ({ AuthProvider } = await vite.ssrLoadModule('/src/auth/AuthProvider.tsx'));
   ({ Sidebar } = await vite.ssrLoadModule('/src/components/Sidebar.tsx'));
   ({ OrganizationPage } = await vite.ssrLoadModule('/src/pages/OrganizationPage.tsx'));
   ({ MembershipPage } = await vite.ssrLoadModule('/src/pages/MembershipPage.tsx'));
@@ -160,4 +162,15 @@ test('members page exposes only the authentication-required state without a veri
   assert.match(markup, /Connect your organization account/);
   assert.match(markup, /server-side membership resolution/);
   assert.doesNotMatch(markup, /Create invitation|Suspend|Revoke/);
+});
+
+
+test('OIDC provider keeps sign-in disabled when public provider configuration is absent', () => {
+  const markup = renderToStaticMarkup(
+    React.createElement(AuthProvider, null, React.createElement(App)),
+  );
+  assert.match(markup, /Sign-in unavailable/);
+  assert.match(markup, /disabled=""/);
+  assert.match(markup, /Preview mode/);
+  assert.doesNotMatch(markup, /Identity verified for this browser session/);
 });
