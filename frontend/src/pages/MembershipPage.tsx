@@ -18,7 +18,6 @@ import {
   type AssignableMemberRole,
   type MemberRole,
   type MemberStatus,
-  type MembershipAction,
   type MembershipSession,
   type TenantMember,
 } from '../api/memberships';
@@ -204,7 +203,7 @@ export function MembershipPage({ session }: MembershipPageProps) {
   async function confirmMemberAction() {
     if (!session || !canManage || clientConfig.state !== 'ready' || !pendingAction) return;
 
-    const action: MembershipAction = pendingAction.action;
+    const action = pendingAction.action;
     setConfirming(true);
     setBusySubject(pendingAction.subject);
     setFeedback(null);
