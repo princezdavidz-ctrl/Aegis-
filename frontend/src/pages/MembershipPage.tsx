@@ -126,6 +126,10 @@ export function MembershipPage({ session }: MembershipPageProps) {
       setMembers([]);
       setLoadedContext(null);
       setPendingAction(null);
+      setSelectedRoles({});
+      setBusySubject(null);
+      setFeedback(null);
+      setInviteSubject('');
       setLoading(false);
       return;
     }
