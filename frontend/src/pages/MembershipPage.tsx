@@ -117,7 +117,7 @@ export function MembershipPage({ session }: MembershipPageProps) {
   const [savingInvite, setSavingInvite] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState<Record<string, MemberRole>>({});
   const [busySubject, setBusySubject] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<{ subject: string; action: 'suspend' | 'revoke' } | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ subject: string; action: 'suspend' | 'revoke'; contextKey: string } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
 
@@ -132,6 +132,11 @@ export function MembershipPage({ session }: MembershipPageProps) {
     let active = true;
     setMembers([]);
     setLoadedContext(null);
+    setPendingAction(null);
+    setSelectedRoles({});
+    setBusySubject(null);
+    setFeedback(null);
+    setInviteSubject('');
     setLoading(true);
     setError(null);
 
@@ -201,7 +206,7 @@ export function MembershipPage({ session }: MembershipPageProps) {
   }
 
   async function confirmMemberAction() {
-    if (!session || !canManage || clientConfig.state !== 'ready' || !pendingAction) return;
+    if (!session || !canManage || clientConfig.state !== 'ready' || !pendingAction || pendingAction.contextKey !== contextKey) return;
 
     const action = pendingAction.action;
     setConfirming(true);
@@ -353,7 +358,7 @@ export function MembershipPage({ session }: MembershipPageProps) {
         </div>
       )}
 
-      {pendingAction && (
+      {pendingAction && pendingAction.contextKey === contextKey && (
         <section aria-labelledby="confirm-member-action" className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-4">
           <h3 id="confirm-member-action" className="text-sm font-semibold text-amber-100">
             Confirm {pendingAction.action} for {pendingAction.subject}
@@ -445,11 +450,11 @@ export function MembershipPage({ session }: MembershipPageProps) {
                         ) : (
                           <div className="flex flex-wrap gap-2">
                             {member.status === 'active' && (
-                              <button type="button" disabled={isBusy} onClick={() => setPendingAction({ subject: member.subject, action: 'suspend' })} className="rounded-lg border border-amber-300/20 px-2.5 py-1.5 text-[10px] text-amber-200 disabled:opacity-50">
+                              <button type="button" disabled={isBusy} onClick={() => setPendingAction({ subject: member.subject, action: 'suspend', contextKey: contextKey ?? '' })} className="rounded-lg border border-amber-300/20 px-2.5 py-1.5 text-[10px] text-amber-200 disabled:opacity-50">
                                 Suspend
                               </button>
                             )}
-                            <button type="button" disabled={isBusy} onClick={() => setPendingAction({ subject: member.subject, action: 'revoke' })} className="inline-flex items-center gap-1 rounded-lg border border-rose-300/20 px-2.5 py-1.5 text-[10px] text-rose-200 disabled:opacity-50">
+                            <button type="button" disabled={isBusy} onClick={() => setPendingAction({ subject: member.subject, action: 'revoke', contextKey: contextKey ?? '' })} className="inline-flex items-center gap-1 rounded-lg border border-rose-300/20 px-2.5 py-1.5 text-[10px] text-rose-200 disabled:opacity-50">
                               <UserRoundX size={11} aria-hidden="true" /> Revoke
                             </button>
                           </div>
