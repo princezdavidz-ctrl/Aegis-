@@ -509,8 +509,11 @@ Build the tenant member management UI with a typed client and role-aware present
 
 ### Validation
 
-- Hosted GitHub Actions validation is pending for this branch. The local environment cannot clone from `github.com`; no local test or build result is claimed.
-- The test suite covers fixed tenant-scoped routes, bearer and tenant headers, safe fetch defaults, OIDC subject encoding, role/action validation, rejection of client-supplied tenant fields, strict response validation, sanitized errors, and signed-out/non-admin UI states.
+- Final code head `21ede4e4d61d7c2193e0245757b399c149255ce3` passed all three hosted GitHub Actions workflows.
+- Frontend: locked dependency install passed; **29 tests passed, 0 failed**; TypeScript typecheck and production build passed.
+- API tests, PostgreSQL migration/RLS integration, API container smoke test, Terraform validation, Linux/Windows/macOS endpoint-agent tests, secret scanning, Python/npm dependency audits, NVD catalogue tests, Python/TypeScript CodeQL, and Flutter format/analysis/tests all passed.
+- Evidence: [AEGIS checks #43421929404](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43421929404), [AEGIS security checks #43421929385](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43421929385), and [AEGIS Flutter checks #43421929314](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43421929314).
+- The local environment cannot clone from `github.com`; no local test/build result is claimed. Hosted CI is the verification evidence.
 
 ### Remaining Phase 2 work
 
