@@ -67,17 +67,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (callbackStarted.current) return;
     callbackStarted.current = true;
-    let active = true;
     setStatus('checking');
     adapter.completeSignIn(window.location.href)
       .then((result) => {
-        if (!active) return;
         setSession(result.session);
         setStatus('authenticated');
         window.history.replaceState(null, '', result.returnTo);
       })
       .catch((reason: unknown) => {
-        if (!active) return;
         adapter.signOut();
         setSession(null);
         setError(safeError(reason));
@@ -85,9 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.history.replaceState(null, '', '/');
       });
 
-    return () => {
-      active = false;
-    };
   }, [adapter, config]);
 
   const signIn = useCallback(async (returnTo = window.location.pathname) => {
