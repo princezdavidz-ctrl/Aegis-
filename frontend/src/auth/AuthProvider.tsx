@@ -10,6 +10,7 @@ import {
 type AuthStatus = 'unconfigured' | 'checking' | 'anonymous' | 'authenticating' | 'authenticated' | 'error';
 
 interface AuthContextValue {
+  configured: boolean;
   status: AuthStatus;
   session: OidcSession | null;
   error: string | null;
@@ -18,6 +19,7 @@ interface AuthContextValue {
 }
 
 const unavailableAuth: AuthContextValue = {
+  configured: false,
   status: 'unconfigured',
   session: null,
   error: null,
@@ -115,12 +117,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [adapter]);
 
   const value = useMemo<AuthContextValue>(() => ({
+    configured: adapter !== null,
     status,
     session,
     error,
     signIn,
     signOut,
-  }), [status, session, error, signIn, signOut]);
+  }), [adapter, status, session, error, signIn, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
