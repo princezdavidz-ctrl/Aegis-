@@ -36,7 +36,15 @@ function safeError(error: unknown): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const config = useMemo(() => {
     try {
-      return { value: readOidcClientConfig(import.meta.env, import.meta.env.DEV), error: null };
+      return {
+        value: readOidcClientConfig({
+          VITE_AEGIS_OIDC_ISSUER: import.meta.env.VITE_AEGIS_OIDC_ISSUER,
+          VITE_AEGIS_OIDC_CLIENT_ID: import.meta.env.VITE_AEGIS_OIDC_CLIENT_ID,
+          VITE_AEGIS_OIDC_REDIRECT_URI: import.meta.env.VITE_AEGIS_OIDC_REDIRECT_URI,
+          VITE_AEGIS_OIDC_CLIENT_SECRET: import.meta.env.VITE_AEGIS_OIDC_CLIENT_SECRET,
+        }, import.meta.env.DEV),
+        error: null,
+      };
     } catch {
       return { value: null, error: 'AEGIS sign-in configuration is invalid.' };
     }
