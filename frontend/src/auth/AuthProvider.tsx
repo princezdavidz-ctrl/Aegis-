@@ -41,19 +41,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { value: null, error: 'AEGIS sign-in configuration is invalid.' };
     }
   }, []);
-  const adapter = useMemo(() => {
-    if (!config.value) return null;
+  const adapterState = useMemo(() => {
+    if (!config.value) return { value: null, error: null };
     try {
-      return createOidcSessionAdapter(config.value);
+      return { value: createOidcSessionAdapter(config.value), error: null };
     } catch {
-      return null;
+      return { value: null, error: 'AEGIS sign-in configuration is invalid.' };
     }
   }, [config]);
+  const adapter = adapterState.value;
   const [session, setSession] = useState<OidcSession | null>(null);
   const [status, setStatus] = useState<AuthStatus>(
-    config.error ? 'error' : adapter ? 'checking' : 'unconfigured',
+    config.error || adapterState.error ? 'error' : adapter ? 'checking' : 'unconfigured',
   );
-  const [error, setError] = useState<string | null>(config.error);
+  const [error, setError] = useState<string | null>(config.error ?? adapterState.error);
 
   useEffect(() => {
     if (!adapter || !config.value) return;
