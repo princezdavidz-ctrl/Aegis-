@@ -94,6 +94,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   }, [adapter, config]);
 
+  useEffect(() => {
+    if (!session || !adapter) return;
+    // The adapter applies its configured clock skew; expire UI state at the same boundary.
+    const expiresIn = Math.max(0, session.expiresAt * 1000 - Date.now() - 60_000);
+    const timeout = window.setTimeout(() => {
+      if (!adapter.getSession()) {
+        setSession(null);
+        setStatus('anonymous');
+        setError('Your sign-in session expired. Sign in again to continue.');
+      }
+    }, expiresIn);
+    return () => window.clearTimeout(timeout);
+  }, [session, adapter]);
+
   const signIn = useCallback(async (returnTo = window.location.pathname) => {
     if (!adapter) {
       setStatus('unconfigured');
