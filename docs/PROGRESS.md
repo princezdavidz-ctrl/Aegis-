@@ -643,3 +643,39 @@ Add the server-verified membership bootstrap contract and frontend client. It mu
 - Opened draft PR #56 against main with the OIDC adapter and React session-provider work together in one independently reviewable change set. The earlier PR #55 remains open and unchanged; PR #56 is the complete superset, so review should avoid merging both separately.
 - PR #56 is mergeable and targets main. A new branch commit after retargeting is used to trigger the main-targeted pull-request workflows.
 - Local clone/test execution was attempted in the container but blocked by DNS resolution for github.com. No local test result is claimed; hosted GitHub Actions must provide the final test/typecheck/build evidence.
+
+
+## 2026-11-14 — Merge browser OIDC session provider
+
+### Repository audit
+
+- Re-inspected `main` at `63121a85e595cbc79370584d869fddd76023d292`, both open browser-authentication pull requests, the OIDC adapter, React provider, customer pages, frontend tests and project documentation.
+- Confirmed PR #56 contained the complete PR #55 OIDC adapter plus the React session-provider integration. PR #56 targeted current main, was mergeable, and its pull-request checks had passed. PR #55 was a subset and was not merged separately.
+
+### Completed
+
+- Marked PR #56 ready for review and squash-merged it into `main`.
+- Merged commit: `a36b197f711be384b9b8cb54c7361a83db5074ce`.
+- Closed superseded PR #55 with a comment pointing to the complete merged implementation in PR #56.
+- Main now includes the provider-neutral Authorization Code + PKCE adapter, RS256 ID-token/JWKS verification, state/nonce/issuer/client-audience checks, callback validation and URL scrubbing, React authentication state, sign-in/local sign-out controls, and in-memory-only access-token handling.
+- Sign-in remains disabled unless a complete public OIDC configuration is supplied. No identity provider, public client, callback registration, API audience or provider CORS configuration is present.
+- Organization, Assets and Members remain locked. An authenticated OIDC subject is not treated as a tenant membership or role; the backend must resolve active memberships before customer data is passed to these pages.
+- No secrets, credentials, customer data or new dependencies were added.
+
+### Validation
+
+- PR #56 checks on head `7319cb0181f5bb1c9f5666f618531bcfb428ed48` all passed: [AEGIS checks #43427194257](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43427194257), [security checks #43427194018](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43427194018), and [Flutter checks #43427196471](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43427196471).
+- Post-merge push checks on `a36b197f711be384b9b8cb54c7361a83db5074ce` all passed: [AEGIS checks #43592710399](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43592710399), [security checks #43592710369](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43592710369), and [Flutter checks #43592710380](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43592710380).
+- The hosted checks covered frontend tests, strict TypeScript typecheck and production build; Python API tests; PostgreSQL migration and least-privilege RLS integration; API container smoke test; Windows/Linux/macOS endpoint-agent tests; AWS OIDC Terraform validation; Flutter formatting, analysis and tests; Gitleaks; dependency audits; NVD catalogue tests; and Python/TypeScript CodeQL.
+- A local clone remains unavailable because this execution environment cannot resolve `github.com`; no local test/build result is claimed. Hosted GitHub Actions is the verification evidence.
+
+### Remaining work
+
+- Add a server-verified membership bootstrap endpoint and typed frontend client. The endpoint must derive the subject from the verified access token and return only that subject's active tenant memberships and server-resolved roles. The browser may select a returned tenant slug, but must not submit or trust tenant UUIDs or roles.
+- Configure and verify a non-production OIDC provider, public SPA client, exact redirect URI, API access-token audience and provider CORS allowlist before enabling live sign-in.
+- Only after membership bootstrap is verified, pass the access token and selected server-returned tenant slug/role to the existing Organization, Assets and Members clients.
+- Add browser-driven authenticated callback, expiry and sign-out tests; then continue Organization profile editing and approved connector onboarding.
+
+### Next task
+
+Implement the server-verified membership bootstrap contract and client, preserving tenant isolation and the existing API authorization boundary.

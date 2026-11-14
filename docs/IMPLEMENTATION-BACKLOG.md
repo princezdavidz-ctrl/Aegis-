@@ -1,8 +1,8 @@
 # AEGIS implementation backlog
 
 **Repository:** `princezdavidz-ctrl/Aegis-`  
-**Baseline:** `main` at `dd7b10425a4df5d4ef9e426b9ee3b9867a9b047d`  
-**Planning date:** 2026-11-13
+**Baseline:** `main` at `a36b197f711be384b9b8cb54c7361a83db5074ce`  
+**Planning date:** 2026-11-14
 
 This backlog is based on an inspection of the current `main` branch. It separates implemented foundations from live, externally configured capabilities. A feature is not considered operational merely because a UI screen, interface, schema or deployment workflow exists.
 
@@ -79,3 +79,31 @@ For every phase, attach:
 - No cross-tenant model context or customer-data training by default.
 - No claim that the platform is monitoring continuously until ingestion, alerting and staffing are operational.
 - No production AWS deployment until the exposed AWS access key incident is confirmed remediated and the account is configured for OIDC-only deployment.
+
+
+## Next vertical slice — server-verified membership bootstrap
+
+Implement the identity-to-tenant handoff before connecting customer pages to live data.
+
+### API contract
+
+- Add a read-only authenticated endpoint that derives the subject only from the verified bearer-token principal.
+- Return only active memberships belonging to that exact subject, with the tenant slug, display name and server-resolved role needed by the portal.
+- Do not accept tenant UUIDs, subject IDs or role values from the browser. Do not infer membership or role from ID-token claims.
+- Preserve database row-level security and least-privilege runtime grants. If a cross-tenant membership lookup needs a database function or separate query boundary, give it a narrowly scoped contract and prove it cannot enumerate another user's memberships.
+- Keep the endpoint free of mutations and append-only audit writes unless the reviewed security model requires them.
+
+### Frontend contract
+
+- Add a typed client that sends the short-lived access token with no cookie credentials, redirects or token persistence.
+- Validate the complete response shape and reject duplicate or malformed membership entries.
+- Allow the user to select only a tenant slug returned by the API. Keep the tenant UUID and role server-derived.
+- Pass the selected slug and server-resolved role to the existing Organization, Assets and Members pages; the backend remains authoritative for every protected operation.
+
+### Acceptance tests
+
+- A verified subject receives only their own active memberships.
+- Suspended, revoked and pending memberships are not selectable.
+- A user cannot enumerate another subject's memberships or inject a tenant UUID/role.
+- Empty membership lists, malformed responses, expired tokens and API failures leave customer pages locked.
+- Existing tenant-isolation, PostgreSQL RLS, API-client and signed-out UI tests remain green.
