@@ -18,18 +18,15 @@ The production build is generated in `dist/`.
 
 Configure Vercel with **Root Directory = `frontend`**. Use `npm install` or `npm ci` for installation and `npm run build` for the build command. The output directory is `dist`.
 
-The portal includes an overview, read-only Organization profile, Asset Inventory and tenant Member Management pages. The typed clients are prepared for existing tenant-scoped APIs, but authentication and live tenant-backed data remain unavailable until a trusted browser OIDC session adapter and API deployment are configured.
+The portal includes an overview, Organization profile, Asset Inventory and tenant Member Management pages. A React OIDC session provider now wires the browser adapter into the shell, handles the callback route, exposes sign-in/local sign-out state, and clears the React session when the access-token expiry boundary is reached. Sign-in remains disabled until a complete public identity-provider configuration is supplied. Identity verification does not grant tenant access; the API must resolve membership before customer data is shown.
 
 ## Customer organization profile
 
 The Organization navigation item contains the first customer-portal profile view. It
 uses the tenant-scoped `GET /api/v1/tenants/profile` contract and renders only
-validated API data. The current preview does not include an OIDC sign-in/session
-adapter, so the page deliberately shows an authentication-required state instead
-of sample organization details.
+validated API data. The page still requires a server-verified tenant membership session before it can load organization details; identity authentication alone is not sufficient.
 
-When an identity adapter is added, it must pass a short-lived verified access token
-and the selected tenant slug to the page. The API resolves membership server-side;
+After a server-verified membership bootstrap is implemented, it must pass a short-lived verified access token and the selected tenant slug to the page. The API resolves membership server-side;
 the browser never supplies a tenant UUID. The typed client sends the token in the
 Authorization header, uses `X-AEGIS-Tenant` for the selected slug, disables
 credential cookies and redirects, and does not persist tokens.
@@ -48,7 +45,7 @@ currently loaded page, archived-record visibility, manual registration, and
 archive/restore controls.
 
 The client requires a short-lived access token and tenant slug from a future
-trusted session adapter. It never sends a tenant UUID, disables credential
+server-verified membership bootstrap. It never sends a tenant UUID, disables credential
 cookies and redirects, validates API responses, and sanitizes HTTP errors.
 Management controls are shown only when the adapter supplies a server-resolved
 tenant role; the backend remains the authorization authority and independently
@@ -75,3 +72,53 @@ rechecks tenant-admin authority and protects the last active administrator.
 Suspension and revocation are shown with explicit confirmation because the current
 API has no reactivation, restore or re-invitation operation. The page remains
 sign-in-required in the current preview and does not display sample identities.
+
+
+## Browser OIDC session adapter
+
+`src/auth/oidc.ts` implements a provider-neutral OpenID Connect Authorization Code
+flow with PKCE S256. It discovers the issuer metadata, requires the exact configured
+issuer, HTTPS endpoints (loopback HTTP only when explicitly enabled for development),
+and provider support for authorization code, PKCE S256 and RS256 ID-token signatures.
+
+The adapter verifies the ID-token RS256 signature against the issuer JWKS and checks
+issuer, client audience, authorized party (`azp` when multiple audiences are present),
+expiry, issue/not-before times and the transaction nonce. The API must independently
+verify the access token using its configured issuer, JWKS and API audience; a browser
+ID-token check is not API authorization and the browser never assigns tenant roles.
+
+The PKCE verifier, state and nonce are held in `sessionStorage` for a maximum
+10-minute redirect transaction. Access and ID tokens are kept in memory only;
+refresh tokens are ignored and never persisted. The in-memory session expires with
+the access token and requires a new sign-in. `signOut()` clears the local session
+only; remote identity-provider single sign-out is not implemented yet.
+
+The adapter is connected to the React shell through `src/auth/AuthProvider.tsx`. The provider handles the configured callback path, exposes sign-in/local sign-out state, and keeps the access token in memory only. The callback is guarded against duplicate exchange under React StrictMode. To prepare a public SPA client,
+register the exact callback URI with the chosen provider and configure these public
+Vite variables:
+
+- `VITE_AEGIS_OIDC_ISSUER`
+- `VITE_AEGIS_OIDC_CLIENT_ID`
+- `VITE_AEGIS_OIDC_REDIRECT_URI`
+
+All three must be present; otherwise configuration remains disabled. The browser
+client rejects a `VITE_AEGIS_OIDC_CLIENT_SECRET` rather than accepting a secret in
+the public bundle. The provider must allow the portal origin to access its discovery,
+JWKS and token endpoints via CORS and issue an access token for the API audience
+configured on the backend. No provider, client ID, redirect registration or API
+audience has been configured for AEGIS yet. See `.env.example` for safe placeholders.
+
+
+## React authentication session provider
+
+`src/auth/AuthProvider.tsx` wraps the application and consumes the OIDC adapter.
+It processes the exact configured callback path, reports sign-in state, and offers
+sign-in and local sign-out controls. If the public OIDC variables are absent or
+invalid, the sign-in control remains disabled. The callback route displays only
+authentication progress or a generic failure state.
+
+A successful OIDC identity is not a tenant membership. The current provider does
+not select a tenant, infer a role, or pass tokens to customer pages. Those pages
+remain locked until a dedicated API bootstrap resolves the authenticated subject's
+active tenant memberships and role. Access tokens remain in memory and are cleared
+on local sign-out or when the adapter reports expiry.

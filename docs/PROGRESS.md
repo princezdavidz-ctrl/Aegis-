@@ -527,3 +527,119 @@ Build the tenant member management UI with a typed client and role-aware present
 ### Next task
 
 Implement a provider-neutral browser OIDC session adapter using Authorization Code + PKCE, with in-memory access-token handling and strict state/nonce/issuer/audience validation. Keep live sign-in disabled until the non-production IdP configuration and redirect URI are supplied and verified.
+
+
+## 2026-11-13 — Provider-neutral browser OIDC PKCE adapter
+
+### Repository audit
+
+- Re-inspected current `main` at `63121a85e595cbc79370584d869fddd76023d292`, the root README, implementation backlog, full progress log, security model, architecture, frontend package/lockfile, current customer pages/API clients/tests, and the backend OIDC verifier/configuration.
+- Confirmed that the backend already verifies RS256 bearer JWTs against configured issuer, audience and JWKS; the customer portal had no browser OIDC adapter and remained intentionally sign-in-required.
+- Created `feat/browser-oidc-pkce-session` from the inspected main commit. No existing source or open pull request was changed.
+
+### Completed
+
+- Added `frontend/src/auth/oidc.ts`, a provider-neutral OIDC Authorization Code + PKCE S256 adapter using browser Web Crypto and no additional package.
+- Added exact issuer discovery checks and strict HTTPS endpoint validation; loopback HTTP is permitted only when the caller explicitly enables development mode.
+- Added random state, nonce and PKCE verifier generation, SHA-256 code challenge, a 10-minute one-time transaction in sessionStorage, exact callback-origin/path checks, state validation and callback URL scrubbing.
+- Added RS256 ID-token signature verification against issuer JWKS, requiring a public RSA key of at least 2048 bits and checking issuer, client audience, `azp`, expiry, issue/not-before times and nonce.
+- Added bounded Bearer access-token validation and short-lived in-memory session handling. Access/ID tokens are not written to browser storage; refresh tokens are ignored. Expired sessions are discarded and local sign-out clears the in-memory session and pending transaction.
+- Added `readOidcClientConfig`; configuration stays disabled until issuer, public client ID and exact redirect URI are all present. A public client secret variable is explicitly rejected.
+- Added commented, non-secret OIDC placeholders to `frontend/.env.example`; updated the root README, frontend README, implementation backlog and this progress log.
+- Added `frontend/tests/oidc-session.test.mjs` with 20 passing test cases covering PKCE, state, nonce, signature, issuer/audience/`azp`, expiry, malformed tokens, discovery requirements, same-origin redirects, session expiry and local sign-out.
+- No new dependencies, client secrets, signing keys, access tokens, customer identities or live provider configuration were added.
+
+### Validation
+
+- Local strict TypeScript check of the new adapter passed with TypeScript 5.8.3:
+  `tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM frontend/src/auth/oidc.ts`.
+- Local isolated Node.js 22.16.0 Web Crypto test harness: **20 passed, 0 failed**. The harness compiled the exact adapter with TypeScript and exercised real RSA-2048 signatures using generated ephemeral test keys.
+- The local execution environment cannot clone the repository from `github.com` and has no cached Vite/React project dependencies. Therefore the full repository `npm ci`, `npm test`, `npm run typecheck` and `npm run build` are not claimed locally; hosted GitHub Actions on the pushed commit are required for full-tree verification.
+- No live IdP flow was attempted because no issuer, public client ID, registered redirect URI, API audience or provider CORS configuration has been supplied.
+
+### Security and scope notes
+
+- This adapter is implemented but not wired into the React shell. Customer pages remain sign-in-required; no live login button or authenticated workflow is enabled.
+- The browser verifies the ID token for the client session, but the API must independently verify the access token against its own configured issuer, JWKS and API audience. The adapter does not grant tenant roles or select a tenant.
+- Only RS256 ID-token signing is currently supported, matching the backend verifier. The selected provider must advertise RS256 and PKCE S256.
+- The provider must permit browser CORS access to discovery, JWKS and token endpoints. Refresh-token rotation and remote identity-provider logout are not implemented; session expiry requires a fresh sign-in, and sign-out is local only.
+
+### Remaining Phase 2 work
+
+- Wire the adapter into the React shell with callback handling, session state and sign-in/local sign-out controls. Keep live sign-in disabled until all provider configuration is present.
+- Select and configure a non-production OIDC provider, public SPA client, exact redirect URI, CORS allowlist and access-token API audience; then verify a real sign-in against the backend.
+- Add a server-verified membership bootstrap so tenant slug and role come from API responses, never from browser assertions.
+- Add organization profile editing and browser-driven authenticated/responsive tests.
+- Continue with connector authorization and endpoint telemetry only after the customer identity/session boundary is operational.
+
+### Next task
+
+Add a React OIDC session provider and callback route that consumes this adapter, exposes a sign-in/local sign-out state to the Organization, Assets and Members pages, and keeps all controls disabled when OIDC configuration is absent. Then validate it against a non-production IdP once its issuer, public client ID, callback URI and API audience are supplied.
+
+
+### CI-driven corrections after the first push
+
+- Hosted GitHub Actions ran the full frontend suite: **49 tests passed**. The first hosted TypeScript check then exposed a DOM `BufferSource` generic mismatch at the Web Crypto signature verification boundary; the adapter now copies signature and signed-input bytes into explicit `ArrayBuffer` instances.
+- Gitleaks correctly flagged a hard-coded JWT-shaped negative-test fixture even though it was synthetic and contained no credential. The test now creates a second ephemeral RSA-2048 key at runtime and signs a deliberately untrusted token, removing the static JWT-looking fixture rather than suppressing the scanner.
+- Re-ran the local strict TypeScript check and isolated Node/Web Crypto suite after both corrections: **20 passed, 0 failed**. The final hosted push and pull-request workflows on commit `2e9fe57f1e2fd88051e8f144bc06a70ee1116d30` all passed; no workflow failures remain.
+
+
+### Final hosted verification — all green
+
+Final commit: `2e9fe57f1e2fd88051e8f144bc06a70ee1116d30`
+
+- Push — [AEGIS checks #43425225088](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425225088): frontend 49 tests, TypeScript typecheck, production build, Python API tests, Windows/Linux/macOS endpoint-agent tests, PostgreSQL migration/RLS integration, API Docker smoke test and AWS OIDC Terraform validation all passed.
+- Push — [AEGIS security checks #43425225102](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425225102): Gitleaks, Python and TypeScript CodeQL, dependency audits and NVD catalogue tests all passed.
+- Push — [Flutter desktop checks #43425225214](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425225214): formatting, analysis and tests passed.
+- Pull request — [AEGIS checks #43425232019](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425232019), [security checks #43425231973](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425231973) and [Flutter checks #43425232648](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43425232648): all passed.
+- Pull request [#55](https://github.com/princezdavidz-ctrl/Aegis-/pull/55) is open, draft, and mergeable. It has one commit based directly on the inspected `main`; it has not been merged.
+
+
+## 2026-11-13 — React OIDC session provider and callback integration
+
+### Repository audit
+
+- Inspected current main, the complete open PR #55 diff, README.md, docs/PROGRESS.md, implementation backlog, OIDC adapter, React shell, tenant API clients and customer pages.
+- Continued from the exact reviewed PR #55 head c774197c60290a296351ea4b4ba567a07eec0ec8 on a new branch, feat/react-oidc-session-provider; PR #55 was left unchanged and unmerged.
+- Confirmed the OIDC adapter was not present on main; it exists on PR #55. This branch therefore builds on the PR #55 head rather than silently assuming that draft work is already merged.
+
+### Completed
+
+- Added frontend/src/auth/AuthProvider.tsx to wrap the React application and expose typed authentication state, sign-in and local sign-out.
+- Wired the provider into frontend/src/main.tsx.
+- Connected the dashboard header to show sign-in, disabled sign-in when public OIDC configuration is absent/invalid, identity-verified state and local sign-out.
+- Added callback-route handling for the exact configured redirect path, with a safe fallback route when callback configuration is malformed.
+- Callback handling verifies through the existing OIDC adapter, scrubs the authorization response URL, and returns to the validated same-origin path.
+- Added a React StrictMode guard so a callback code is not exchanged twice during development effect replay.
+- Added an expiry timer aligned with the adapter's 60-second clock-skew boundary so React authenticated UI state is cleared when the short-lived access token is no longer accepted.
+- Kept access tokens in memory only. The provider does not write credentials to localStorage/sessionStorage and does not treat an OIDC subject as a tenant membership or role.
+- Customer Organization, Assets and Members pages remain locked. A server-verified membership bootstrap is still required before passing a session/tenant slug/role to those pages.
+- Added an SSR regression test proving sign-in remains disabled when no public OIDC provider configuration is present.
+- Updated root/frontend READMEs and the implementation backlog to reflect the actual integration boundary.
+
+### Validation and limitations
+
+- Changes are pushed to feat/react-oidc-session-provider; full repository CI is required to validate Vite SSR tests, strict TypeScript, production build and all backend/agent/security workflows.
+- The current environment did not provide a local clone or installed frontend dependency tree, so no local full-suite result is claimed.
+- No IdP issuer, public client ID, registered redirect URI, API audience or provider CORS configuration is available. Therefore no live sign-in was attempted and the sign-in control remains disabled by default.
+- No secrets, tokens, private keys, customer data or new dependencies were added.
+- The callback guard is intentionally one-shot for the page lifetime; if a callback fails, the user returns to the portal and must initiate a fresh sign-in.
+
+### Remaining work
+
+- Run and fix hosted frontend tests, typecheck and production build; then verify all repository CI workflows.
+- Implement a server-verified membership bootstrap endpoint/client that resolves the verified subject's active tenant memberships and role. Do not infer tenant or role from ID-token claims.
+- Configure a non-production OIDC provider, SPA public client, exact callback URI, provider CORS allowlist and API access-token audience.
+- Only after the above, pass the verified access token plus server-resolved tenant slug/role into the existing Organization, Assets and Members API clients.
+- Add browser-driven callback, sign-in and sign-out tests against a controlled test IdP.
+
+### Next task
+
+Add the server-verified membership bootstrap contract and frontend client. It must resolve tenant membership from the API using the authenticated access token and return only active memberships/roles; the browser may select a returned membership slug but must never submit or trust a tenant UUID or role.
+
+
+### Review packaging
+
+- Opened draft PR #56 against main with the OIDC adapter and React session-provider work together in one independently reviewable change set. The earlier PR #55 remains open and unchanged; PR #56 is the complete superset, so review should avoid merging both separately.
+- PR #56 is mergeable and targets main. A new branch commit after retargeting is used to trigger the main-targeted pull-request workflows.
+- Local clone/test execution was attempted in the container but blocked by DNS resolution for github.com. No local test result is claimed; hosted GitHub Actions must provide the final test/typecheck/build evidence.
