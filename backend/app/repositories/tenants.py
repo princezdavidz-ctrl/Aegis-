@@ -10,6 +10,31 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import MembershipStatus, Tenant, TenantMembership
 
 
+async def list_active_memberships(
+    session: AsyncSession,
+    *,
+    subject: str,
+) -> list[tuple[str, str, str]]:
+    """List bounded active memberships for one verified identity subject.
+
+    Tenant UUIDs are deliberately not returned to the browser. PostgreSQL RLS
+    is activated by the caller using the verified subject before this query.
+    """
+
+    statement = (
+        select(Tenant.slug, Tenant.display_name, TenantMembership.role)
+        .join(TenantMembership, TenantMembership.tenant_id == Tenant.id)
+        .where(
+            TenantMembership.subject == subject,
+            TenantMembership.status == MembershipStatus.ACTIVE.value,
+        )
+        .order_by(Tenant.display_name, Tenant.slug)
+        .limit(100)
+    )
+    result = await session.execute(statement)
+    return [(row[0], row[1], row[2]) for row in result.all()]
+
+
 async def resolve_active_membership(
     session: AsyncSession,
     *,

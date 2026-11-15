@@ -81,6 +81,31 @@ export default function App() {
                 <p className="mt-1 hidden text-sm text-slate-500 sm:block">{current.description}</p>
               </div>
               <div className="flex items-center gap-2">
+                {auth.status === 'authenticated' && auth.memberships.length > 1 && auth.selectedMembership && (
+                  <label className="flex max-w-32 items-center sm:max-w-56">
+                    <span className="sr-only">Active organization</span>
+                    <select
+                      aria-label="Active organization"
+                      value={auth.selectedMembership.tenant_slug}
+                      onChange={(event) => auth.selectTenant(event.target.value)}
+                      className="w-full max-w-32 rounded-xl border border-white/10 bg-[#101722] px-2 py-2 text-[10px] text-slate-200 sm:max-w-56 sm:px-3 sm:text-[11px]"
+                    >
+                      {auth.memberships.map((membership) => (
+                        <option key={membership.tenant_slug} value={membership.tenant_slug}>
+                          {membership.display_name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {auth.status === 'authenticated' && auth.memberships.length === 1 && auth.selectedMembership && (
+                  <span className="hidden max-w-44 truncate text-[10px] text-slate-400 sm:inline" title={auth.selectedMembership.display_name}>
+                    {auth.selectedMembership.display_name}
+                  </span>
+                )}
+                {auth.status === 'authenticated' && auth.membershipStatus === 'loading' && (
+                  <span className="hidden text-[10px] text-slate-400 sm:inline">Checking organization access…</span>
+                )}
                 {auth.status === 'authenticated' ? (
                   <>
                     <span className="hidden max-w-40 truncate text-[10px] text-emerald-200 sm:inline" title={auth.session?.subject}>Identity verified</span>
@@ -126,7 +151,11 @@ export default function App() {
             )}
             {auth.status === 'authenticated' && (
               <p role="status" className="mb-5 rounded-xl border border-emerald-200/15 bg-emerald-300/[0.04] px-4 py-3 text-xs leading-5 text-emerald-100">
-                Identity verified for this browser session. Organization access remains locked until the API resolves an active tenant membership; no tenant role is inferred from the identity token.
+                {auth.membershipStatus === 'loading'
+                  ? 'Identity verified. Checking active organization memberships with the API…'
+                  : auth.selectedMembership
+                    ? `Organization access verified for ${auth.selectedMembership.display_name}. Server-resolved role: ${auth.selectedMembership.role}.`
+                    : auth.membershipError ?? 'Identity verified, but no active organization access is available. Customer data remains locked.'}
               </p>
             )}
             {active === 'overview' ? (
@@ -190,11 +219,11 @@ export default function App() {
                 </section>
               </>
             ) : active === 'organization' ? (
-              <OrganizationPage />
+              <OrganizationPage session={auth.tenantSession ?? undefined} />
             ) : active === 'assets' ? (
-              <AssetInventoryPage />
+              <AssetInventoryPage session={auth.tenantSession ?? undefined} />
             ) : active === 'members' ? (
-              <MembershipPage />
+              <MembershipPage session={auth.tenantSession ?? undefined} />
             ) : (
               <section className="mx-auto flex min-h-[420px] max-w-3xl flex-col items-center justify-center rounded-2xl border border-white/[0.07] bg-[#101722] p-8 text-center">
                 <CloudOff size={28} className="text-cyan-200" aria-hidden="true" />

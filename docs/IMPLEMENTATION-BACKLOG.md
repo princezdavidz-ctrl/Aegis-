@@ -81,7 +81,7 @@ For every phase, attach:
 - No production AWS deployment until the exposed AWS access key incident is confirmed remediated and the account is configured for OIDC-only deployment.
 
 
-## Next vertical slice — server-verified membership bootstrap
+## Completed vertical slice — server-verified membership bootstrap
 
 Implement the identity-to-tenant handoff before connecting customer pages to live data.
 
@@ -107,3 +107,21 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - A user cannot enumerate another subject's memberships or inject a tenant UUID/role.
 - Empty membership lists, malformed responses, expired tokens and API failures leave customer pages locked.
 - Existing tenant-isolation, PostgreSQL RLS, API-client and signed-out UI tests remain green.
+
+
+### Completion record — 2026-11-15
+
+- Added authenticated `GET /api/v1/me/tenants`; the subject is derived exclusively from the verified bearer principal.
+- The API applies transaction-local PostgreSQL RLS subject context and returns only active memberships for that subject.
+- The response contains only tenant slug, display name and server-resolved role; tenant UUIDs, membership IDs and identity subjects are not exposed.
+- Added bounded, typed API contracts and fail-closed behavior when authentication or the membership store is unavailable.
+- Added a strict frontend client with HTTPS/loopback-only origin validation, no cookies/redirects/cache, bounded token handling, duplicate-slug rejection and exact response-field validation.
+- The React OIDC provider loads memberships after sign-in, clears stale membership state across session changes, and permits selection only from the server-returned membership list.
+- Organization, Assets and Members receive a tenant session only after bootstrap succeeds. Existing APIs continue to resolve tenant IDs and roles server-side on every request.
+- Added backend isolation/active-status/authentication/store-unavailable tests and frontend transport/schema tests.
+
+## Next vertical slice — repair the AI evaluation framework PR
+
+Review and complete the existing [PR #43](https://github.com/princezdavidz-ctrl/Aegis-/pull/43) before adding further model-dependent behavior. Its last recorded AI-service CI run failed during test collection because `evaluate_suite` was imported by the new tests but not exported from `aegis_ai.evaluation`. Add the missing public export only after inspecting the implementation, rerun the AI service tests and Ruff, then verify all repository workflows before merge.
+
+Other open work remains unchanged: PR #37 has a PostgreSQL migration failure caused by SQLAlchemy interpreting a colon-prefixed token inside a SQL function body as a bind parameter; PR #41 has two Ruff findings (the `Sequence` import location and a self-comparison in a NaN test). Keep these PRs separate and do not merge them until their own checks pass.

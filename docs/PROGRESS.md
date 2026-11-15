@@ -679,3 +679,44 @@ Add the server-verified membership bootstrap contract and frontend client. It mu
 ### Next task
 
 Implement the server-verified membership bootstrap contract and client, preserving tenant isolation and the existing API authorization boundary.
+
+
+## 2026-11-15 — Server-verified membership bootstrap
+
+### Repository audit
+
+- Re-inspected the latest `main` commit `a528ead12d60ee0fcbd55846efeefd74998d4f31`, repository README, implementation backlog, progress log, architecture, tenant security model, FastAPI application, membership repositories, PostgreSQL RLS migrations, React OIDC provider, customer pages and frontend/API test conventions.
+- Confirmed the OIDC adapter and React session provider were merged, but the portal still lacked a read-only endpoint to enumerate the signed-in subject's own active tenant memberships. Existing tenant APIs required a selected tenant slug and independently resolved the tenant UUID and role server-side.
+- Created `feat/server-verified-membership-bootstrap` from the inspected `main` head. No existing branches or pull requests were modified.
+- Attempted a local Git remote check; the execution environment cannot resolve `github.com`. Full local repository tests/build are therefore unavailable, and no local pass is claimed.
+
+### Completed
+
+- Added authenticated `GET /api/v1/me/tenants`, deriving the subject only from the verified bearer-token principal.
+- Added a bounded repository query that returns active memberships for the exact subject and applies the existing transaction-local PostgreSQL RLS subject context.
+- Exposed only tenant slug, display name and server-resolved role. Tenant UUIDs, membership IDs and subject identifiers are not returned.
+- Added strict Pydantic response contracts and fail-closed handling for missing membership storage.
+- Added a frontend membership-bootstrap client with HTTPS origin validation (loopback HTTP only for development), bounded access-token validation, no cookies/redirects/cache, strict response fields, role validation and duplicate-slug rejection.
+- Wired bootstrap into the React OIDC provider. Membership state is bound to the exact in-memory OIDC session object so a newly authenticated session cannot temporarily reuse a previous user's membership list.
+- Added an organization selector that only offers server-returned memberships and passes a tenant session to Organization, Assets and Members only after bootstrap succeeds. Backend authorization remains authoritative.
+- Added backend tests for subject isolation, active-only membership filtering, empty membership, missing bearer identity and unavailable membership storage.
+- Added a PostgreSQL RLS integration assertion proving the query cannot substitute another subject under the same transaction context.
+- Added frontend tests for safe request defaults, empty results, malformed/duplicate membership rejection, invalid origins/tokens and sanitized errors.
+- Updated README and implementation backlog to reflect the new contract and next work item.
+
+### Validation
+
+- Hosted GitHub Actions validation is pending for this branch. The local environment cannot resolve `github.com`, so `npm ci`, frontend tests/typecheck/build, Python API tests, PostgreSQL RLS integration, container smoke, endpoint-agent, Terraform, Flutter and security scans have not been run locally.
+- No identity provider, live database, customer record, external connector, model provider or security tool was accessed or configured.
+- No credentials, secrets, access tokens, signing keys or private customer data were added.
+
+### Pending
+
+- Hosted CI must pass before this branch is considered complete or merged.
+- Configure a non-production OIDC provider, public SPA client, exact redirect URI, API audience and provider CORS policy before enabling live sign-in.
+- Verify membership bootstrap and tenant selection against a non-production IdP and PostgreSQL database.
+- Continue organization profile editing, browser-driven authenticated/responsive tests and approved connector onboarding after identity bootstrap is validated.
+
+### Next task
+
+Fix the existing AI evaluation framework PR #43's missing `evaluate_suite` public export, rerun the AI service tests and Ruff, and merge only after all repository checks pass.
