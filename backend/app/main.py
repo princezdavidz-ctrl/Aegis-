@@ -17,6 +17,7 @@ from app.api.ai_analysis import router as ai_analysis_router
 from app.api.assets import router as assets_router
 from app.api.endpoints import router as endpoint_router
 from app.api.memberships import router as membership_router
+from app.api.membership_bootstrap import router as membership_bootstrap_router
 from app.api.tenants import router as tenant_router
 from app.api.tenant_profile import router as tenant_profile_router
 from app.config import Settings
@@ -112,6 +113,7 @@ def create_app(
     application.include_router(ai_analysis_router)
     application.include_router(tenant_router)
     application.include_router(membership_router)
+    application.include_router(membership_bootstrap_router)
     application.include_router(tenant_profile_router)
     application.include_router(assets_router)
     application.include_router(endpoint_router)

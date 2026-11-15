@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.db.models import AuditRecord, Tenant, TenantMembership
 from app.db.session import apply_database_context
 from app.repositories.audit import PostgresAuditEventSink
+from app.repositories.tenants import list_active_memberships
 from app.security.audit import AuditEvent, AuditOutcome
 from app.security.authorization import AuthorizationReason
 from app.security.identity import PrincipalType
@@ -151,6 +152,12 @@ async def test_postgres_rls_and_least_privilege_audit_roles() -> None:
             ).scalars().all()
             assert visible_tenants == [f"tenant-{tenant_a.hex[:8]}"]
             assert visible_memberships == ["subject-a"]
+            assert await list_active_memberships(session, subject="subject-a") == [
+                (f"tenant-{tenant_a.hex[:8]}", "Tenant A", "analyst")
+            ]
+            # A caller cannot substitute another subject while the transaction
+            # remains bound to subject-a by PostgreSQL RLS.
+            assert await list_active_memberships(session, subject="subject-b") == []
 
         # Audit visibility is restricted to the active transaction's tenant.
         async with runtime_factory() as session:
