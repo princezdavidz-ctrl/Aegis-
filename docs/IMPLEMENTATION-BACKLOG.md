@@ -119,6 +119,7 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - The React OIDC provider loads memberships after sign-in, clears stale membership state across session changes, and permits selection only from the server-returned membership list.
 - Organization, Assets and Members receive a tenant session only after bootstrap succeeds. Existing APIs continue to resolve tenant IDs and roles server-side on every request.
 - Added backend isolation/active-status/authentication/store-unavailable tests and frontend transport/schema tests.
+- Merged PR #58 as `fa0a1a09fa69d2dcdc6daa01f533a56aac6993a7`; all PR and post-merge workflows passed. See the 2026-11-15 progress entry for detailed test counts and run links.
 
 ## Next vertical slice — repair the AI evaluation framework PR
 

@@ -706,13 +706,20 @@ Implement the server-verified membership bootstrap contract and client, preservi
 
 ### Validation
 
-- Hosted GitHub Actions validation is pending for this branch. The local environment cannot resolve `github.com`, so `npm ci`, frontend tests/typecheck/build, Python API tests, PostgreSQL RLS integration, container smoke, endpoint-agent, Terraform, Flutter and security scans have not been run locally.
-- No identity provider, live database, customer record, external connector, model provider or security tool was accessed or configured.
-- No credentials, secrets, access tokens, signing keys or private customer data were added.
+- PR #58 was merged into `main` as squash commit `fa0a1a09fa69d2dcdc6daa01f533a56aac6993a7` from final tested head `033c1b2ff22d1eafda19779c3de8b4680b7a55b0`.
+- All three pull-request workflows passed: [AEGIS checks #43708546217](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43708546217), [security checks #43708546222](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43708546222), and [Flutter checks #43708546200](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43708546200).
+- Frontend: **55 tests passed, 0 failed**; strict TypeScript typecheck and production Vite build passed.
+- Python API: **109 passed, 6 skipped**. PostgreSQL migration/RLS integration: **6 passed**, including the new subject-substitution/RLS assertion.
+- API container smoke test, Windows/Linux/macOS endpoint-agent tests and AWS OIDC Terraform validation passed.
+- Security: Gitleaks, NVD catalogue tests, Python/TypeScript CodeQL and dependency audits passed.
+- Flutter formatting, analysis and **2 tests** passed.
+- All three post-merge workflows also passed on the merge commit: [AEGIS checks #43708707515](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43708707515), [security checks #43708707447](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43708707447), and [Flutter checks #43708707439](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43708707439).
+- The local container still cannot resolve `github.com`; no local clone/test result is claimed. Hosted GitHub Actions supplied the verification evidence.
+- No identity provider, live database, customer record, external connector, model provider or security tool was accessed or configured. No credentials, secrets, access tokens, signing keys or private customer data were added.
 
 ### Pending
 
-- Hosted CI must pass before this branch is considered complete or merged.
+- Completed: all pull-request and post-merge workflows passed; the implementation is merged into `main`.
 - Configure a non-production OIDC provider, public SPA client, exact redirect URI, API audience and provider CORS policy before enabling live sign-in.
 - Verify membership bootstrap and tenant selection against a non-production IdP and PostgreSQL database.
 - Continue organization profile editing, browser-driven authenticated/responsive tests and approved connector onboarding after identity bootstrap is validated.
