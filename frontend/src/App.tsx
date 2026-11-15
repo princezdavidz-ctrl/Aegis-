@@ -82,13 +82,13 @@ export default function App() {
               </div>
               <div className="flex items-center gap-2">
                 {auth.status === 'authenticated' && auth.memberships.length > 1 && auth.selectedMembership && (
-                  <label className="hidden max-w-56 items-center sm:flex">
+                  <label className="flex max-w-32 items-center sm:max-w-56">
                     <span className="sr-only">Active organization</span>
                     <select
                       aria-label="Active organization"
                       value={auth.selectedMembership.tenant_slug}
                       onChange={(event) => auth.selectTenant(event.target.value)}
-                      className="max-w-56 rounded-xl border border-white/10 bg-[#101722] px-3 py-2 text-[11px] text-slate-200"
+                      className="w-full max-w-32 rounded-xl border border-white/10 bg-[#101722] px-2 py-2 text-[10px] text-slate-200 sm:max-w-56 sm:px-3 sm:text-[11px]"
                     >
                       {auth.memberships.map((membership) => (
                         <option key={membership.tenant_slug} value={membership.tenant_slug}>

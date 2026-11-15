@@ -200,9 +200,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, adapter]);
 
   const selectTenant = useCallback((tenantSlug: string) => {
+    if (membershipSession !== session || membershipStatus !== 'ready') return;
     if (!memberships.some((membership) => membership.tenant_slug === tenantSlug)) return;
     setSelectedTenantSlug(tenantSlug);
-  }, [memberships]);
+  }, [memberships, membershipSession, membershipStatus, session]);
 
   const signIn = useCallback(async (returnTo = window.location.pathname) => {
     if (!adapter) {
