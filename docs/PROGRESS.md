@@ -727,3 +727,42 @@ Implement the server-verified membership bootstrap contract and client, preservi
 ### Next task
 
 Fix the existing AI evaluation framework PR #43's missing `evaluate_suite` public export, rerun the AI service tests and Ruff, and merge only after all repository checks pass.
+
+
+## 2026-11-16 — Deterministic AI evaluation framework merged
+
+### Repository audit
+
+- Re-inspected `main` at `35dfd563e40c90f811ef5cf3bc4d0338f4a75741`, the current README, progress log, implementation backlog, AI evaluation guidance, AI service package configuration, specialist runtime boundary, and CI workflow.
+- Reviewed open PR #43 and compared its branch with current `main`: it contained five newly added evaluation files only, with no modifications or deletions to existing application code. The branch was 3 commits ahead and 15 behind; the merge preserved all newer main-branch work.
+- Kept unrelated open PRs unchanged.
+
+### Completed
+
+- Added a deterministic evaluation API with immutable `EvaluationCase` and `EvaluationReport` contracts, `evaluate_output`, and public `evaluate_suite` export.
+- Checks cover expected evidence identifiers, required and forbidden phrases, uncertainty language, and advisory-only language.
+- Added a versioned seed dataset and evaluation usage/release-gate guidance.
+- Fixed the missing `evaluate_suite` package export discovered during test collection.
+- Fixed the Ruff `UP035` finding by importing `Iterable` from `collections.abc`.
+- Merged [PR #43](https://github.com/princezdavidz-ctrl/Aegis-/pull/43) as squash commit `ba293965d4fc8690b9d2af3cc08562bbebd79e17`.
+
+### Validation
+
+- AI service CI: **33 tests passed** and Ruff passed on final PR head `662d5fb392dc496118196b80767a957f1f845488`: [run #43859615247](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43859615247).
+- AEGIS checks passed: [run #43859615152](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43859615152).
+- Security checks passed: [run #43859615296](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43859615296).
+- All post-merge workflows passed on `ba293965d4fc8690b9d2af3cc08562bbebd79e17`: [AEGIS checks #43859965546](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43859965546), [AI service CI #43859965532](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43859965532), [Flutter #43859965607](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43859965607), and [security #43859965695](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/43859965695).
+- The PR-head Flutter run was cancelled during superseded-run cleanup; the post-merge Flutter run passed. No Flutter files changed in this increment.
+- No model calls, external provider credentials, customer evidence, or security-tool actions were used. Evaluation remains a deterministic regression gate, not a factual-accuracy benchmark.
+
+### Pending
+
+- Configure and verify a non-production OIDC provider, public SPA client, API audience and PostgreSQL database before live tenant sessions are enabled.
+- Configure a model provider through deployment-managed secrets; no live provider is configured.
+- Implement tenant-scoped evidence retrieval and durable vector persistence before using embeddings for customer knowledge.
+- Extend evaluation with expert-labelled expected findings and false-positive/false-negative review before treating scores as quality metrics.
+- Keep the integration authorization migration in PR #37 separate until its PostgreSQL CI failure is fixed.
+
+### Next task
+
+Inspect and finish [PR #41 — configurable embeddings provider](https://github.com/princezdavidz-ctrl/Aegis-/pull/41). Resolve its two Ruff findings, retain the mocked/no-live-key test boundary, verify ordering/dimension/non-finite-vector validation, and run the AI service and repository workflows before merging. The next architecture step after that is PostgreSQL/pgvector persistence with database-enforced tenant isolation and hybrid retrieval.

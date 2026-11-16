@@ -121,8 +121,24 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - Added backend isolation/active-status/authentication/store-unavailable tests and frontend transport/schema tests.
 - Merged PR #58 as `fa0a1a09fa69d2dcdc6daa01f533a56aac6993a7`; all PR and post-merge workflows passed. See the 2026-11-15 progress entry for detailed test counts and run links.
 
-## Next vertical slice — repair the AI evaluation framework PR
+## Completed vertical slice — deterministic AI evaluation framework (PR #43)
 
-Review and complete the existing [PR #43](https://github.com/princezdavidz-ctrl/Aegis-/pull/43) before adding further model-dependent behavior. Its last recorded AI-service CI run failed during test collection because `evaluate_suite` was imported by the new tests but not exported from `aegis_ai.evaluation`. Add the missing public export only after inspecting the implementation, rerun the AI service tests and Ruff, then verify all repository workflows before merge.
+- Added immutable evaluation case/report contracts, `evaluate_output`, and the public `evaluate_suite` helper under `services/ai/src/aegis_ai/evaluation/`.
+- Added a versioned seed dataset and documented deterministic checks for evidence provenance, required/forbidden phrases, uncertainty and advisory-only language.
+- This evaluator is an offline regression gate. It makes no model/network calls and does not establish real-world model accuracy or replace analyst review.
+- Fixed the missing public export and Ruff's `UP035` import finding.
+- Merged PR #43 as `ba293965d4fc8690b9d2af3cc08562bbebd79e17`.
+- Validation: AI service **33 tests passed**, Ruff passed, and AEGIS, security, AI-service and Flutter post-merge workflows all passed. See `docs/PROGRESS.md` for exact run links.
 
-Other open work remains unchanged: PR #37 has a PostgreSQL migration failure caused by SQLAlchemy interpreting a colon-prefixed token inside a SQL function body as a bind parameter; PR #41 has two Ruff findings (the `Sequence` import location and a self-comparison in a NaN test). Keep these PRs separate and do not merge them until their own checks pass.
+## Next vertical slice — finish configurable embeddings provider (PR #41)
+
+Review and complete the existing [PR #41](https://github.com/princezdavidz-ctrl/Aegis-/pull/41) before implementing persistent retrieval.
+
+1. Move `Sequence` to `collections.abc` to satisfy Ruff.
+2. Replace the NaN self-comparison in the test fixture with an explicit finite/NaN assertion while retaining coverage of non-finite provider responses.
+3. Review batch bounds, input length limits, HTTPS enforcement, response ordering, vector dimensions, zero/non-finite rejection and sanitized provider errors.
+4. Keep tests on mocked HTTP transport; do not require a live provider or commit API credentials.
+5. Run AI service pytest and Ruff, then all relevant repository security/build workflows before merging.
+6. After the provider contract is merged, design PostgreSQL/pgvector persistence and hybrid retrieval with database-enforced tenant isolation.
+
+Other open work remains separate: PR #37 has a PostgreSQL migration failure caused by SQLAlchemy interpreting a colon-prefixed token inside a SQL function body as a bind parameter; do not merge it until its migration/RLS checks pass.
