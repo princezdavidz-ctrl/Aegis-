@@ -130,15 +130,26 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - Merged PR #43 as `ba293965d4fc8690b9d2af3cc08562bbebd79e17`.
 - Validation: AI service **33 tests passed**, Ruff passed, and AEGIS, security, AI-service and Flutter post-merge workflows all passed. See `docs/PROGRESS.md` for exact run links.
 
-## Next vertical slice — finish configurable embeddings provider (PR #41)
+## Completed vertical slice — configurable embeddings provider (PR #59)
 
-Review and complete the existing [PR #41](https://github.com/princezdavidz-ctrl/Aegis-/pull/41) before implementing persistent retrieval.
+- Ported the existing provider work onto the current main baseline instead of merging the stale PR #41 branch.
+- Added the EmbeddingProvider protocol and OpenAI-compatible adapter with runtime-only credentials.
+- Enforced HTTPS for remote endpoints, exact loopback-only HTTP for development, bounded batches/text, response ordering and strict vector/index validation.
+- Rejected zero/non-finite vectors and non-numeric/boolean values; sanitized transport and provider errors; disabled redirects.
+- Added mocked HTTP tests; no live provider or API key is required.
+- PR #59 final tested head: b2511a3c40259f7b86286933da416ff30722e606.
+- Validation: AI service 56 tests passed, Ruff passed, and AEGIS, security and Flutter workflows all passed. See docs/PROGRESS.md for run links and details.
+- This is an adapter foundation only. It does not persist vectors, automatically ingest customer data, or enable semantic retrieval. The in-memory store remains development/test-only.
 
-1. Move `Sequence` to `collections.abc` to satisfy Ruff.
-2. Replace the NaN self-comparison in the test fixture with an explicit finite/NaN assertion while retaining coverage of non-finite provider responses.
-3. Review batch bounds, input length limits, HTTPS enforcement, response ordering, vector dimensions, zero/non-finite rejection and sanitized provider errors.
-4. Keep tests on mocked HTTP transport; do not require a live provider or commit API credentials.
-5. Run AI service pytest and Ruff, then all relevant repository security/build workflows before merging.
-6. After the provider contract is merged, design PostgreSQL/pgvector persistence and hybrid retrieval with database-enforced tenant isolation.
+## Next vertical slice — persistent tenant-scoped knowledge retrieval (PostgreSQL/pgvector)
+
+1. Re-read the existing KnowledgeStore protocol, knowledge contracts, PostgreSQL migration conventions and tenant RLS model before choosing the schema.
+2. Define vector dimension/model-version compatibility explicitly; do not assume one provider's dimensions or mix incompatible embedding spaces.
+3. Add tenant-owned document/chunk/vector records with tenant-consistent composite relationships and database-enforced row-level security.
+4. Ensure every vector and lexical retrieval query is tenant-scoped in SQL; never fetch cross-tenant candidates and filter them in application memory afterward.
+5. Add a PostgreSQL adapter behind KnowledgeStore, preserving the in-memory adapter for unit tests.
+6. Add hybrid retrieval with bounded top-k, deterministic tie-breaking, provenance and classification filters. Retrieved text remains untrusted evidence.
+7. Add two-tenant integration tests proving cross-tenant reads, joins, inserts and similarity searches are denied, including attempts to mismatch a chunk and its parent document.
+8. Run AI service, API, PostgreSQL/RLS, security and dependency workflows before merging. Do not require a live model provider or customer content.
 
 Other open work remains separate: PR #37 has a PostgreSQL migration failure caused by SQLAlchemy interpreting a colon-prefixed token inside a SQL function body as a bind parameter; do not merge it until its migration/RLS checks pass.
