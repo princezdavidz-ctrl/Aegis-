@@ -54,13 +54,13 @@ class OpenAICompatibleEmbedder:
         ):
             raise ValueError("timeout_seconds must be between 1 and 120")
         if not isinstance(base_url, str):
-            raise ValueError("base_url must be a valid HTTPS URL")
+            raise TypeError("base_url must be a string")
 
         try:
             parsed_url = urlsplit(base_url)
             hostname = parsed_url.hostname
             # Accessing .port also validates malformed/out-of-range port values.
-            parsed_url.port
+            _ = parsed_url.port
         except ValueError:
             raise ValueError("base_url must be a valid HTTPS URL") from None
 
@@ -93,7 +93,7 @@ class OpenAICompatibleEmbedder:
     async def embed(self, texts: Sequence[str]) -> tuple[tuple[float, ...], ...]:
         """Embed 1–64 non-empty strings and preserve input order."""
         if isinstance(texts, (str, bytes)) or not isinstance(texts, Sequence):
-            raise ValueError("embedding input must be a sequence of text strings")
+            raise TypeError("embedding input must be a sequence of text strings")
 
         batch = tuple(texts)
         if not 1 <= len(batch) <= 64:
@@ -139,7 +139,7 @@ class OpenAICompatibleEmbedder:
         try:
             body = response.json()
             if not isinstance(body, dict):
-                raise ValueError("invalid response object")
+                raise TypeError("invalid response object")
             data = body.get("data")
             if not isinstance(data, list) or len(data) != len(batch):
                 raise ValueError("embedding count mismatch")
@@ -147,11 +147,11 @@ class OpenAICompatibleEmbedder:
             ordered: list[tuple[float, ...] | None] = [None] * len(batch)
             for item in data:
                 if not isinstance(item, dict):
-                    raise ValueError("invalid embedding item")
+                    raise TypeError("invalid embedding item")
                 index = item.get("index")
                 vector = item.get("embedding")
                 if isinstance(index, bool) or not isinstance(index, int):
-                    raise ValueError("invalid embedding index")
+                    raise TypeError("invalid embedding index")
                 if not 0 <= index < len(batch):
                     raise ValueError("invalid embedding index")
                 if ordered[index] is not None:
