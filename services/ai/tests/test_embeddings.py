@@ -187,15 +187,15 @@ async def test_rejects_unbounded_or_invalid_batches_before_network():
     )
     try:
         invalid_batches = (
-            [],
-            [" "],
-            ["x" * 20_001],
-            [None],
-            "not-a-batch",
-            [str(index) for index in range(65)],
+            ([], ValueError),
+            ([" "], ValueError),
+            (["x" * 20_001], ValueError),
+            ([None], ValueError),
+            ("not-a-batch", TypeError),
+            ([str(index) for index in range(65)], ValueError),
         )
-        for batch in invalid_batches:
-            with pytest.raises(ValueError):
+        for batch, error_type in invalid_batches:
+            with pytest.raises(error_type):
                 await embedder.embed(batch)
     finally:
         await client.aclose()
