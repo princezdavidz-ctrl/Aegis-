@@ -766,3 +766,46 @@ Fix the existing AI evaluation framework PR #43's missing `evaluate_suite` publi
 ### Next task
 
 Inspect and finish [PR #41 — configurable embeddings provider](https://github.com/princezdavidz-ctrl/Aegis-/pull/41). Resolve its two Ruff findings, retain the mocked/no-live-key test boundary, verify ordering/dimension/non-finite-vector validation, and run the AI service and repository workflows before merging. The next architecture step after that is PostgreSQL/pgvector persistence with database-enforced tenant isolation and hybrid retrieval.
+
+
+## 2026-11-17 — Configurable embeddings provider hardened
+
+### Repository audit
+
+- Re-inspected main at 35dc8870409b7e8e9d9ca7cace78add39ed436f5, the README, architecture, implementation backlog, progress log, AI service package, knowledge-store contract and current CI workflows.
+- Confirmed PR #41 contained an embeddings adapter but was based on an older repository state and was not mergeable against current main. Preserved PR #41 unchanged and ported its intended implementation onto a fresh branch from the inspected main head.
+- Opened [PR #59](https://github.com/princezdavidz-ctrl/Aegis-/pull/59) from fix/ai-embeddings-provider-hardening; no existing application code was removed or replaced.
+
+### Completed
+
+- Added the EmbeddingProvider protocol and OpenAICompatibleEmbedder implementation, exported from the knowledge package.
+- Kept API credentials runtime-injected; no credential is read from source control, persisted, logged or included in provider error messages.
+- Enforced HTTPS for remote providers and exact loopback-only HTTP for local development. Rejected malformed hosts, deceptive localhost prefixes, URL user-info, query strings and fragments.
+- Bounded requests to 1–64 non-empty text inputs of at most 20,000 characters each.
+- Validated provider response shape, exact result count, integer/non-boolean indices, duplicate/missing/out-of-range indices, vector dimensions, numeric values, finite values and non-zero vectors.
+- Restored input order even when the provider returns vectors out of order.
+- Disabled redirects and converted transport failures into sanitized provider errors.
+- Added mocked HTTP tests for ordering, dimensions, malformed/duplicate indices, non-finite and zero vectors, invalid numeric types, request bounds, unsafe URLs, accepted loopback URLs and sanitized failures.
+- No live provider was called; the adapter is not automatically wired into customer ingestion or persistent retrieval.
+
+### Validation
+
+- Final tested PR head: b2511a3c40259f7b86286933da416ff30722e606.
+- AI service CI [#44073611805](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44073611805): **56 tests passed** and Ruff reported **All checks passed**.
+- AEGIS checks [#44073611809](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44073611809): all jobs passed, including web tests/typecheck/build, Python API, PostgreSQL migration/RLS integration, API container smoke test, Windows/Linux/macOS agent tests and Terraform validation.
+- Security checks [#44073611914](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44073611914): all jobs passed, including Gitleaks, Python/TypeScript CodeQL, dependency audits and NVD catalogue tests.
+- Flutter checks [#44073611969](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44073611969): formatting, analysis and tests passed.
+- An earlier lint run identified the two original Ruff findings plus stricter Ruff type/error-style findings; those were corrected. A subsequent test run exposed a mismatch between the new TypeError contract and a test expectation; the test was corrected. The final commit above passed all checks.
+- The local execution environment still cannot resolve github.com; no local full-suite result is claimed. Hosted GitHub Actions supplied the verification evidence.
+- No secrets, customer data, model calls, external integrations or security actions were used.
+
+### Pending
+
+- Embeddings are not persisted. The current InMemoryKnowledgeStore remains development/test-only.
+- Semantic retrieval is not yet wired into the specialist runtime; no tenant knowledge is sent to a model.
+- A live PostgreSQL/Neon database and non-production identity provider remain unconfigured.
+- PR #37's integration-authorization migration remains separate and must pass its PostgreSQL migration/RLS checks before merge.
+
+### Next task
+
+Design and implement the persistent knowledge-store adapter using PostgreSQL/pgvector. Inspect the existing KnowledgeStore protocol and migration/RLS conventions first; enforce tenant scope in database queries and composite relationships, add two-tenant isolation tests, and keep model calls and customer ingestion disabled until the storage boundary is verified.
