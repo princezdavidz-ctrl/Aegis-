@@ -25,7 +25,7 @@ Aegis-/
 - **Backend:** Python 3.11+, FastAPI; deploy the `backend/` application.
 - **Engineer desktop:** Flutter for Windows, Linux and macOS.
 - **Database target:** Neon PostgreSQL; migrations and RLS are in source but no live database is configured or verified.
-- **AI:** provider-independent gateway, advisory specialist workflows, and a deterministic offline evaluation suite under `services/ai/`; live provider configuration is not confirmed.
+- **AI:** provider-independent gateway, advisory specialist workflows, deterministic offline evaluation suite, and a hardened OpenAI-compatible embeddings adapter foundation under `services/ai/`; no live provider is configured and persistent semantic retrieval is not yet operational.
 - **AWS:** manual GitHub Actions deployment foundation using short-lived GitHub OIDC credentials; infrastructure provisioning and a successful live deployment are not confirmed.
 
 OIDC configuration uses `AEGIS_OIDC_ISSUER`, `AEGIS_OIDC_AUDIENCE` and `AEGIS_OIDC_JWKS_URL` together. Optional `AEGIS_OIDC_CLOCK_SKEW_SECONDS` defaults to 30 seconds. Optional `AEGIS_OIDC_JWKS_CACHE_SECONDS` defaults to 300 seconds and is bounded from 30 to 600 seconds. Production OIDC endpoints must use HTTPS; loopback HTTP is allowed only in development/test environments.
