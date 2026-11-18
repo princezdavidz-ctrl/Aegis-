@@ -15,7 +15,7 @@ for tests/local development only. It is process-local and non-durable.
 
 Backend migration `0010_tenant_knowledge_store` now defines tenant-owned
 PostgreSQL document, chunk and embedding-space tables with pgvector, forced RLS,
-composite tenant/document and tenant/embedding-space foreign keys, vector
+write-once embedding-space identity, composite tenant/document and tenant/embedding-space foreign keys, vector
 dimension checks, lexical search indexing and audited ingestor writes. The
 schema is covered by PostgreSQL CI. See `deploy/postgres/KNOWLEDGE-STORE.md`
 for DBA prerequisites and role boundaries.
