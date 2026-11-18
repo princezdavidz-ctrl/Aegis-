@@ -856,3 +856,25 @@ Design and implement the persistent knowledge-store adapter using PostgreSQL/pgv
 ### Next task
 
 Implement the PostgreSQL KnowledgeStore adapter behind the existing AI protocol, using transaction-local tenant context, explicit embedding-space identity and a single audited transaction for document/chunk persistence. Start only after this schema PR's PostgreSQL and repository CI checks pass.
+
+ 
+### CI repair and validation — 2026-11-18
+
+- Re-inspected PR #60 after its first CI run. The new migration file contained duplicated SQL/Python fragments after its first downgrade function and an incomplete document SHA-256 check; Alembic failed with a Python syntax error before applying migration 0010.
+- Rebuilt the migration from its first complete upgrade/downgrade definition, removed only the duplicated trailing fragments, and corrected the document hash constraint to require exactly 64 lowercase hexadecimal characters.
+- Pushed fix commit 22829a5a2ccb14cbe3ae0b70c349853f8769d9e6 (fix(db): repair tenant knowledge migration) to the existing PR #60 branch. The migration now contains one upgrade, one downgrade and one definition of each knowledge table.
+
+#### Validation
+
+- Push AEGIS checks [run #44298712784](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298712784): all 8 jobs passed, including PostgreSQL migration and least-privilege RLS integration, Python API tests, frontend tests/typecheck/build, Linux/Windows/macOS agent tests, API container smoke test and Terraform validation.
+- AI service CI [run #44298728050](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298728050): passed.
+- NVD catalogue checks [run #44298727884](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298727884): passed.
+- Flutter desktop checks [run #44298712775](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298712775): passed.
+- Security checks [run #44298712765](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298712765): Gitleaks, both CodeQL jobs, Python dependency audits and NVD tests passed; the dependency-audit job failed at npm audit on high-severity GHSA-fc5q-39xc-vjpf in transitive picomatch 4.0.7.
+- The advisory currently affects picomatch through 4.0.7, and npm still lists 4.0.7 as latest; no patched release is published. No unverified version override, audit suppression or security-workflow weakening was added.
+- The local environment still cannot resolve GitHub, so hosted Actions supplied the executable validation. No live Neon database, model provider, customer data or security tool was used.
+
+#### Pending and next task
+
+- PR #60 remains open and unmerged until the unpatched picomatch advisory has a safe upstream fix or an explicit risk-acceptance decision is made. The PostgreSQL schema/RLS integration itself now passes on the disposable pgvector CI database.
+- After PR #60 is mergeable, implement the backend-owned PostgreSQL KnowledgeStore adapter and tenant/embedding-space-scoped hybrid retrieval. Keep customer ingestion and model retrieval disabled until the adapter's isolation and rollback tests pass.
