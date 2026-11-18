@@ -41,9 +41,9 @@ privileged project/database administrator first.
 After migrations, run `deploy/postgres/grants.sql`:
 
 - `aegis_runtime`: SELECT only on knowledge tables.
-- `aegis_ingestor`: SELECT/INSERT/UPDATE on knowledge tables, with forced RLS
+- `aegis_ingestor`: SELECT/INSERT on embedding spaces and SELECT/INSERT/UPDATE on documents/chunks, with forced RLS
   requiring a matching active tenant membership and transaction-local context.
-  It has no DELETE privilege.
+  It cannot update embedding-space identity or DELETE any knowledge row. A model, revision or dimension change creates a new embedding space.
 - `aegis_ingestor` can read only its own membership row through the existing
   membership RLS policy so the knowledge policies can verify authorization.
 - Inserts and updates to documents and chunks append audit events. If the audit
