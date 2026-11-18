@@ -10,7 +10,21 @@ This package implements the first retrieval-augmented generation (RAG) capabilit
 - Tests for relevance, repeat ingestion, source URL validation, chunk bounds and cross-tenant isolation.
 
 ## Current storage status
-InMemoryKnowledgeStore is a development/test adapter. It is process-local, non-durable and must not be used for production customer knowledge. The KnowledgeStore protocol is the persistence boundary for a later PostgreSQL/pgvector adapter. A persistent adapter must enforce tenant scope in the database query itself, not filter results after fetching.
+`InMemoryKnowledgeStore` is the only active KnowledgeStore adapter and remains
+for tests/local development only. It is process-local and non-durable.
+
+Backend migration `0010_tenant_knowledge_store` now defines tenant-owned
+PostgreSQL document, chunk and embedding-space tables with pgvector, forced RLS,
+composite tenant/document and tenant/embedding-space foreign keys, vector
+dimension checks, lexical search indexing and audited ingestor writes. The
+schema is covered by PostgreSQL CI. See `deploy/postgres/KNOWLEDGE-STORE.md`
+for DBA prerequisites and role boundaries.
+
+The application-level PostgreSQL KnowledgeStore adapter is not implemented yet.
+Until it exists and is tested, customer ingestion and semantic retrieval remain
+disabled. Any future adapter must enforce tenant scope in SQL, use the exact
+embedding-space identity for every vector comparison, and never fetch global
+candidates before filtering in application memory.
 
 ## Ingestion boundary
 Only ingest content from approved, authorized sources. Validate source ownership, document size, tenant membership, classification and retention before constructing KnowledgeDocument. Do not fetch arbitrary user-supplied URLs from the AI service. The optional source URI is provenance metadata only; it is not fetched by this package.
