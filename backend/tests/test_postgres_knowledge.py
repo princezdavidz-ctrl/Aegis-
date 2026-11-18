@@ -259,11 +259,12 @@ async def test_knowledge_schema_enforces_tenant_scope_and_embedding_compatibilit
                             has_table_privilege('aegis_runtime', 'knowledge_chunks', 'INSERT'),
                             has_table_privilege('aegis_ingestor', 'knowledge_chunks', 'INSERT'),
                             has_table_privilege('aegis_ingestor', 'knowledge_chunks', 'DELETE'),
-                            has_table_privilege('aegis_ingestor', 'tenant_memberships', 'SELECT')
+                            has_table_privilege('aegis_ingestor', 'tenant_memberships', 'SELECT'),
+                            has_table_privilege('aegis_ingestor', 'audit_events', 'INSERT')
                     """)
                 )
             ).one()
-            assert privileges == (True, False, True, False, True)
+            assert privileges == (True, False, True, False, True, False)
 
             audit = (
                 await session.execute(
