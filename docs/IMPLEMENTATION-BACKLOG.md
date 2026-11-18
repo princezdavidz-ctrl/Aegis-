@@ -149,7 +149,7 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - Composite foreign keys prevent chunks from referencing another tenant's document or embedding space.
 - Embedding spaces record provider, model, model revision and dimensions; chunk constraints verify the vector's actual dimensions and prevent incompatible spaces from being joined.
 - Added generated lexical search vectors and a GIN index for the planned hybrid retrieval path.
-- Ingestor writes append audit events through a restricted SECURITY DEFINER trigger; the ingestor cannot insert audit rows directly and has no DELETE privilege.
+- Embedding-space rows are write-once for the ingestor; model/revision/dimension changes create a new space. Document/chunk writes append audit events through a restricted SECURITY DEFINER trigger; the ingestor cannot insert audit rows directly or DELETE knowledge rows.
 - PostgreSQL CI uses a pgvector-enabled PostgreSQL 16 image and enables the extension as the database administrator before applying migrations.
 - The schema is a foundation only. No PostgreSQL KnowledgeStore adapter, customer ingestion or semantic retrieval is active.
 
