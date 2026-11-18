@@ -191,9 +191,28 @@ def upgrade() -> None:
         """)
 
     op.execute("""
+        CREATE POLICY audit_events_knowledge_migrator_append ON public.audit_events
+        FOR INSERT TO aegis_migrator
+        WITH CHECK (
+            (resource_type = 'knowledge_document' AND EXISTS (
+                SELECT 1 FROM public.knowledge_documents document
+                WHERE document.id::text = audit_events.resource_id
+                  AND document.tenant_id = audit_events.tenant_id
+            ))
+            OR
+            (resource_type = 'knowledge_chunk' AND EXISTS (
+                SELECT 1 FROM public.knowledge_chunks chunk
+                WHERE chunk.id::text = audit_events.resource_id
+                  AND chunk.tenant_id = audit_events.tenant_id
+            ))
+        )
+    """)
+
+    op.execute("""
         CREATE FUNCTION public.aegis_audit_knowledge_write()
         RETURNS trigger
         LANGUAGE plpgsql
+        SECURITY DEFINER
         SET search_path = pg_catalog, public
         AS $function$
         DECLARE
@@ -236,6 +255,9 @@ def upgrade() -> None:
         $function$
     """)
     op.execute("""
+        ALTER FUNCTION public.aegis_audit_knowledge_write() OWNER TO aegis_migrator
+    """)
+    op.execute("""
         REVOKE ALL ON FUNCTION public.aegis_audit_knowledge_write() FROM PUBLIC
     """)
     op.execute("""
@@ -253,6 +275,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute("DROP TRIGGER IF EXISTS knowledge_chunks_audit_write ON public.knowledge_chunks")
     op.execute("DROP TRIGGER IF EXISTS knowledge_documents_audit_write ON public.knowledge_documents")
+    op.execute("DROP POLICY IF EXISTS audit_events_knowledge_migrator_append ON public.audit_events")
     op.execute("DROP FUNCTION IF EXISTS public.aegis_audit_knowledge_write()")
     op.execute("DROP TABLE IF EXISTS public.knowledge_chunks")
     op.execute("DROP TABLE IF EXISTS public.knowledge_documents")
