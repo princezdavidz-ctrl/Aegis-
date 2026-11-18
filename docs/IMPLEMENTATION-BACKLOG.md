@@ -167,3 +167,14 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 The pgvector extension must be enabled by a database administrator before migration 0010. The current CI evidence validates the schema and RLS against a disposable PostgreSQL instance only; no live Neon database is configured or claimed.
 
 Other open work remains separate: PR #37's integration-authorization migration has an outstanding PostgreSQL migration failure caused by SQLAlchemy interpreting a colon-prefixed token inside a SQL function body as a bind parameter; do not merge it until its migration/RLS checks pass.
+
+ 
+### PR #60 validation status — 2026-11-18
+
+- Migration repair commit: 22829a5a2ccb14cbe3ae0b70c349853f8769d9e6.
+- The hosted AEGIS checks push run passed all eight jobs, including migration 0010 and the PostgreSQL knowledge/RLS integration test: [run #44298712784](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298712784).
+- AI service, NVD catalogue and Flutter workflows passed.
+- The security workflow remains blocked only by the newly reviewed, unpatched GHSA-fc5q-39xc-vjpf finding in transitive picomatch 4.0.7. Do not suppress the advisory, force an unverified package version or merge PR #60 while the required security workflow is red. Reassess when upstream publishes a fixed version or the repository owner explicitly accepts the documented build-time risk.
+- The schema is validated against disposable pgvector PostgreSQL in CI only; no live Neon database is configured.
+
+**Immediate next action:** resolve the npm advisory through a verified upstream release or explicit risk acceptance, then merge PR #60. After merge, implement the backend-owned PostgreSQL KnowledgeStore adapter described above.
