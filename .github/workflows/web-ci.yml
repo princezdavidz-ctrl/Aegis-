@@ -168,7 +168,9 @@ jobs:
       - name: Configure CI-only passwords and audit trigger test role
         run: psql -h localhost -U postgres -d aegis_test -v ON_ERROR_STOP=1 -f backend/tests/postgres_runtime_role.sql
       - name: Enable pgvector as the database administrator
-        run: psql -h localhost -U postgres -d aegis_test -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector"
+        run: |
+          psql -h localhost -U postgres -d aegis_test -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector"
+          psql -h localhost -U postgres -d aegis_test -v ON_ERROR_STOP=1 -c "GRANT USAGE ON TYPE public.vector TO aegis_migrator"
       - name: Apply migrations as the dedicated migration owner
         run: alembic -c backend/alembic.ini upgrade head
       - name: Grant least-privilege runtime permissions
