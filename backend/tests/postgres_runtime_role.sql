@@ -16,3 +16,5 @@ ALTER ROLE aegis_test_mutator
 GRANT CONNECT ON DATABASE aegis_test TO aegis_test_mutator;
 GRANT USAGE ON SCHEMA public TO aegis_test_mutator;
 ALTER ROLE aegis_provisioner PASSWORD 'aegis_ci_provisioner_password';
+
+ALTER ROLE aegis_ingestor PASSWORD 'aegis_ci_ingestor_password';
