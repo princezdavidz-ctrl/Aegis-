@@ -10,6 +10,7 @@ A database administrator must enable pgvector before running Alembic:
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;
+GRANT USAGE ON TYPE public.vector TO aegis_migrator;
 ```
 
 The migration deliberately checks for the extension rather than attempting to
