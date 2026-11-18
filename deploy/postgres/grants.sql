@@ -40,8 +40,10 @@ GRANT SELECT ON TABLE
     public.knowledge_chunks
     TO aegis_runtime;
 
+-- Embedding-space identity is immutable; a model/revision/dimension change
+-- creates a new space rather than reinterpreting vectors already stored.
+GRANT SELECT, INSERT ON TABLE public.knowledge_embedding_spaces TO aegis_ingestor;
 GRANT SELECT, INSERT, UPDATE ON TABLE
-    public.knowledge_embedding_spaces,
     public.knowledge_documents,
     public.knowledge_chunks
     TO aegis_ingestor;
