@@ -818,3 +818,41 @@ Design and implement the persistent knowledge-store adapter using PostgreSQL/pgv
 - All post-merge workflows passed on the merge commit: [AEGIS checks #44074404927](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44074404927), [security checks #44074405490](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44074405490), [AI service CI #44074405047](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44074405047), and [Flutter desktop checks #44074404972](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44074404972).
 - AI service post-merge CI passed the complete **56-test** suite and Ruff. The repository, security and Flutter workflows also completed successfully.
 - Main now contains the embeddings adapter and updated README, knowledge documentation, implementation backlog and progress log. No live embedding provider, customer data or vector persistence was enabled.
+
+
+## 2026-11-18 — Tenant-scoped pgvector knowledge schema
+
+### Repository audit
+
+- Re-inspected `main` at `b9e275052397b85e85acda71b1234f837d34f540`, the README, architecture, implementation backlog, knowledge contracts/store/embedding adapter, PostgreSQL role grants, migration chain and PostgreSQL CI workflow.
+- Confirmed the active `KnowledgeStore` is still the process-local `InMemoryKnowledgeStore`; no persistent adapter or semantic retrieval path was present.
+- Preserved the existing AI package protocol and backend-owned SQLAlchemy/migration boundary. No second database stack was added to the AI package.
+
+### Completed in this increment
+
+- Added migration `0010_tenant_knowledge_store` with tenant-owned embedding-space, document and chunk tables.
+- Added pgvector dimension checks and explicit provider/model/model-revision/dimension identity. Composite foreign keys ensure a chunk's document and embedding space belong to the same tenant.
+- Enabled and forced RLS on all knowledge tables. Reads and ingestor writes require both transaction-local tenant context and an active membership for the verified subject.
+- Added a generated lexical search vector and GIN index for the future hybrid retrieval adapter. No ANN index is created while embedding dimensions remain provider/model-specific.
+- Added a restricted SECURITY DEFINER audit trigger for document/chunk writes. Audit insertion is constrained to matching knowledge resources; the ingestor has no direct audit INSERT or knowledge DELETE privilege.
+- Added PostgreSQL integration tests for tenant isolation, cross-tenant foreign-key mismatches, embedding dimension mismatch, least-privilege grants and audit records.
+- Updated PostgreSQL CI to use a pgvector-enabled PostgreSQL 16 image and install the extension as the database administrator before running Alembic. The migration itself does not require superuser privileges.
+- Added `deploy/postgres/KNOWLEDGE-STORE.md` and updated the AI knowledge, architecture, deployment and backlog documentation.
+
+### Validation
+
+- Hosted GitHub Actions validation is pending on this branch. The PostgreSQL integration test requires the pgvector-enabled CI service and has not been represented as locally executed.
+- The local execution environment cannot resolve `github.com`; hosted CI is the available full integration-test environment.
+- No live Neon database, model provider, customer source or customer content was accessed. No credentials or private data were added.
+
+### Pending
+
+- Review and pass the new PostgreSQL migration/RLS integration test and all repository/security workflows.
+- Implement the backend-owned PostgreSQL KnowledgeStore adapter with separate runtime and ingestor sessions.
+- Add exact vector and lexical hybrid retrieval scoped by tenant and embedding-space ID.
+- Wire persistent retrieval into specialist augmentation only after adapter tests pass.
+- Keep live model calls, customer ingestion and security-tool execution disabled until their configuration and authorization prerequisites are verified.
+
+### Next task
+
+Implement the PostgreSQL KnowledgeStore adapter behind the existing AI protocol, using transaction-local tenant context, explicit embedding-space identity and a single audited transaction for document/chunk persistence. Start only after this schema PR's PostgreSQL and repository CI checks pass.
