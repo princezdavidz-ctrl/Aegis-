@@ -176,7 +176,7 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - Flutter checks [#44514291508](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291508): formatting, analysis and tests passed.
 - Local Git clone remains unavailable because this execution environment cannot resolve `github.com`; hosted GitHub Actions supplied validation.
 - No live Neon database, model provider, customer content, customer ingestion, or security-tool action was used.
-- Post-merge workflows for `7964f6295edcc291f5bd6f8b6c9ee333faf99d49` were queued/in progress at the time of this update; confirm their terminal results before claiming post-merge CI success.
+- Post-merge AEGIS checks [#44514824976](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514824976) passed all eight jobs, AI service CI [#44514825011](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514825011) passed, and Flutter checks [#44514825002](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514825002) passed. The pre-merge security run [#44514291498](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291498) passed on the final code head; the later PR commits were documentation-only.
 
 ## Next vertical slice — safe configuration and specialist RAG wiring
 
