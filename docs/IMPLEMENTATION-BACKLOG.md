@@ -153,7 +153,7 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - PostgreSQL CI uses a pgvector-enabled PostgreSQL 16 image and enables the extension as the database administrator before applying migrations.
 - The schema is a foundation only. No PostgreSQL KnowledgeStore adapter, customer ingestion or semantic retrieval is active.
 
-## PostgreSQL KnowledgeStore adapter — implementation complete in PR #61 (merge pending)
+## Completed — PostgreSQL KnowledgeStore adapter (PR #61 merged)
 
 - Added `backend/app/ai/knowledge_store.py` behind the existing AI `KnowledgeStore` protocol; no second database stack was added to the AI package.
 - Each adapter instance is bound to one server-resolved tenant UUID and verified subject. A request for a different tenant is rejected before retrieval.
@@ -164,7 +164,7 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - Implements bounded reciprocal-rank fusion over exact pgvector cosine distance and PostgreSQL lexical ranking. Tenant ID and embedding-space ID are applied in SQL before candidate ranking; top-k is bounded by the existing request contract. `restricted` documents are excluded until role-aware classification authorization is available.
 - Extended PostgreSQL integration coverage for repeat ingestion, cross-tenant binding, classification filtering, content-version conflicts, wrong-role rejection and transaction rollback.
 - Extended the security workflow's Ruff target to include the adapter and its PostgreSQL integration tests.
-- PR #61 final tested head before documentation-only commits: `7a9014ced7baa38838f283eb2b32e0bab4e39710`.
+- PR #61 final tested code head before documentation-only commits: `7a9014ced7baa38838f283eb2b32e0bab4e39710`; merged into `main` as `7964f6295edcc291f5bd6f8b6c9ee333faf99d49`.
 
 ### Validation on PR #61
 
@@ -176,6 +176,7 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - Flutter checks [#44514291508](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291508): formatting, analysis and tests passed.
 - Local Git clone remains unavailable because this execution environment cannot resolve `github.com`; hosted GitHub Actions supplied validation.
 - No live Neon database, model provider, customer content, customer ingestion, or security-tool action was used.
+- Post-merge workflows for `7964f6295edcc291f5bd6f8b6c9ee333faf99d49` were queued/in progress at the time of this update; confirm their terminal results before claiming post-merge CI success.
 
 ## Next vertical slice — safe configuration and specialist RAG wiring
 
