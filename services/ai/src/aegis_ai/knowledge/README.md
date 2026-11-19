@@ -20,11 +20,24 @@ dimension checks, lexical search indexing and audited ingestor writes. The
 schema is covered by PostgreSQL CI. See `deploy/postgres/KNOWLEDGE-STORE.md`
 for DBA prerequisites and role boundaries.
 
-The application-level PostgreSQL KnowledgeStore adapter is not implemented yet.
-Until it exists and is tested, customer ingestion and semantic retrieval remain
-disabled. Any future adapter must enforce tenant scope in SQL, use the exact
-embedding-space identity for every vector comparison, and never fetch global
-candidates before filtering in application memory.
+The backend-owned `PostgresKnowledgeStore` implementation is present at
+`backend/app/ai/knowledge_store.py` and is covered by PostgreSQL CI. It binds
+each instance to one server-resolved tenant UUID and verified subject, uses
+separate `aegis_runtime` and `aegis_ingestor` session factories, verifies
+`current_user`, and sets transaction-local RLS context for every operation.
+It records explicit provider/model/revision/dimension identity, embeds in
+bounded batches, and performs tenant- and embedding-space-filtered vector plus
+lexical retrieval in SQL.
+
+The adapter is not wired into FastAPI lifespan or specialist augmentation.
+`InMemoryKnowledgeStore` remains the active default. Customer ingestion and
+RAG augmentation remain disabled until separate database/provider
+configuration, role-aware classification authorization, and retention/
+deletion controls are implemented. Document keys are immutable for a content
+digest; changed source content requires a new versioned document ID because
+the current schema intentionally has no knowledge DELETE or soft-delete path.
+Restricted-classification records are stored but excluded from retrieval until
+role-aware access is available.
 
 ## Ingestion boundary
 Only ingest content from approved, authorized sources. Validate source ownership, document size, tenant membership, classification and retention before constructing KnowledgeDocument. Do not fetch arbitrary user-supplied URLs from the AI service. The optional source URI is provenance metadata only; it is not fetched by this package.
