@@ -939,7 +939,7 @@ Implement and test the backend-owned PostgreSQL KnowledgeStore adapter behind th
 - Flutter formatting, analysis and tests passed [#44514291508](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291508).
 - The local Git clone remains blocked by DNS resolution for `github.com`; hosted Actions supplied executable validation.
 - No live Neon database, model provider, customer data, customer ingestion or security-tool action was used.
-- Post-merge workflows for `7964f6295edcc291f5bd6f8b6c9ee333faf99d49` have started; at this documentation update they were queued/in progress, so no post-merge success is claimed yet.
+- Post-merge verification for `7964f6295edcc291f5bd6f8b6c9ee333faf99d49` completed successfully: AEGIS checks [#44514824976](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514824976) (all eight jobs, including API 109 passed/8 skipped and PostgreSQL integration 8 passed), AI service CI [#44514825011](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514825011), and Flutter checks [#44514825002](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514825002). The pre-merge security run [#44514291498](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291498) passed on the final code head; subsequent PR commits were documentation-only.
 
 ### Pending
 
