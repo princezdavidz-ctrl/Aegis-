@@ -11,6 +11,17 @@ from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from aegis_ai.knowledge import (
+    KnowledgeClassification,
+    KnowledgeDocument,
+    KnowledgeEngine,
+    RetrievalRequest,
+)
+from app.ai.knowledge_store import (
+    EmbeddingSpaceProfile,
+    KnowledgeStoreConflict,
+    PostgresKnowledgeStore,
+)
 from app.db.session import apply_database_context
 
 ADMIN_URL = os.getenv("AEGIS_TEST_ADMIN_DATABASE_URL")
@@ -280,6 +291,165 @@ async def test_knowledge_schema_enforces_tenant_scope_and_embedding_compatibilit
             ).all()
             assert ("knowledge_document", "knowledge.document.create") in audit
             assert ("knowledge_chunk", "knowledge.chunk.create") in audit
+    finally:
+        await ingestor_engine.dispose()
+        await provisioner_engine.dispose()
+        await runtime_engine.dispose()
+        await admin_engine.dispose()
+
+
+class FixedEmbeddingProvider:
+    """Deterministic local embedding fake; no provider credentials or network calls."""
+
+    dimensions = 3
+
+    async def embed(self, texts):
+        return tuple((1.0, 0.25, 0.0) for _ in texts)
+
+
+@pytest.mark.asyncio
+async def test_postgres_knowledge_store_is_idempotent_tenant_bound_and_classified() -> None:
+    admin_engine = create_async_engine(ADMIN_URL)
+    runtime_engine = create_async_engine(RUNTIME_URL)
+    provisioner_engine = create_async_engine(PROVISIONER_URL)
+    ingestor_engine = create_async_engine(INGESTOR_URL)
+
+    admin_factory = async_sessionmaker(admin_engine, expire_on_commit=False)
+    runtime_factory = async_sessionmaker(runtime_engine, expire_on_commit=False)
+    provisioner_factory = async_sessionmaker(provisioner_engine, expire_on_commit=False)
+    ingestor_factory = async_sessionmaker(ingestor_engine, expire_on_commit=False)
+
+    actor_a = "oidc|knowledge-adapter-a"
+    actor_b = "oidc|knowledge-adapter-b"
+    request_id = uuid4()
+    slug_prefix = f"knowledge-adapter-{request_id.hex[:8]}"
+    profile = EmbeddingSpaceProfile(
+        provider="test-provider",
+        model="test-embedding",
+        model_revision="revision-1",
+        dimensions=3,
+    )
+    embeddings = FixedEmbeddingProvider()
+
+    async def provision(slug: str, actor: str):
+        async with provisioner_factory() as session:
+            tenant_id = (
+                await session.execute(
+                    text("""
+                        SELECT tenant_id FROM public.aegis_provision_tenant(
+                            :slug, :display_name, :actor, :actor, 'user', :request_id
+                        )
+                    """),
+                    {
+                        "slug": slug,
+                        "display_name": slug,
+                        "actor": actor,
+                        "request_id": uuid4(),
+                    },
+                )
+            ).scalar_one()
+            await session.commit()
+            return tenant_id
+
+    def store_for(tenant_id, actor: str) -> PostgresKnowledgeStore:
+        return PostgresKnowledgeStore(
+            runtime_session_factory=runtime_factory,
+            ingestor_session_factory=ingestor_factory,
+            subject=actor,
+            tenant_id=tenant_id,
+            embeddings=embeddings,
+            embedding_space=profile,
+        )
+
+    try:
+        tenant_a = await provision(f"{slug_prefix}-a", actor_a)
+        tenant_b = await provision(f"{slug_prefix}-b", actor_b)
+        engine_a = KnowledgeEngine(store_for(tenant_a, actor_a))
+        engine_b = KnowledgeEngine(store_for(tenant_b, actor_b))
+
+        public_document = KnowledgeDocument(
+            tenant_id=str(tenant_a),
+            document_id="baseline-a",
+            title="Linux endpoint hardening",
+            source="security-baseline",
+            content=(
+                "Linux endpoint hardening requires supported package versions, "
+                "restricted remote access, strong authentication and monitored logs."
+            ),
+            source_uri="https://security.example/baselines/linux",
+            classification=KnowledgeClassification.PUBLIC,
+            updated_at="2026-11-19T00:00:00Z",
+        )
+        first_count = await engine_a.ingest(public_document)
+        second_count = await engine_a.ingest(public_document)
+        assert first_count == second_count
+
+        await engine_a.ingest(
+            KnowledgeDocument(
+                tenant_id=str(tenant_a),
+                document_id="restricted-a",
+                title="Restricted incident response notes",
+                source="incident-notes",
+                content="Restricted internal incident response evidence and access details.",
+                classification=KnowledgeClassification.RESTRICTED,
+            )
+        )
+        await engine_b.ingest(
+            KnowledgeDocument(
+                tenant_id=str(tenant_b),
+                document_id="baseline-b",
+                title="Database backup policy",
+                source="security-baseline",
+                content="Database backup encryption and recovery testing policy.",
+                classification=KnowledgeClassification.PUBLIC,
+            )
+        )
+
+        results = await engine_a.retrieve(
+            RetrievalRequest(str(tenant_a), "Linux endpoint hardening authentication", 5)
+        )
+        assert results
+        assert {item.chunk.document_id for item in results} == {"baseline-a"}
+        assert all(item.chunk.tenant_id == str(tenant_a) for item in results)
+        assert all(item.chunk.classification == KnowledgeClassification.PUBLIC for item in results)
+
+        with pytest.raises(PermissionError):
+            await engine_a.retrieve(
+                RetrievalRequest(str(tenant_b), "Database backup policy", 5)
+            )
+
+        changed_version = KnowledgeDocument(
+            tenant_id=str(tenant_a),
+            document_id="baseline-a",
+            title="Linux endpoint hardening",
+            source="security-baseline",
+            content="Changed source content must not silently overwrite an immutable document key.",
+            source_uri="https://security.example/baselines/linux",
+            classification=KnowledgeClassification.PUBLIC,
+            updated_at="2026-11-19T00:00:00Z",
+        )
+        with pytest.raises(KnowledgeStoreConflict):
+            await engine_a.ingest(changed_version)
+
+        async with admin_factory() as session:
+            counts = (
+                await session.execute(
+                    text("""
+                        SELECT
+                            (SELECT count(*) FROM public.knowledge_documents
+                             WHERE tenant_id = :tenant_id AND document_key = 'baseline-a'),
+                            (SELECT count(*) FROM public.knowledge_chunks chunk
+                             JOIN public.knowledge_documents document
+                               ON document.tenant_id = chunk.tenant_id
+                              AND document.id = chunk.document_id
+                             WHERE chunk.tenant_id = :tenant_id
+                               AND document.document_key = 'baseline-a')
+                    """),
+                    {"tenant_id": tenant_a},
+                )
+            ).one()
+            assert counts[0] == 1
+            assert counts[1] == first_count
     finally:
         await ingestor_engine.dispose()
         await provisioner_engine.dispose()
