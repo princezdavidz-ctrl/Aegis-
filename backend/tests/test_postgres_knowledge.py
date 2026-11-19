@@ -7,9 +7,6 @@ import os
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import text
-from sqlalchemy.exc import DBAPIError
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from aegis_ai.knowledge import (
     KnowledgeClassification,
@@ -23,6 +20,9 @@ from app.ai.knowledge_store import (
     PostgresKnowledgeStore,
 )
 from app.db.session import apply_database_context
+from sqlalchemy import text
+from sqlalchemy.exc import DBAPIError
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 ADMIN_URL = os.getenv("AEGIS_TEST_ADMIN_DATABASE_URL")
 RUNTIME_URL = os.getenv("AEGIS_TEST_DATABASE_URL")
