@@ -939,10 +939,11 @@ Implement and test the backend-owned PostgreSQL KnowledgeStore adapter behind th
 - Flutter formatting, analysis and tests passed [#44514291508](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291508).
 - The local Git clone remains blocked by DNS resolution for `github.com`; hosted Actions supplied executable validation.
 - No live Neon database, model provider, customer data, customer ingestion or security-tool action was used.
+- Post-merge workflows for `7964f6295edcc291f5bd6f8b6c9ee333faf99d49` have started; at this documentation update they were queued/in progress, so no post-merge success is claimed yet.
 
 ### Pending
 
-- PR #61 is still in draft while the implementation is documented and prepared for merge.
+- PR #61 was merged into `main` on 2026-11-19 as squash commit `7964f6295edcc291f5bd6f8b6c9ee333faf99d49` after all pre-merge checks passed.
 - The adapter is not wired into FastAPI lifespan or specialist augmentation. The in-memory adapter remains the active default.
 - Separate runtime/ingestor database URL settings and embedding profile configuration are not yet present.
 - Role-aware restricted-classification access and retention/deletion controls remain required before customer ingestion.
