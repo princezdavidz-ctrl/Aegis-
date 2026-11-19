@@ -915,3 +915,39 @@ Implement the PostgreSQL KnowledgeStore adapter behind the existing AI protocol,
 ### Next task
 
 Implement and test the backend-owned PostgreSQL KnowledgeStore adapter behind the existing AI `KnowledgeStore` protocol. Do not connect it to live customer ingestion or specialist model prompts in this increment.
+
+## 2026-11-19 — Backend PostgreSQL KnowledgeStore adapter (PR #61)
+
+### Completed
+
+- Added `backend/app/ai/knowledge_store.py`, implementing the existing AI `KnowledgeStore` protocol without introducing a second database stack.
+- Bound each store instance to one server-resolved tenant UUID and verified subject; cross-tenant retrieval requests are rejected before SQL execution.
+- Used separate runtime and ingestor session factories, verified the database role with `SELECT current_user`, and applied transaction-local subject/tenant RLS context for each operation.
+- Added immutable embedding-space identity (provider, model, model revision and dimensions), bounded embedding batches, strict vector validation and idempotent document/chunk persistence.
+- Kept document content immutable for a document key. Changed source content requires a new versioned document ID because the current schema intentionally has no knowledge DELETE/soft-delete workflow.
+- Added bounded hybrid retrieval using exact pgvector cosine distance and PostgreSQL lexical ranking with reciprocal-rank fusion. Tenant and embedding-space filters are applied in SQL before ranking; restricted-classification content is excluded pending role-aware authorization.
+- Added PostgreSQL integration coverage for idempotency, tenant binding, classification filtering, content conflicts, rejection of privileged database sessions and transaction rollback.
+- Extended the security workflow's Ruff command to lint the adapter and its integration test.
+
+### Validation
+
+- Final tested code head: `7a9014ced7baa38838f283eb2b32e0bab4e39710`.
+- AEGIS checks [#44514291573](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291573): all eight jobs passed.
+- API: **109 passed, 8 skipped**; PostgreSQL migration/RLS/knowledge integration: **8 passed**.
+- Frontend: **55 tests passed**; TypeScript typecheck and production build passed.
+- Targeted Ruff, NVD tests, Gitleaks, Python/TypeScript CodeQL and Python/npm dependency audits passed in security checks [#44514291498](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291498).
+- Flutter formatting, analysis and tests passed [#44514291508](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291508).
+- The local Git clone remains blocked by DNS resolution for `github.com`; hosted Actions supplied executable validation.
+- No live Neon database, model provider, customer data, customer ingestion or security-tool action was used.
+
+### Pending
+
+- PR #61 is still in draft while the implementation is documented and prepared for merge.
+- The adapter is not wired into FastAPI lifespan or specialist augmentation. The in-memory adapter remains the active default.
+- Separate runtime/ingestor database URL settings and embedding profile configuration are not yet present.
+- Role-aware restricted-classification access and retention/deletion controls remain required before customer ingestion.
+- PR #37's integration-authorization migration remains separate and unmerged.
+
+### Next task
+
+Add fail-closed settings and application-lifecycle wiring for the separate runtime/ingestor database roles and embedding profile, then connect the tenant-bound KnowledgeEngine to specialist augmentation only after role-aware authorization tests pass.
