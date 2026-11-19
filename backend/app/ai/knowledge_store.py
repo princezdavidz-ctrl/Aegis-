@@ -105,6 +105,7 @@ class PostgresKnowledgeStore(KnowledgeStore):
         updated_at = self._parse_updated_at(document.updated_at)
 
         async with self._ingestor_sessions() as session, session.begin():
+            await self._require_role(session, "aegis_ingestor")
             await apply_database_context(
                 session,
                 subject=self._subject,
@@ -156,6 +157,7 @@ class PostgresKnowledgeStore(KnowledgeStore):
             raise PermissionError("knowledge store is bound to a different tenant")
 
         async with self._runtime_sessions() as session, session.begin():
+            await self._require_role(session, "aegis_runtime")
             await apply_database_context(
                 session,
                 subject=self._subject,
@@ -324,6 +326,11 @@ class PostgresKnowledgeStore(KnowledgeStore):
                 )
             )
         return tuple(matches)
+
+    async def _require_role(self, session: AsyncSession, expected: str) -> None:
+        current = await session.scalar(text("SELECT current_user"))
+        if current != expected:
+            raise PermissionError(f"knowledge store requires database role {expected}")
 
     async def _ensure_embedding_space(self, session: AsyncSession) -> UUID:
         await session.execute(
