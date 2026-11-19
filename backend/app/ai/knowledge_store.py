@@ -513,7 +513,7 @@ class PostgresKnowledgeStore(KnowledgeStore):
         if not isinstance(value, str):
             raise TypeError("updated_at must be an ISO-8601 string")
         try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            parsed = datetime.fromisoformat(value)
         except ValueError:
             raise ValueError("updated_at must be a valid ISO-8601 timestamp") from None
         if parsed.tzinfo is None:
