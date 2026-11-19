@@ -58,10 +58,20 @@ tenant scope from document content or model output.
 ## Current status
 
 The schema, RLS policies, composite tenant constraints, embedding compatibility
-checks and audit triggers are covered by PostgreSQL CI. The application-level
-PostgreSQL KnowledgeStore adapter, ingestion orchestration, vector query path
-and retention/deletion workflow are not implemented. The in-memory store
-remains the only active KnowledgeStore adapter.
+checks and audit triggers are covered by PostgreSQL CI. The backend-owned
+`PostgresKnowledgeStore` adapter is implemented at
+`backend/app/ai/knowledge_store.py` and covered by the same disposable
+pgvector PostgreSQL CI service. It requires separate `aegis_runtime` and
+`aegis_ingestor` session factories, checks `current_user` against the exact
+least-privilege role before each operation, and applies transaction-local
+subject/tenant context.
+
+The adapter is not yet wired into the FastAPI lifecycle or customer ingestion;
+the in-memory store remains the active default. Document keys are immutable
+for a content digest, and a changed source must use a new versioned document
+key until a reviewed soft-delete/retention migration exists. Restricted
+documents are excluded from retrieval pending role-aware classification
+authorization. No live Neon database or model provider is configured.
 
 The downgrade drops AEGIS knowledge tables and triggers but intentionally
 leaves the shared pgvector extension installed.
