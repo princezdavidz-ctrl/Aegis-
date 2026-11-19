@@ -153,18 +153,40 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - PostgreSQL CI uses a pgvector-enabled PostgreSQL 16 image and enables the extension as the database administrator before applying migrations.
 - The schema is a foundation only. No PostgreSQL KnowledgeStore adapter, customer ingestion or semantic retrieval is active.
 
-## Next vertical slice — PostgreSQL KnowledgeStore adapter
+## PostgreSQL KnowledgeStore adapter — implementation complete in PR #61 (merge pending)
 
-1. Implement a backend-owned adapter behind the existing `KnowledgeStore` protocol, using the API's SQLAlchemy session boundary rather than adding a second database stack to the AI package.
-2. Separate read-only runtime sessions from the RLS-bound ingestor session; set tenant and subject context transaction-locally for every operation.
-3. Persist documents/chunks idempotently and keep document metadata, chunks and embeddings in one transaction so audit-trigger failures roll back the entire ingestion.
-4. Embed document chunks and retrieval queries using one explicit provider/model/revision/dimension profile. Reject mismatched dimensions and never compare vectors across embedding spaces.
-5. Implement exact vector similarity and lexical retrieval with tenant ID and embedding-space ID filters in SQL before ranking. Keep top-k bounded, add deterministic tie-breaking and preserve source/classification provenance.
-6. Add PostgreSQL integration tests for repeat ingestion, updates, empty results, model-space mismatch, cross-tenant search denial and failure rollback. Do not fetch global candidates and filter them in application memory.
-7. Wire the adapter into specialist augmentation only after the persistence and tenant-isolation tests pass. Retrieved content remains untrusted evidence.
-8. Keep customer ingestion disabled until approved source authorization, retention and classification controls are connected.
+- Added `backend/app/ai/knowledge_store.py` behind the existing AI `KnowledgeStore` protocol; no second database stack was added to the AI package.
+- Each adapter instance is bound to one server-resolved tenant UUID and verified subject. A request for a different tenant is rejected before retrieval.
+- Uses separate read-only `aegis_runtime` and write-limited `aegis_ingestor` session factories. The adapter checks `SELECT current_user` against the expected role before every database operation so a superuser or incorrectly configured role cannot silently bypass the intended boundary.
+- Sets transaction-local `aegis.subject` and `aegis.tenant_id` for every read/write transaction.
+- Persists an explicit provider/model/model-revision/dimension embedding-space identity. Embedding batches are capped at 64; vector count, dimensions, numeric values, finite values and non-zero vectors are validated.
+- Document/chunk persistence is idempotent and occurs in one transaction so database/audit failures roll back the embedding-space/document/chunk writes together. A document key is immutable for its content digest; changed source content must use a new versioned document ID because the current schema has no DELETE/soft-delete path.
+- Implements bounded reciprocal-rank fusion over exact pgvector cosine distance and PostgreSQL lexical ranking. Tenant ID and embedding-space ID are applied in SQL before candidate ranking; top-k is bounded by the existing request contract. `restricted` documents are excluded until role-aware classification authorization is available.
+- Extended PostgreSQL integration coverage for repeat ingestion, cross-tenant binding, classification filtering, content-version conflicts, wrong-role rejection and transaction rollback.
+- Extended the security workflow's Ruff target to include the adapter and its PostgreSQL integration tests.
+- PR #61 final tested head before documentation-only commits: `7a9014ced7baa38838f283eb2b32e0bab4e39710`.
 
-The pgvector extension must be enabled by a database administrator before migration 0010. The current CI evidence validates the schema and RLS against a disposable PostgreSQL instance only; no live Neon database is configured or claimed.
+### Validation on PR #61
+
+- AEGIS checks [#44514291573](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291573): all eight jobs passed, including API container smoke test, frontend, Python API, PostgreSQL/RLS, Windows/Linux/macOS agents and Terraform.
+- Python API tests: **109 passed, 8 skipped**.
+- PostgreSQL migration/knowledge integration: **8 passed**, including the new adapter test.
+- Frontend: **55 tests passed**, TypeScript typecheck and production build passed.
+- Security checks [#44514291498](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291498): targeted Ruff, NVD tests, Gitleaks, Python/TypeScript CodeQL and Python/npm dependency audits passed.
+- Flutter checks [#44514291508](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291508): formatting, analysis and tests passed.
+- Local Git clone remains unavailable because this execution environment cannot resolve `github.com`; hosted GitHub Actions supplied validation.
+- No live Neon database, model provider, customer content, customer ingestion, or security-tool action was used.
+
+## Next vertical slice — safe configuration and specialist RAG wiring
+
+1. Add secret-wrapped settings for separate runtime and ingestor database URLs, plus a validated embedding provider/model/revision/dimension profile. Do not log or expose any credential.
+2. Create separate SQLAlchemy session factories only when all required configuration is present; keep the feature disabled by default and fail closed on incomplete configuration.
+3. Construct a tenant-bound store from the verified `TenantContext` per request/task. Never cache a store globally across tenants.
+4. Integrate `KnowledgeEngine` and `KnowledgeAugmentedSpecialistService` into the existing specialist service only after the role, membership and classification checks are available.
+5. Keep retrieved passages explicitly untrusted, preserve evidence IDs/source/classification, and never allow retrieved text to authorize tools or override system instructions.
+6. Add API-level tests for disabled configuration, wrong-role database URLs, cross-tenant retrieval, provider failure and advisory-only responses.
+7. Implement role-aware access to `restricted` knowledge and a reviewed retention/deletion workflow before enabling customer ingestion.
+8. Configure a disposable/live non-production Neon database and model provider through deployment secret stores before any customer data is accepted.
 
 Other open work remains separate: PR #37's integration-authorization migration has an outstanding PostgreSQL migration failure caused by SQLAlchemy interpreting a colon-prefixed token inside a SQL function body as a bind parameter; do not merge it until its migration/RLS checks pass.
 
