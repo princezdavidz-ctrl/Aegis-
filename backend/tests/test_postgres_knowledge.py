@@ -7,7 +7,6 @@ import os
 from uuid import uuid4
 
 import pytest
-
 from aegis_ai.knowledge import (
     KnowledgeClassification,
     KnowledgeDocument,
