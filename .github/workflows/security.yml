@@ -95,7 +95,7 @@ jobs:
           python -m pip install --disable-pip-version-check -r backend/requirements-dev.txt
           python -m pip install -e services/ai ruff
       - name: Lint NVD importer
-        run: ruff check backend/app/vulnerability_intel backend/scripts/sync_nvd_cves.py backend/tests/test_nvd_sync.py
+        run: ruff check backend/app/vulnerability_intel backend/scripts/sync_nvd_cves.py backend/tests/test_nvd_sync.py backend/app/ai/knowledge_store.py backend/tests/test_postgres_knowledge.py
       - name: Test NVD importer
         env:
           PYTHONPATH: backend
