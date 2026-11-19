@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import math
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -105,49 +105,49 @@ class PostgresKnowledgeStore(KnowledgeStore):
         updated_at = self._parse_updated_at(document.updated_at)
 
         async with self._ingestor_sessions() as session, session.begin():
-                await apply_database_context(
-                    session,
-                    subject=self._subject,
-                    tenant_id=self._tenant_id,
+            await apply_database_context(
+                session,
+                subject=self._subject,
+                tenant_id=self._tenant_id,
+            )
+            space_id = await self._ensure_embedding_space(session)
+            document_id = await self._ensure_document(
+                session,
+                document=document,
+                content_sha256=document_digest,
+                updated_at=updated_at,
+            )
+            for chunk, vector in zip(ordered, vectors, strict=True):
+                await session.execute(
+                    text(
+                        """
+                        INSERT INTO public.knowledge_chunks (
+                            tenant_id, document_id, chunk_key, chunk_index,
+                            content, content_sha256, embedding_space_id,
+                            embedding_dimensions, embedding
+                        )
+                        VALUES (
+                            :tenant_id, :document_id, :chunk_key, :chunk_index,
+                            :content, :content_sha256, :space_id,
+                            :dimensions, CAST(:embedding AS vector)
+                        )
+                        ON CONFLICT (
+                            tenant_id, document_id, chunk_key, embedding_space_id
+                        ) DO NOTHING
+                        """
+                    ),
+                    {
+                        "tenant_id": self._tenant_id,
+                        "document_id": document_id,
+                        "chunk_key": chunk.chunk_id,
+                        "chunk_index": chunk.chunk_index,
+                        "content": chunk.content,
+                        "content_sha256": self._digest(chunk.content),
+                        "space_id": space_id,
+                        "dimensions": self._space.dimensions,
+                        "embedding": self._vector_literal(vector),
+                    },
                 )
-                space_id = await self._ensure_embedding_space(session)
-                document_id = await self._ensure_document(
-                    session,
-                    document=document,
-                    content_sha256=document_digest,
-                    updated_at=updated_at,
-                )
-                for chunk, vector in zip(ordered, vectors, strict=True):
-                    await session.execute(
-                        text(
-                            """
-                            INSERT INTO public.knowledge_chunks (
-                                tenant_id, document_id, chunk_key, chunk_index,
-                                content, content_sha256, embedding_space_id,
-                                embedding_dimensions, embedding
-                            )
-                            VALUES (
-                                :tenant_id, :document_id, :chunk_key, :chunk_index,
-                                :content, :content_sha256, :space_id,
-                                :dimensions, CAST(:embedding AS vector)
-                            )
-                            ON CONFLICT (
-                                tenant_id, document_id, chunk_key, embedding_space_id
-                            ) DO NOTHING
-                            """
-                        ),
-                        {
-                            "tenant_id": self._tenant_id,
-                            "document_id": document_id,
-                            "chunk_key": chunk.chunk_id,
-                            "chunk_index": chunk.chunk_index,
-                            "content": chunk.content,
-                            "content_sha256": self._digest(chunk.content),
-                            "space_id": space_id,
-                            "dimensions": self._space.dimensions,
-                            "embedding": self._vector_literal(vector),
-                        },
-                    )
 
     async def search(self, request: RetrievalRequest) -> tuple[KnowledgeMatch, ...]:
         """Run tenant- and embedding-space-scoped hybrid retrieval."""
@@ -156,31 +156,31 @@ class PostgresKnowledgeStore(KnowledgeStore):
             raise PermissionError("knowledge store is bound to a different tenant")
 
         async with self._runtime_sessions() as session, session.begin():
-                await apply_database_context(
-                    session,
-                    subject=self._subject,
-                    tenant_id=self._tenant_id,
-                )
-                space_id = await session.scalar(
-                    text(
-                        """
-                        SELECT id
-                        FROM public.knowledge_embedding_spaces
-                        WHERE tenant_id = :tenant_id
-                          AND provider = :provider
-                          AND model = :model
-                          AND model_revision = :model_revision
-                          AND dimensions = :dimensions
-                        """
-                    ),
-                    {
-                        "tenant_id": self._tenant_id,
-                        "provider": self._space.provider,
-                        "model": self._space.model,
-                        "model_revision": self._space.model_revision,
-                        "dimensions": self._space.dimensions,
-                    },
-                )
+            await apply_database_context(
+            session,
+            subject=self._subject,
+            tenant_id=self._tenant_id,
+            )
+            space_id = await session.scalar(
+            text(
+                """
+                SELECT id
+                FROM public.knowledge_embedding_spaces
+                WHERE tenant_id = :tenant_id
+                  AND provider = :provider
+                  AND model = :model
+                  AND model_revision = :model_revision
+                  AND dimensions = :dimensions
+                """
+            ),
+            {
+                "tenant_id": self._tenant_id,
+                "provider": self._space.provider,
+                "model": self._space.model,
+                "model_revision": self._space.model_revision,
+                "dimensions": self._space.dimensions,
+            },
+            )
         if space_id is None:
             return ()
 
@@ -192,117 +192,117 @@ class PostgresKnowledgeStore(KnowledgeStore):
 
         async with self._runtime_sessions() as session:
             async with session.begin():
-                await apply_database_context(
-                    session,
-                    subject=self._subject,
-                    tenant_id=self._tenant_id,
-                )
-                result = await session.execute(
-                    text(
-                        """
-                        WITH vector_candidates AS (
-                            SELECT candidate.id,
-                                   ROW_NUMBER() OVER (
-                                       ORDER BY candidate.distance,
-                                                candidate.document_id,
-                                                candidate.chunk_index
-                                   ) AS rank
-                            FROM (
-                                SELECT chunk.id,
-                                       chunk.document_id,
-                                       chunk.chunk_index,
-                                       chunk.embedding <=> CAST(:embedding AS vector)
-                                           AS distance
-                                FROM public.knowledge_chunks AS chunk
-                                JOIN public.knowledge_documents AS document
-                                  ON document.tenant_id = chunk.tenant_id
-                                 AND document.id = chunk.document_id
-                                WHERE chunk.tenant_id = :tenant_id
-                                  AND chunk.embedding_space_id = :space_id
-                                  AND document.classification IN ('public', 'internal')
-                                ORDER BY distance, chunk.document_id, chunk.chunk_index
-                                LIMIT :candidate_limit
-                            ) AS candidate
-                        ),
-                        lexical_candidates AS (
-                            SELECT candidate.id,
-                                   ROW_NUMBER() OVER (
-                                       ORDER BY candidate.lexical_score DESC,
-                                                candidate.document_id,
-                                                candidate.chunk_index
-                                   ) AS rank
-                            FROM (
-                                SELECT chunk.id,
-                                       chunk.document_id,
-                                       chunk.chunk_index,
-                                       ts_rank_cd(
-                                           chunk.search_vector,
-                                           plainto_tsquery('simple', :query)
-                                       ) AS lexical_score
-                                FROM public.knowledge_chunks AS chunk
-                                JOIN public.knowledge_documents AS document
-                                  ON document.tenant_id = chunk.tenant_id
-                                 AND document.id = chunk.document_id
-                                WHERE chunk.tenant_id = :tenant_id
-                                  AND chunk.embedding_space_id = :space_id
-                                  AND document.classification IN ('public', 'internal')
-                                  AND chunk.search_vector @@ plainto_tsquery('simple', :query)
-                                ORDER BY lexical_score DESC,
-                                         chunk.document_id,
-                                         chunk.chunk_index
-                                LIMIT :candidate_limit
-                            ) AS candidate
-                        ),
-                        combined_ranks AS (
-                            SELECT id, SUM(contribution) AS reciprocal_rank
-                            FROM (
-                                SELECT id, 1.0 / (60.0 + rank) AS contribution
-                                FROM vector_candidates
-                                UNION ALL
-                                SELECT id, 1.0 / (60.0 + rank) AS contribution
-                                FROM lexical_candidates
-                            ) AS ranked_sources
-                            GROUP BY id
-                        )
-                        SELECT
-                            chunk.tenant_id,
-                            document.document_key,
-                            chunk.chunk_key,
-                            document.title,
-                            document.source,
-                            chunk.content,
-                            chunk.chunk_index,
-                            document.source_uri,
-                            document.classification,
-                            document.updated_at,
-                            LEAST(
-                                combined_ranks.reciprocal_rank / (2.0 / 61.0),
-                                1.0
-                            ) AS score
-                        FROM combined_ranks
-                        JOIN public.knowledge_chunks AS chunk
-                          ON chunk.id = combined_ranks.id
-                         AND chunk.tenant_id = :tenant_id
-                         AND chunk.embedding_space_id = :space_id
-                        JOIN public.knowledge_documents AS document
-                          ON document.tenant_id = chunk.tenant_id
-                         AND document.id = chunk.document_id
-                        ORDER BY combined_ranks.reciprocal_rank DESC,
-                                 document.document_key,
-                                 chunk.chunk_index
-                        LIMIT :top_k
-                        """
+            await apply_database_context(
+                session,
+                subject=self._subject,
+                tenant_id=self._tenant_id,
+            )
+            result = await session.execute(
+                text(
+                    """
+                    WITH vector_candidates AS (
+                        SELECT candidate.id,
+                               ROW_NUMBER() OVER (
+                                   ORDER BY candidate.distance,
+                                            candidate.document_id,
+                                            candidate.chunk_index
+                               ) AS rank
+                        FROM (
+                            SELECT chunk.id,
+                                   chunk.document_id,
+                                   chunk.chunk_index,
+                                   chunk.embedding <=> CAST(:embedding AS vector)
+                                       AS distance
+                            FROM public.knowledge_chunks AS chunk
+                            JOIN public.knowledge_documents AS document
+                              ON document.tenant_id = chunk.tenant_id
+                             AND document.id = chunk.document_id
+                            WHERE chunk.tenant_id = :tenant_id
+                              AND chunk.embedding_space_id = :space_id
+                              AND document.classification IN ('public', 'internal')
+                            ORDER BY distance, chunk.document_id, chunk.chunk_index
+                            LIMIT :candidate_limit
+                        ) AS candidate
                     ),
-                    {
-                        "tenant_id": self._tenant_id,
-                        "space_id": space_id,
-                        "embedding": self._vector_literal(query_vector),
-                        "query": request.query,
-                        "candidate_limit": candidate_limit,
-                        "top_k": request.top_k,
-                    },
-                )
-                rows = result.mappings().all()
+                    lexical_candidates AS (
+                        SELECT candidate.id,
+                               ROW_NUMBER() OVER (
+                                   ORDER BY candidate.lexical_score DESC,
+                                            candidate.document_id,
+                                            candidate.chunk_index
+                               ) AS rank
+                        FROM (
+                            SELECT chunk.id,
+                                   chunk.document_id,
+                                   chunk.chunk_index,
+                                   ts_rank_cd(
+                                       chunk.search_vector,
+                                       plainto_tsquery('simple', :query)
+                                   ) AS lexical_score
+                            FROM public.knowledge_chunks AS chunk
+                            JOIN public.knowledge_documents AS document
+                              ON document.tenant_id = chunk.tenant_id
+                             AND document.id = chunk.document_id
+                            WHERE chunk.tenant_id = :tenant_id
+                              AND chunk.embedding_space_id = :space_id
+                              AND document.classification IN ('public', 'internal')
+                              AND chunk.search_vector @@ plainto_tsquery('simple', :query)
+                            ORDER BY lexical_score DESC,
+                                     chunk.document_id,
+                                     chunk.chunk_index
+                            LIMIT :candidate_limit
+                        ) AS candidate
+                    ),
+                    combined_ranks AS (
+                        SELECT id, SUM(contribution) AS reciprocal_rank
+                        FROM (
+                            SELECT id, 1.0 / (60.0 + rank) AS contribution
+                            FROM vector_candidates
+                            UNION ALL
+                            SELECT id, 1.0 / (60.0 + rank) AS contribution
+                            FROM lexical_candidates
+                        ) AS ranked_sources
+                        GROUP BY id
+                    )
+                    SELECT
+                        chunk.tenant_id,
+                        document.document_key,
+                        chunk.chunk_key,
+                        document.title,
+                        document.source,
+                        chunk.content,
+                        chunk.chunk_index,
+                        document.source_uri,
+                        document.classification,
+                        document.updated_at,
+                        LEAST(
+                            combined_ranks.reciprocal_rank / (2.0 / 61.0),
+                            1.0
+                        ) AS score
+                    FROM combined_ranks
+                    JOIN public.knowledge_chunks AS chunk
+                      ON chunk.id = combined_ranks.id
+                     AND chunk.tenant_id = :tenant_id
+                     AND chunk.embedding_space_id = :space_id
+                    JOIN public.knowledge_documents AS document
+                      ON document.tenant_id = chunk.tenant_id
+                     AND document.id = chunk.document_id
+                    ORDER BY combined_ranks.reciprocal_rank DESC,
+                             document.document_key,
+                             chunk.chunk_index
+                    LIMIT :top_k
+                    """
+                ),
+                {
+                    "tenant_id": self._tenant_id,
+                    "space_id": space_id,
+                    "embedding": self._vector_literal(query_vector),
+                    "query": request.query,
+                    "candidate_limit": candidate_limit,
+                    "top_k": request.top_k,
+                },
+            )
+            rows = result.mappings().all()
 
         matches: list[KnowledgeMatch] = []
         for row in rows:
