@@ -463,6 +463,34 @@ async def test_postgres_knowledge_store_is_idempotent_tenant_bound_and_classifie
                 )
             )
 
+        rollback_profile = EmbeddingSpaceProfile(
+            provider="test-provider",
+            model="test-embedding",
+            model_revision="rollback-revision",
+            dimensions=3,
+        )
+        rollback_store = PostgresKnowledgeStore(
+            runtime_session_factory=runtime_factory,
+            ingestor_session_factory=ingestor_factory,
+            subject=actor_a,
+            tenant_id=tenant_a,
+            embeddings=embeddings,
+            embedding_space=rollback_profile,
+        )
+        oversized_source = "https://security.example/" + ("a" * 2050)
+        with pytest.raises(DBAPIError):
+            await KnowledgeEngine(rollback_store).ingest(
+                KnowledgeDocument(
+                    tenant_id=str(tenant_a),
+                    document_id="rollback-document",
+                    title="Transaction rollback test",
+                    source="security-baseline",
+                    content="The document insert violates the database source URI bound.",
+                    source_uri=oversized_source,
+                    classification=KnowledgeClassification.PUBLIC,
+                )
+            )
+
         async with admin_factory() as session:
             counts = (
                 await session.execute(
@@ -475,13 +503,25 @@ async def test_postgres_knowledge_store_is_idempotent_tenant_bound_and_classifie
                                ON document.tenant_id = chunk.tenant_id
                               AND document.id = chunk.document_id
                              WHERE chunk.tenant_id = :tenant_id
-                               AND document.document_key = 'baseline-a')
+                               AND document.document_key = 'baseline-a'),
+                            (SELECT count(*) FROM public.knowledge_documents
+                             WHERE tenant_id = :tenant_id
+                               AND document_key = 'wrong-role-write'),
+                            (SELECT count(*) FROM public.knowledge_embedding_spaces
+                             WHERE tenant_id = :tenant_id
+                               AND model_revision = 'rollback-revision'),
+                            (SELECT count(*) FROM public.knowledge_documents
+                             WHERE tenant_id = :tenant_id
+                               AND document_key = 'rollback-document')
                     """),
                     {"tenant_id": tenant_a},
                 )
             ).one()
             assert counts[0] == 1
             assert counts[1] == first_count
+            assert counts[2] == 0
+            assert counts[3] == 0
+            assert counts[4] == 0
     finally:
         await ingestor_engine.dispose()
         await provisioner_engine.dispose()
