@@ -142,7 +142,7 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - Validation: AI service 56 tests passed, Ruff passed, and AEGIS, security and Flutter workflows all passed. See docs/PROGRESS.md for run links and details.
 - This is an adapter foundation only. It does not persist vectors, automatically ingest customer data, or enable semantic retrieval. The in-memory store remains development/test-only.
 
-## Completed vertical slice — tenant-scoped pgvector schema (PR pending)
+## Completed vertical slice — tenant-scoped pgvector schema (PR #60 merged)
 
 - Added migration `0010_tenant_knowledge_store` for tenant-owned embedding spaces, documents and chunks.
 - Every knowledge table uses forced RLS. Reads and ingestion writes require transaction-local tenant context plus an active membership for the verified subject.
@@ -178,3 +178,13 @@ Other open work remains separate: PR #37's integration-authorization migration h
 - The schema is validated against disposable pgvector PostgreSQL in CI only; no live Neon database is configured.
 
 **Immediate next action:** resolve the npm advisory through a verified upstream release or explicit risk acceptance, then merge PR #60. After merge, implement the backend-owned PostgreSQL KnowledgeStore adapter described above.
+
+
+### Merge and dependency-audit revalidation — 2026-11-19
+
+- PR #60 was merged into `main` as squash commit `64325ebf210fe4f129d72050b9f65102a7f135a8` after all PR workflows passed.
+- The previously failing security dependency-audit job was re-run after GitHub withdrew GHSA-fc5q-39xc-vjpf on 2026-11-18; the rerun passed, including npm audit. The advisory withdrawal is not a package patch, and picomatch 4.0.7 remains in the lockfile through development tooling. Continue monitoring; do not add an override or suppression without new evidence.
+- PR validation evidence: AEGIS checks [#44299199105](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44299199105), AI service [#44299199003](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44299199003), Flutter [#44299199083](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44299199083), NVD [#44299199102](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44299199102), and security [#44299198857](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44299198857).
+- The schema remains validated against disposable pgvector PostgreSQL only. No live Neon database or production ingestion is configured.
+
+**Next implementation:** build the backend-owned PostgreSQL KnowledgeStore adapter behind the existing AI protocol. Use separate read-only runtime and RLS-bound ingestor session factories, transaction-local verified subject/tenant context, explicit embedding-space identity, SQL-scoped vector and lexical retrieval, bounded top-k, provenance, and atomic audited persistence. Add PostgreSQL tests for idempotency, version conflicts, tenant isolation, classification filtering and rollback before wiring retrieval into specialist augmentation.
