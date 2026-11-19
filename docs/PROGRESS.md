@@ -878,3 +878,40 @@ Implement the PostgreSQL KnowledgeStore adapter behind the existing AI protocol,
 
 - PR #60 remains open and unmerged until the unpatched picomatch advisory has a safe upstream fix or an explicit risk-acceptance decision is made. The PostgreSQL schema/RLS integration itself now passes on the disposable pgvector CI database.
 - After PR #60 is mergeable, implement the backend-owned PostgreSQL KnowledgeStore adapter and tenant/embedding-space-scoped hybrid retrieval. Keep customer ingestion and model retrieval disabled until the adapter's isolation and rollback tests pass.
+
+## 2026-11-19 — pgvector schema merged; dependency audit revalidated
+
+### Repository audit
+
+- Re-inspected the current `main` documentation, README, implementation backlog, knowledge contracts/store/embedding provider, backend SQLAlchemy session/RLS helpers, migration 0010, PostgreSQL role grants, and the open pull-request list.
+- Confirmed PR #60 was still open at head `a4781fbd855f134dad605cdf62dcc116289e83cd`; no new commits or conflicting changes had appeared.
+- Preserved the existing React/TypeScript/Tailwind portal, FastAPI service, AI protocol and in-memory test adapter.
+
+### Completed
+
+- Rechecked GitHub Advisory Database entry GHSA-fc5q-39xc-vjpf. GitHub marked the advisory withdrawn on 2026-11-18 after the upstream maintainer disputed the reported behavior; no package upgrade or local vulnerability fix was published.
+- Re-ran only the failed dependency-audit job from security workflow run [#44299198857](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44299198857). The rerun completed successfully, including `npm audit --audit-level=high`; Python dependency audits also passed. No audit suppression, package override, or workflow weakening was added.
+- Confirmed the other PR #60 workflows were successful: AEGIS checks [#44299199105](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44299199105), AI service [#44299199003](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44299199003), Flutter [#44299199083](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44299199083), and NVD catalogue [#44299199102](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44299199102).
+- Merged [PR #60](https://github.com/princezdavidz-ctrl/Aegis-/pull/60) using squash commit `64325ebf210fe4f129d72050b9f65102a7f135a8`.
+- The merged schema provides tenant-owned embedding spaces, documents and chunks; forced RLS; composite tenant/document/embedding-space relationships; vector dimension checks; generated lexical search indexing; and audited writes.
+- The schema remains CI-validated against a disposable pgvector PostgreSQL service only. No live Neon database, customer ingestion, model provider, or semantic retrieval was enabled.
+
+### Validation and limitations
+
+- All five PR #60 workflow runs were green after the dependency-audit rerun. The failed job was re-run after the GitHub advisory withdrawal and completed successfully.
+- The GitHub workflow-run listing for the squash merge commit returned no post-merge runs in this check; no post-merge CI result is claimed.
+- The advisory withdrawal is not a code-level patch to picomatch. The lockfile still resolves picomatch 4.0.7 through development tooling; continue monitoring upstream and reassess if the advisory is reinstated or a fix is published.
+- No secrets, private data, live provider calls, customer content, or security-tool actions were used.
+
+### Pending
+
+- Implement the backend-owned PostgreSQL KnowledgeStore adapter using the existing SQLAlchemy session and RLS boundary.
+- Keep read-only runtime and write-limited ingestor session factories separate; bind each adapter instance to a verified subject and server-resolved tenant UUID.
+- Add bounded embedding batches, explicit provider/model/revision/dimension identity, tenant- and embedding-space-filtered vector plus lexical retrieval, provenance mapping, and atomic audited persistence.
+- Add PostgreSQL integration coverage for idempotency, content-version conflicts, cross-tenant denial, classification filtering and transaction rollback.
+- Keep customer ingestion and RAG augmentation disabled until the adapter and authorization tests pass.
+- PR #37's integration-authorization migration remains separate and must pass its PostgreSQL migration/RLS checks before merge.
+
+### Next task
+
+Implement and test the backend-owned PostgreSQL KnowledgeStore adapter behind the existing AI `KnowledgeStore` protocol. Do not connect it to live customer ingestion or specialist model prompts in this increment.
