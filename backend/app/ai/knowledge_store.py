@@ -157,29 +157,29 @@ class PostgresKnowledgeStore(KnowledgeStore):
 
         async with self._runtime_sessions() as session, session.begin():
             await apply_database_context(
-            session,
-            subject=self._subject,
-            tenant_id=self._tenant_id,
+                session,
+                subject=self._subject,
+                tenant_id=self._tenant_id,
             )
             space_id = await session.scalar(
-            text(
-                """
-                SELECT id
-                FROM public.knowledge_embedding_spaces
-                WHERE tenant_id = :tenant_id
-                  AND provider = :provider
-                  AND model = :model
-                  AND model_revision = :model_revision
-                  AND dimensions = :dimensions
-                """
-            ),
-            {
-                "tenant_id": self._tenant_id,
-                "provider": self._space.provider,
-                "model": self._space.model,
-                "model_revision": self._space.model_revision,
-                "dimensions": self._space.dimensions,
-            },
+                text(
+                    """
+                    SELECT id
+                    FROM public.knowledge_embedding_spaces
+                    WHERE tenant_id = :tenant_id
+                      AND provider = :provider
+                      AND model = :model
+                      AND model_revision = :model_revision
+                      AND dimensions = :dimensions
+                    """
+                ),
+                {
+                    "tenant_id": self._tenant_id,
+                    "provider": self._space.provider,
+                    "model": self._space.model,
+                    "model_revision": self._space.model_revision,
+                    "dimensions": self._space.dimensions,
+                },
             )
         if space_id is None:
             return ()
@@ -190,8 +190,7 @@ class PostgresKnowledgeStore(KnowledgeStore):
         query_vector = self._validate_vector(embedded[0])
         candidate_limit = min(50, max(request.top_k, request.top_k * 5))
 
-        async with self._runtime_sessions() as session:
-            async with session.begin():
+        async with self._runtime_sessions() as session, session.begin():
             await apply_database_context(
                 session,
                 subject=self._subject,
