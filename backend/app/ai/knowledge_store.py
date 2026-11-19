@@ -193,6 +193,7 @@ class PostgresKnowledgeStore(KnowledgeStore):
         candidate_limit = min(50, max(request.top_k, request.top_k * 5))
 
         async with self._runtime_sessions() as session, session.begin():
+            await self._require_role(session, "aegis_runtime")
             await apply_database_context(
                 session,
                 subject=self._subject,
