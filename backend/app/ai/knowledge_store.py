@@ -5,12 +5,9 @@ from __future__ import annotations
 import hashlib
 import math
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Sequence
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from uuid import UUID
-
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from aegis_ai.knowledge.contracts import (
     KnowledgeChunk,
@@ -20,6 +17,8 @@ from aegis_ai.knowledge.contracts import (
 )
 from aegis_ai.knowledge.embeddings import EmbeddingProvider
 from aegis_ai.knowledge.store import KnowledgeStore
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db.session import apply_database_context
 
@@ -105,8 +104,7 @@ class PostgresKnowledgeStore(KnowledgeStore):
         ).hexdigest()
         updated_at = self._parse_updated_at(document.updated_at)
 
-        async with self._ingestor_sessions() as session:
-            async with session.begin():
+        async with self._ingestor_sessions() as session, session.begin():
                 await apply_database_context(
                     session,
                     subject=self._subject,
@@ -157,8 +155,7 @@ class PostgresKnowledgeStore(KnowledgeStore):
         if requested_tenant != self._tenant_id:
             raise PermissionError("knowledge store is bound to a different tenant")
 
-        async with self._runtime_sessions() as session:
-            async with session.begin():
+        async with self._runtime_sessions() as session, session.begin():
                 await apply_database_context(
                     session,
                     subject=self._subject,
@@ -477,7 +474,7 @@ class PostgresKnowledgeStore(KnowledgeStore):
         if not first.source.strip() or len(first.source) > 80:
             raise ValueError("source must contain 1–80 characters")
         if not isinstance(first.classification, KnowledgeClassification):
-            raise ValueError("classification must be a KnowledgeClassification")
+            raise TypeError("classification must be a KnowledgeClassification")
         indices = [item.chunk_index for item in chunks]
         if indices != list(range(len(chunks))):
             raise ValueError("chunk indices must be contiguous and start at zero")
@@ -515,14 +512,14 @@ class PostgresKnowledgeStore(KnowledgeStore):
         if value is None:
             return None
         if not isinstance(value, str):
-            raise ValueError("updated_at must be an ISO-8601 string")
+            raise TypeError("updated_at must be an ISO-8601 string")
         try:
             parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
         except ValueError:
             raise ValueError("updated_at must be a valid ISO-8601 timestamp") from None
         if parsed.tzinfo is None:
             raise ValueError("updated_at must include a timezone")
-        return parsed.astimezone(timezone.utc)
+        return parsed.astimezone(UTC)
 
     @staticmethod
     def _digest(value: str) -> str:
@@ -534,7 +531,7 @@ class PostgresKnowledgeStore(KnowledgeStore):
         values: list[float] = []
         for value in vector:
             if isinstance(value, bool) or not isinstance(value, (int, float)):
-                raise ValueError("embedding vector values must be numeric")
+                raise TypeError("embedding vector values must be numeric")
             converted = float(value)
             if not math.isfinite(converted):
                 raise ValueError("embedding vector values must be finite")
