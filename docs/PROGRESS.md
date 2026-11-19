@@ -932,6 +932,7 @@ Implement and test the backend-owned PostgreSQL KnowledgeStore adapter behind th
 ### Validation
 
 - Final tested code head: `7a9014ced7baa38838f283eb2b32e0bab4e39710`.
+- PR #61 was merged into `main` on 2026-11-19 as squash commit `7964f6295edcc291f5bd6f8b6c9ee333faf99d49` after all pre-merge checks passed.
 - AEGIS checks [#44514291573](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44514291573): all eight jobs passed.
 - API: **109 passed, 8 skipped**; PostgreSQL migration/RLS/knowledge integration: **8 passed**.
 - Frontend: **55 tests passed**; TypeScript typecheck and production build passed.
@@ -943,7 +944,6 @@ Implement and test the backend-owned PostgreSQL KnowledgeStore adapter behind th
 
 ### Pending
 
-- PR #61 was merged into `main` on 2026-11-19 as squash commit `7964f6295edcc291f5bd6f8b6c9ee333faf99d49` after all pre-merge checks passed.
 - The adapter is not wired into FastAPI lifespan or specialist augmentation. The in-memory adapter remains the active default.
 - Separate runtime/ingestor database URL settings and embedding profile configuration are not yet present.
 - Role-aware restricted-classification access and retention/deletion controls remain required before customer ingestion.
