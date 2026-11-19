@@ -129,7 +129,7 @@ jobs:
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:16
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -148,6 +148,7 @@ jobs:
       AEGIS_TEST_DATABASE_URL: postgresql+asyncpg://aegis_runtime:aegis_ci_runtime_password@localhost:5432/aegis_test
       AEGIS_TEST_MUTATOR_DATABASE_URL: postgresql+asyncpg://aegis_test_mutator:aegis_ci_mutator_password@localhost:5432/aegis_test
       AEGIS_TEST_PROVISIONER_DATABASE_URL: postgresql+asyncpg://aegis_provisioner:aegis_ci_provisioner_password@localhost:5432/aegis_test
+      AEGIS_TEST_INGESTOR_DATABASE_URL: postgresql+asyncpg://aegis_ingestor:aegis_ci_ingestor_password@localhost:5432/aegis_test
       PGPASSWORD: postgres
     steps:
       - name: Check out repository
@@ -166,6 +167,10 @@ jobs:
         run: psql -h localhost -U postgres -d aegis_test -v db_name=aegis_test -v ON_ERROR_STOP=1 -f deploy/postgres/roles.sql
       - name: Configure CI-only passwords and audit trigger test role
         run: psql -h localhost -U postgres -d aegis_test -v ON_ERROR_STOP=1 -f backend/tests/postgres_runtime_role.sql
+      - name: Enable pgvector as the database administrator
+        run: |
+          psql -h localhost -U postgres -d aegis_test -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector"
+          psql -h localhost -U postgres -d aegis_test -v ON_ERROR_STOP=1 -c "GRANT USAGE ON TYPE public.vector TO aegis_migrator"
       - name: Apply migrations as the dedicated migration owner
         run: alembic -c backend/alembic.ini upgrade head
       - name: Grant least-privilege runtime permissions
@@ -177,7 +182,7 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -d aegis_test -v ON_ERROR_STOP=1 -c "GRANT SELECT, UPDATE, DELETE ON TABLE audit_events TO aegis_test_mutator"
       - name: Verify tenant RLS, provisioning function and least-privilege roles
-        run: python -m pytest backend/tests/test_postgres_rls.py backend/tests/test_postgres_memberships.py backend/tests/test_postgres_tenant_profile.py backend/tests/test_postgres_assets.py backend/tests/test_postgres_endpoints.py -q
+        run: python -m pytest backend/tests/test_postgres_rls.py backend/tests/test_postgres_memberships.py backend/tests/test_postgres_tenant_profile.py backend/tests/test_postgres_assets.py backend/tests/test_postgres_endpoints.py backend/tests/test_postgres_knowledge.py -q
 
   container-smoke:
     name: Build and smoke-test API container

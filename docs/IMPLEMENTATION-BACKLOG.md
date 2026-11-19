@@ -14,7 +14,7 @@ This backlog is based on an inspection of the current `main` branch. It separate
 | FastAPI | App factory, OIDC verifier, tenant/profile/membership/manual asset APIs, endpoint enrollment/fleet APIs and advisory AI analysis route exist | Live IdP/database configuration, non-production identity verification and production deployment proof |
 | Tenant security | Membership resolution, tenant context and PostgreSQL RLS migration exist | Run migrations against PostgreSQL and prove RLS under production-like roles |
 | Audit | Append-only audit model/sink and database migration protections exist | Verify durable writes and database immutability on PostgreSQL |
-| AI | Provider-neutral gateway, OpenAI-compatible adapter, four advisory specialist workflows and backend wiring exist | Live provider config, tenant evidence retrieval, evaluation and operational governance |
+| AI | Provider-neutral gateway, OpenAI-compatible adapter, four advisory specialist workflows, deterministic evaluation, embeddings adapter and tenant-scoped pgvector schema exist | PostgreSQL KnowledgeStore adapter, live provider config, tenant evidence retrieval, retrieval evaluation and operational governance |
 | Flutter desktop | Engineer SOC shell and module navigation exist | Real API data, authentication, analyst workflows and realtime updates |
 | AWS | OIDC-based manual deployment workflow and role Terraform foundation exist | Provision AWS resources, correct/configure OIDC provider, set repository variables and execute staging deployment |
 | Telemetry/detection | Architecture and module placeholders exist | Connectors, event pipeline, detection rules and correlation are not operational |
@@ -142,15 +142,39 @@ Implement the identity-to-tenant handoff before connecting customer pages to liv
 - Validation: AI service 56 tests passed, Ruff passed, and AEGIS, security and Flutter workflows all passed. See docs/PROGRESS.md for run links and details.
 - This is an adapter foundation only. It does not persist vectors, automatically ingest customer data, or enable semantic retrieval. The in-memory store remains development/test-only.
 
-## Next vertical slice — persistent tenant-scoped knowledge retrieval (PostgreSQL/pgvector)
+## Completed vertical slice — tenant-scoped pgvector schema (PR pending)
 
-1. Re-read the existing KnowledgeStore protocol, knowledge contracts, PostgreSQL migration conventions and tenant RLS model before choosing the schema.
-2. Define vector dimension/model-version compatibility explicitly; do not assume one provider's dimensions or mix incompatible embedding spaces.
-3. Add tenant-owned document/chunk/vector records with tenant-consistent composite relationships and database-enforced row-level security.
-4. Ensure every vector and lexical retrieval query is tenant-scoped in SQL; never fetch cross-tenant candidates and filter them in application memory afterward.
-5. Add a PostgreSQL adapter behind KnowledgeStore, preserving the in-memory adapter for unit tests.
-6. Add hybrid retrieval with bounded top-k, deterministic tie-breaking, provenance and classification filters. Retrieved text remains untrusted evidence.
-7. Add two-tenant integration tests proving cross-tenant reads, joins, inserts and similarity searches are denied, including attempts to mismatch a chunk and its parent document.
-8. Run AI service, API, PostgreSQL/RLS, security and dependency workflows before merging. Do not require a live model provider or customer content.
+- Added migration `0010_tenant_knowledge_store` for tenant-owned embedding spaces, documents and chunks.
+- Every knowledge table uses forced RLS. Reads and ingestion writes require transaction-local tenant context plus an active membership for the verified subject.
+- Composite foreign keys prevent chunks from referencing another tenant's document or embedding space.
+- Embedding spaces record provider, model, model revision and dimensions; chunk constraints verify the vector's actual dimensions and prevent incompatible spaces from being joined.
+- Added generated lexical search vectors and a GIN index for the planned hybrid retrieval path.
+- Embedding-space rows are write-once for the ingestor; model/revision/dimension changes create a new space. Document/chunk writes append audit events through a restricted SECURITY DEFINER trigger; the ingestor cannot insert audit rows directly or DELETE knowledge rows.
+- PostgreSQL CI uses a pgvector-enabled PostgreSQL 16 image and enables the extension as the database administrator before applying migrations.
+- The schema is a foundation only. No PostgreSQL KnowledgeStore adapter, customer ingestion or semantic retrieval is active.
 
-Other open work remains separate: PR #37 has a PostgreSQL migration failure caused by SQLAlchemy interpreting a colon-prefixed token inside a SQL function body as a bind parameter; do not merge it until its migration/RLS checks pass.
+## Next vertical slice — PostgreSQL KnowledgeStore adapter
+
+1. Implement a backend-owned adapter behind the existing `KnowledgeStore` protocol, using the API's SQLAlchemy session boundary rather than adding a second database stack to the AI package.
+2. Separate read-only runtime sessions from the RLS-bound ingestor session; set tenant and subject context transaction-locally for every operation.
+3. Persist documents/chunks idempotently and keep document metadata, chunks and embeddings in one transaction so audit-trigger failures roll back the entire ingestion.
+4. Embed document chunks and retrieval queries using one explicit provider/model/revision/dimension profile. Reject mismatched dimensions and never compare vectors across embedding spaces.
+5. Implement exact vector similarity and lexical retrieval with tenant ID and embedding-space ID filters in SQL before ranking. Keep top-k bounded, add deterministic tie-breaking and preserve source/classification provenance.
+6. Add PostgreSQL integration tests for repeat ingestion, updates, empty results, model-space mismatch, cross-tenant search denial and failure rollback. Do not fetch global candidates and filter them in application memory.
+7. Wire the adapter into specialist augmentation only after the persistence and tenant-isolation tests pass. Retrieved content remains untrusted evidence.
+8. Keep customer ingestion disabled until approved source authorization, retention and classification controls are connected.
+
+The pgvector extension must be enabled by a database administrator before migration 0010. The current CI evidence validates the schema and RLS against a disposable PostgreSQL instance only; no live Neon database is configured or claimed.
+
+Other open work remains separate: PR #37's integration-authorization migration has an outstanding PostgreSQL migration failure caused by SQLAlchemy interpreting a colon-prefixed token inside a SQL function body as a bind parameter; do not merge it until its migration/RLS checks pass.
+
+ 
+### PR #60 validation status — 2026-11-18
+
+- Migration repair commit: 22829a5a2ccb14cbe3ae0b70c349853f8769d9e6.
+- The hosted AEGIS checks push run passed all eight jobs, including migration 0010 and the PostgreSQL knowledge/RLS integration test: [run #44298712784](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298712784).
+- AI service, NVD catalogue and Flutter workflows passed.
+- The security workflow remains blocked only by the newly reviewed, unpatched GHSA-fc5q-39xc-vjpf finding in transitive picomatch 4.0.7. Do not suppress the advisory, force an unverified package version or merge PR #60 while the required security workflow is red. Reassess when upstream publishes a fixed version or the repository owner explicitly accepts the documented build-time risk.
+- The schema is validated against disposable pgvector PostgreSQL in CI only; no live Neon database is configured.
+
+**Immediate next action:** resolve the npm advisory through a verified upstream release or explicit risk acceptance, then merge PR #60. After merge, implement the backend-owned PostgreSQL KnowledgeStore adapter described above.

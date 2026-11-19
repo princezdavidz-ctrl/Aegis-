@@ -31,3 +31,23 @@ GRANT EXECUTE ON FUNCTION
 -- Public CVE catalogue: runtime read-only, dedicated ingestion writer only.
 GRANT SELECT ON TABLE public.cve_catalog, public.nvd_feed_sync TO aegis_runtime;
 GRANT SELECT, INSERT, UPDATE ON TABLE public.cve_catalog, public.nvd_feed_sync TO aegis_ingestor;
+
+
+-- Tenant-scoped knowledge retrieval: runtime is read-only; ingestion is RLS-bound.
+GRANT SELECT ON TABLE
+    public.knowledge_embedding_spaces,
+    public.knowledge_documents,
+    public.knowledge_chunks
+    TO aegis_runtime;
+
+-- Embedding-space identity is immutable; a model/revision/dimension change
+-- creates a new space rather than reinterpreting vectors already stored.
+GRANT SELECT, INSERT ON TABLE public.knowledge_embedding_spaces TO aegis_ingestor;
+GRANT SELECT, INSERT, UPDATE ON TABLE
+    public.knowledge_documents,
+    public.knowledge_chunks
+    TO aegis_ingestor;
+
+-- The ingestor can inspect only its own membership row through tenant_memberships RLS.
+GRANT SELECT ON TABLE public.tenant_memberships TO aegis_ingestor;
+GRANT USAGE ON TYPE public.vector TO aegis_runtime, aegis_ingestor;

@@ -818,3 +818,63 @@ Design and implement the persistent knowledge-store adapter using PostgreSQL/pgv
 - All post-merge workflows passed on the merge commit: [AEGIS checks #44074404927](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44074404927), [security checks #44074405490](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44074405490), [AI service CI #44074405047](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44074405047), and [Flutter desktop checks #44074404972](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44074404972).
 - AI service post-merge CI passed the complete **56-test** suite and Ruff. The repository, security and Flutter workflows also completed successfully.
 - Main now contains the embeddings adapter and updated README, knowledge documentation, implementation backlog and progress log. No live embedding provider, customer data or vector persistence was enabled.
+
+
+## 2026-11-18 — Tenant-scoped pgvector knowledge schema
+
+### Repository audit
+
+- Re-inspected `main` at `b9e275052397b85e85acda71b1234f837d34f540`, the README, architecture, implementation backlog, knowledge contracts/store/embedding adapter, PostgreSQL role grants, migration chain and PostgreSQL CI workflow.
+- Confirmed the active `KnowledgeStore` is still the process-local `InMemoryKnowledgeStore`; no persistent adapter or semantic retrieval path was present.
+- Preserved the existing AI package protocol and backend-owned SQLAlchemy/migration boundary. No second database stack was added to the AI package.
+
+### Completed in this increment
+
+- Added migration `0010_tenant_knowledge_store` with tenant-owned embedding-space, document and chunk tables.
+- Added pgvector dimension checks and explicit provider/model/model-revision/dimension identity. Composite foreign keys ensure a chunk's document and embedding space belong to the same tenant.
+- Enabled and forced RLS on all knowledge tables. Reads and ingestor writes require both transaction-local tenant context and an active membership for the verified subject.
+- Added a generated lexical search vector and GIN index for the future hybrid retrieval adapter. No ANN index is created while embedding dimensions remain provider/model-specific.
+- Added a restricted SECURITY DEFINER audit trigger for document/chunk writes. Audit insertion is constrained to matching knowledge resources; the ingestor has no direct audit INSERT or knowledge DELETE privilege.
+- Added PostgreSQL integration tests for tenant isolation, cross-tenant foreign-key mismatches, embedding dimension mismatch, least-privilege grants and audit records.
+- Updated PostgreSQL CI to use a pgvector-enabled PostgreSQL 16 image and install the extension as the database administrator before running Alembic. The migration itself does not require superuser privileges.
+- Added `deploy/postgres/KNOWLEDGE-STORE.md` and updated the AI knowledge, architecture, deployment and backlog documentation.
+
+### Validation
+
+- Hosted GitHub Actions validation is pending on this branch. The PostgreSQL integration test requires the pgvector-enabled CI service and has not been represented as locally executed.
+- The local execution environment cannot resolve `github.com`; hosted CI is the available full integration-test environment.
+- No live Neon database, model provider, customer source or customer content was accessed. No credentials or private data were added.
+
+### Pending
+
+- Review and pass the new PostgreSQL migration/RLS integration test and all repository/security workflows.
+- Implement the backend-owned PostgreSQL KnowledgeStore adapter with separate runtime and ingestor sessions.
+- Add exact vector and lexical hybrid retrieval scoped by tenant and embedding-space ID.
+- Wire persistent retrieval into specialist augmentation only after adapter tests pass.
+- Keep live model calls, customer ingestion and security-tool execution disabled until their configuration and authorization prerequisites are verified.
+
+### Next task
+
+Implement the PostgreSQL KnowledgeStore adapter behind the existing AI protocol, using transaction-local tenant context, explicit embedding-space identity and a single audited transaction for document/chunk persistence. Start only after this schema PR's PostgreSQL and repository CI checks pass.
+
+ 
+### CI repair and validation — 2026-11-18
+
+- Re-inspected PR #60 after its first CI run. The new migration file contained duplicated SQL/Python fragments after its first downgrade function and an incomplete document SHA-256 check; Alembic failed with a Python syntax error before applying migration 0010.
+- Rebuilt the migration from its first complete upgrade/downgrade definition, removed only the duplicated trailing fragments, and corrected the document hash constraint to require exactly 64 lowercase hexadecimal characters.
+- Pushed fix commit 22829a5a2ccb14cbe3ae0b70c349853f8769d9e6 (fix(db): repair tenant knowledge migration) to the existing PR #60 branch. The migration now contains one upgrade, one downgrade and one definition of each knowledge table.
+
+#### Validation
+
+- Push AEGIS checks [run #44298712784](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298712784): all 8 jobs passed, including PostgreSQL migration and least-privilege RLS integration, Python API tests, frontend tests/typecheck/build, Linux/Windows/macOS agent tests, API container smoke test and Terraform validation.
+- AI service CI [run #44298728050](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298728050): passed.
+- NVD catalogue checks [run #44298727884](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298727884): passed.
+- Flutter desktop checks [run #44298712775](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298712775): passed.
+- Security checks [run #44298712765](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44298712765): Gitleaks, both CodeQL jobs, Python dependency audits and NVD tests passed; the dependency-audit job failed at npm audit on high-severity GHSA-fc5q-39xc-vjpf in transitive picomatch 4.0.7.
+- The advisory currently affects picomatch through 4.0.7, and npm still lists 4.0.7 as latest; no patched release is published. No unverified version override, audit suppression or security-workflow weakening was added.
+- The local environment still cannot resolve GitHub, so hosted Actions supplied the executable validation. No live Neon database, model provider, customer data or security tool was used.
+
+#### Pending and next task
+
+- PR #60 remains open and unmerged until the unpatched picomatch advisory has a safe upstream fix or an explicit risk-acceptance decision is made. The PostgreSQL schema/RLS integration itself now passes on the disposable pgvector CI database.
+- After PR #60 is mergeable, implement the backend-owned PostgreSQL KnowledgeStore adapter and tenant/embedding-space-scoped hybrid retrieval. Keep customer ingestion and model retrieval disabled until the adapter's isolation and rollback tests pass.

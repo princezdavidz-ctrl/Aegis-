@@ -46,3 +46,19 @@ Configure the API's `AEGIS_DATABASE_URL` with the `aegis_runtime` connection, ne
 The GitHub Actions PostgreSQL integration suite creates a separate CI-only mutation role to prove the audit trigger rejects UPDATE/DELETE even when a role has those table privileges. That role and its test passwords are never used in production.
 
 Use a dedicated Neon development database to verify this role design before staging. The CI test does not prove that any live Neon database has been configured.
+
+
+## Tenant-scoped knowledge storage
+
+Before applying migration `0010_tenant_knowledge_store`, a database administrator
+must enable the pgvector extension:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+The migration checks for the extension but does not install it using the
+restricted migration role. See [KNOWLEDGE-STORE.md](KNOWLEDGE-STORE.md) for
+embedding-space compatibility, forced RLS, ingestion role grants and audit
+trigger details. The schema is a persistence foundation only; the application
+KnowledgeStore adapter and semantic retrieval are not yet operational.
