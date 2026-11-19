@@ -430,6 +430,39 @@ async def test_postgres_knowledge_store_is_idempotent_tenant_bound_and_classifie
         with pytest.raises(KnowledgeStoreConflict):
             await engine_a.ingest(changed_version)
 
+        unsafe_runtime_store = PostgresKnowledgeStore(
+            runtime_session_factory=admin_factory,
+            ingestor_session_factory=ingestor_factory,
+            subject=actor_a,
+            tenant_id=tenant_a,
+            embeddings=embeddings,
+            embedding_space=profile,
+        )
+        with pytest.raises(PermissionError, match="aegis_runtime"):
+            await unsafe_runtime_store.search(
+                RetrievalRequest(str(tenant_a), "Linux endpoint hardening", 5)
+            )
+
+        unsafe_ingestor_store = PostgresKnowledgeStore(
+            runtime_session_factory=runtime_factory,
+            ingestor_session_factory=admin_factory,
+            subject=actor_a,
+            tenant_id=tenant_a,
+            embeddings=embeddings,
+            embedding_space=profile,
+        )
+        with pytest.raises(PermissionError, match="aegis_ingestor"):
+            await KnowledgeEngine(unsafe_ingestor_store).ingest(
+                KnowledgeDocument(
+                    tenant_id=str(tenant_a),
+                    document_id="wrong-role-write",
+                    title="Must not be written by a privileged role",
+                    source="security-baseline",
+                    content="Role validation prevents accidental superuser use.",
+                    classification=KnowledgeClassification.PUBLIC,
+                )
+            )
+
         async with admin_factory() as session:
             counts = (
                 await session.execute(
