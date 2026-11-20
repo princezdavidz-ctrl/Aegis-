@@ -66,12 +66,36 @@ pgvector PostgreSQL CI service. It requires separate `aegis_runtime` and
 least-privilege role before each operation, and applies transaction-local
 subject/tenant context.
 
-The adapter is not yet wired into the FastAPI lifecycle or customer ingestion;
-the in-memory store remains the active default. Document keys are immutable
-for a content digest, and a changed source must use a new versioned document
-key until a reviewed soft-delete/retention migration exists. Restricted
-documents are excluded from retrieval pending role-aware classification
-authorization. No live Neon database or model provider is configured.
+A fail-closed configuration contract is now defined in
+`backend/app/ai/knowledge_config.py`. The optional settings are:
+
+- `AEGIS_KNOWLEDGE_RUNTIME_DATABASE_URL` — `aegis_runtime` PostgreSQL role.
+- `AEGIS_KNOWLEDGE_INGESTOR_DATABASE_URL` — `aegis_ingestor` PostgreSQL role.
+- `AEGIS_KNOWLEDGE_EMBEDDING_PROVIDER` — provider identity label.
+- `AEGIS_KNOWLEDGE_EMBEDDING_BASE_URL` — HTTPS embeddings endpoint; loopback
+  HTTP is permitted only in development/test.
+- `AEGIS_KNOWLEDGE_EMBEDDING_MODEL` and
+  `AEGIS_KNOWLEDGE_EMBEDDING_REVISION` — explicit immutable model identity.
+- `AEGIS_KNOWLEDGE_EMBEDDING_DIMENSIONS` — vector width (1–16000).
+- `AEGIS_KNOWLEDGE_EMBEDDING_API_KEY` — secret-managed provider credential.
+- `AEGIS_KNOWLEDGE_EMBEDDING_TIMEOUT_SECONDS` — bounded request timeout (1–120).
+
+No core settings means the feature remains disabled. Once any core setting is
+supplied, the complete runtime/ingestor role pair and embedding profile are
+required; partial configuration is rejected. Credentials are secret-wrapped
+and excluded from representations.
+
+This settings contract is not yet wired into the FastAPI lifecycle. The
+in-memory store remains the active default and the PostgreSQL adapter is not
+available to request handlers or specialist augmentation. Do not configure
+customer ingestion or assume persistent memory is active until lifecycle
+wiring, role checks and authorization tests are merged.
+
+Document keys remain immutable for a content digest; changed source content
+requires a new versioned document key until a reviewed soft-delete/retention
+migration exists. Restricted documents remain excluded pending role-aware
+classification authorization. No live Neon database or embedding provider is
+configured.
 
 The downgrade drops AEGIS knowledge tables and triggers but intentionally
 leaves the shared pgvector extension installed.
