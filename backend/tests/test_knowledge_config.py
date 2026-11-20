@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 import pytest
 from app.ai.knowledge_config import KnowledgeSettings
-
 from pydantic import ValidationError
 
 
