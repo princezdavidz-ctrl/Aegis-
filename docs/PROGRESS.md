@@ -952,3 +952,42 @@ Implement and test the backend-owned PostgreSQL KnowledgeStore adapter behind th
 ### Next task
 
 Add fail-closed settings and application-lifecycle wiring for the separate runtime/ingestor database roles and embedding profile, then connect the tenant-bound KnowledgeEngine to specialist augmentation only after role-aware authorization tests pass.
+
+
+## 2026-11-20 — Fail-closed knowledge-memory configuration contract (PR #62)
+
+### Repository audit
+
+- Re-inspected `main` at `dfcc4b1dd0734e13912567aa4ef5d223fb3a198b`, the README, architecture, roadmap, implementation backlog, security model, backend configuration/lifespan/session code, PostgreSQL KnowledgeStore adapter, embedding provider contract and existing CI workflows.
+- Confirmed the pgvector schema and `PostgresKnowledgeStore` adapter are already merged, but neither is wired into the FastAPI lifecycle. Preserved the current chat-model path and the in-memory knowledge default.
+- Confirmed the repository's separate `aegis_runtime` and `aegis_ingestor` roles and the adapter's exact `current_user` checks.
+
+### Completed
+
+- Added `backend/app/ai/knowledge_config.py` with an optional `KnowledgeSettings` model.
+- Memory remains disabled when no memory settings are supplied. Supplying any core setting requires both database URLs and the complete embedding profile; partial configuration is rejected instead of silently falling back.
+- Validated the runtime and ingestor URLs as PostgreSQL/asyncpg connections for the distinct `aegis_runtime` and `aegis_ingestor` roles.
+- Added explicit provider, model, model revision, vector dimensions and bounded timeout configuration.
+- Required HTTPS for remote embedding endpoints; loopback HTTP is permitted only in development/test. URL credentials, query strings and fragments are rejected.
+- Wrapped database URLs and embedding credentials in `SecretStr`, excluded them and the embedding endpoint from model representations, and added configuration regression tests.
+- Extended the security workflow's Ruff target to cover the new configuration module and tests.
+- Updated the backend AI, PostgreSQL knowledge-store and root README documentation. The configuration is intentionally not yet loaded by FastAPI lifespan.
+
+### Validation status
+
+- Hosted GitHub Actions validation is pending on PR #62. No local test execution is claimed because this environment does not provide a checked-out repository or the project dependency environment.
+- No live Neon database, embedding provider, customer content, customer ingestion or security-tool action was used.
+- No credentials or private data were committed; tests use synthetic placeholder credentials only.
+
+### Pending
+
+- Run API tests, Python compilation and the security workflow against the PR branch; fix any failures before merge.
+- Wire the complete settings into FastAPI lifespan and create separate runtime/ingestor engines only when the full bundle is configured.
+- Add lifespan tests for disabled configuration, partial configuration failure, resource cleanup and role verification.
+- Construct a tenant-bound `PostgresKnowledgeStore` per verified request/task; do not cache it globally.
+- Add role-aware restricted-classification authorization and retention/deletion controls before enabling customer ingestion.
+- PR #37's integration-authorization migration remains open and unmerged pending its own PostgreSQL migration/RLS repair.
+
+### Next task
+
+After PR #62 passes CI, wire the validated knowledge settings into the FastAPI lifespan with separate session factories and safe resource cleanup. Keep retrieval and ingestion disconnected until role-aware authorization is implemented and tested.
