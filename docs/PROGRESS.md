@@ -973,9 +973,17 @@ Add fail-closed settings and application-lifecycle wiring for the separate runti
 - Extended the security workflow's Ruff target to cover the new configuration module and tests.
 - Updated the backend AI, PostgreSQL knowledge-store and root README documentation. The configuration is intentionally not yet loaded by FastAPI lifespan.
 
-### Validation status
+### Validation
 
-- Hosted GitHub Actions validation is pending on PR #62. No local test execution is claimed because this environment does not provide a checked-out repository or the project dependency environment.
+- Final tested code head: `a76b8e6e6df5244665e044fee36779f548b08efa`.
+- API workflow [push run #44728686053](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44728686053) and [PR run #44728694767](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44728694767): **123 passed, 8 skipped, 1 warning**; Python module compilation passed.
+- PostgreSQL migration/RLS integration: **8 passed** in the AEGIS checks workflow.
+- Frontend tests, TypeScript typecheck and production build passed in both AEGIS checks runs.
+- API container smoke test, Linux/Windows/macOS endpoint-agent checks and AWS Terraform validation passed.
+- Security workflow [push run #44728686043](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44728686043) and [PR run #44728694970](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44728694970): Ruff lint, NVD tests, Gitleaks, Python/TypeScript CodeQL, and Python/npm dependency audits passed.
+- Flutter formatting, analysis and tests passed in [push run #44728686276](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44728686276) and [PR run #44728694980](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44728694980).
+- The first Ruff run exposed import-order and SIM117 findings in the new tests; these were corrected and the final push/PR security runs passed.
+- No local test execution is claimed because this environment does not provide a checked-out repository or the project dependency environment.
 - No live Neon database, embedding provider, customer content, customer ingestion or security-tool action was used.
 - No credentials or private data were committed; tests use synthetic placeholder credentials only.
 
