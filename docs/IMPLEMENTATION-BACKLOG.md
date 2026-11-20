@@ -211,3 +211,28 @@ Other open work remains separate: PR #37's integration-authorization migration h
 - The schema remains validated against disposable pgvector PostgreSQL only. No live Neon database or production ingestion is configured.
 
 **Next implementation:** build the backend-owned PostgreSQL KnowledgeStore adapter behind the existing AI protocol. Use separate read-only runtime and RLS-bound ingestor session factories, transaction-local verified subject/tenant context, explicit embedding-space identity, SQL-scoped vector and lexical retrieval, bounded top-k, provenance, and atomic audited persistence. Add PostgreSQL tests for idempotency, version conflicts, tenant isolation, classification filtering and rollback before wiring retrieval into specialist augmentation.
+
+
+## 2026-11-20 — Knowledge memory configuration contract (PR #62)
+
+### Completed in this increment
+
+- Added `KnowledgeSettings` as an optional, secret-safe configuration boundary.
+- No memory settings means disabled; partial configuration is rejected.
+- Requires distinct PostgreSQL/asyncpg URLs for `aegis_runtime` and `aegis_ingestor`.
+- Requires an explicit embedding provider, model, revision, dimension count and API key.
+- Enforces HTTPS for remote embedding endpoints and permits loopback HTTP only in development/test.
+- Adds regression tests and includes the new module/tests in the security workflow's Ruff target.
+
+This is configuration only. It is not loaded by the FastAPI lifespan, does not create database connections and does not activate persistent retrieval or ingestion.
+
+### Next implementation order
+
+1. Load `KnowledgeSettings` during FastAPI lifespan and create the runtime/ingestor engines only when the complete bundle is present.
+2. Ensure partial configuration fails closed without leaking secret values; dispose every engine on startup failure and application shutdown.
+3. Verify actual database `current_user` before exposing a store, retaining the adapter's per-operation role checks.
+4. Build a tenant-bound `PostgresKnowledgeStore` from the verified `TenantContext` per request/task; never cache tenant-specific stores globally.
+5. Implement role-aware restricted-classification access and a reviewed retention/deletion workflow before customer ingestion.
+6. Connect retrieved passages to specialist augmentation only after provenance, prompt-injection, cross-tenant and advisory-only tests pass.
+
+PR #37 remains separate and must pass its PostgreSQL migration/RLS checks before merge.
