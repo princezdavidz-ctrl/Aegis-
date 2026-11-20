@@ -5,9 +5,9 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
-from pydantic import ValidationError
 
 from app.ai.knowledge_config import KnowledgeSettings
+from pydantic import ValidationError
 
 
 def _complete_environment() -> dict[str, str]:
@@ -85,9 +85,11 @@ def test_memory_credentials_are_not_in_settings_representation() -> None:
     ],
 )
 def test_partial_memory_configuration_is_rejected(environment: dict[str, str]) -> None:
-    with patch.dict("os.environ", environment, clear=True):
-        with pytest.raises(ValidationError, match="knowledge memory configuration is incomplete"):
-            KnowledgeSettings.from_environment(environment="staging")
+    with (
+        patch.dict("os.environ", environment, clear=True),
+        pytest.raises(ValidationError, match="knowledge memory configuration is incomplete"),
+    ):
+        KnowledgeSettings.from_environment(environment="staging")
 
 
 def test_runtime_and_ingestor_urls_must_use_distinct_expected_roles() -> None:
@@ -95,27 +97,31 @@ def test_runtime_and_ingestor_urls_must_use_distinct_expected_roles() -> None:
     values["AEGIS_KNOWLEDGE_INGESTOR_DATABASE_URL"] = (
         "postgresql+asyncpg://aegis_runtime:another-password@db.example/aegis"
     )
-    with patch.dict("os.environ", values, clear=True):
-        with pytest.raises(ValidationError, match="aegis_ingestor role"):
-            KnowledgeSettings.from_environment(environment="staging")
+    with (
+        patch.dict("os.environ", values, clear=True),
+        pytest.raises(ValidationError, match="aegis_ingestor role"),
+    ):
+        KnowledgeSettings.from_environment(environment="staging")
 
 
 def test_memory_database_urls_must_use_postgresql_asyncpg() -> None:
     values = _complete_environment()
-    values["AEGIS_KNOWLEDGE_RUNTIME_DATABASE_URL"] = (
-        "sqlite+aiosqlite:///./aegis.db"
-    )
-    with patch.dict("os.environ", values, clear=True):
-        with pytest.raises(ValidationError, match="aegis_runtime role"):
-            KnowledgeSettings.from_environment(environment="staging")
+    values["AEGIS_KNOWLEDGE_RUNTIME_DATABASE_URL"] = "sqlite+aiosqlite:///./aegis.db"
+    with (
+        patch.dict("os.environ", values, clear=True),
+        pytest.raises(ValidationError, match="aegis_runtime role"),
+    ):
+        KnowledgeSettings.from_environment(environment="staging")
 
 
 def test_non_loopback_http_embedding_endpoint_is_rejected_outside_development() -> None:
     values = _complete_environment()
     values["AEGIS_KNOWLEDGE_EMBEDDING_BASE_URL"] = "http://embeddings.example/v1"
-    with patch.dict("os.environ", values, clear=True):
-        with pytest.raises(ValidationError, match="must use HTTPS"):
-            KnowledgeSettings.from_environment(environment="staging")
+    with (
+        patch.dict("os.environ", values, clear=True),
+        pytest.raises(ValidationError, match="must use HTTPS"),
+    ):
+        KnowledgeSettings.from_environment(environment="staging")
 
 
 def test_loopback_http_embedding_endpoint_is_allowed_in_development() -> None:
@@ -132,9 +138,11 @@ def test_embedding_endpoint_rejects_embedded_credentials_and_query_strings() -> 
     values["AEGIS_KNOWLEDGE_EMBEDDING_BASE_URL"] = (
         "https://user:password@embeddings.example/v1?token=secret"
     )
-    with patch.dict("os.environ", values, clear=True):
-        with pytest.raises(ValidationError, match="must use HTTPS"):
-            KnowledgeSettings.from_environment(environment="staging")
+    with (
+        patch.dict("os.environ", values, clear=True),
+        pytest.raises(ValidationError, match="must use HTTPS"),
+    ):
+        KnowledgeSettings.from_environment(environment="staging")
 
 
 @pytest.mark.parametrize(
@@ -149,6 +157,8 @@ def test_embedding_endpoint_rejects_embedded_credentials_and_query_strings() -> 
 def test_embedding_bounds_are_validated(setting: str, value: str) -> None:
     values = _complete_environment()
     values[setting] = value
-    with patch.dict("os.environ", values, clear=True):
-        with pytest.raises(ValidationError):
-            KnowledgeSettings.from_environment(environment="staging")
+    with (
+        patch.dict("os.environ", values, clear=True),
+        pytest.raises(ValidationError),
+    ):
+        KnowledgeSettings.from_environment(environment="staging")
