@@ -53,6 +53,7 @@ class KnowledgeSettings(BaseModel):
         default="https://api.openai.com/v1",
         min_length=1,
         max_length=500,
+        repr=False,
     )
     embedding_model: str | None = Field(default=None, min_length=1, max_length=160)
     embedding_model_revision: str | None = Field(default=None, min_length=1, max_length=120)
@@ -125,7 +126,7 @@ class KnowledgeSettings(BaseModel):
             or not parsed.host
             or not parsed.database
             or parsed.username != expected_role
-            or parsed.password is None
+            or not parsed.password
         ):
             raise ValueError(
                 f"{setting_name} must use postgresql+asyncpg and the {expected_role} role"
