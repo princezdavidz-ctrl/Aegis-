@@ -6,7 +6,14 @@ import os
 from typing import ClassVar
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SecretStr,
+    field_validator,
+    model_validator,
+)
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
 
