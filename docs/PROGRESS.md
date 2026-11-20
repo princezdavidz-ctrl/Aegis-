@@ -999,3 +999,12 @@ Add fail-closed settings and application-lifecycle wiring for the separate runti
 ### Next task
 
 After PR #62 passes CI, wire the validated knowledge settings into the FastAPI lifespan with separate session factories and safe resource cleanup. Keep retrieval and ingestion disconnected until role-aware authorization is implemented and tested.
+
+
+### Merge and post-merge verification — 2026-11-20
+
+- Merged [PR #62](https://github.com/princezdavidz-ctrl/Aegis-/pull/62) into `main` with squash commit `b35cdf166cb545233f5c1af4f1ff8530b390c4b3`.
+- Post-merge AEGIS checks [run #44729311248](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44729311248): all eight jobs passed; API **123 passed, 8 skipped, 1 warning**; PostgreSQL migration/RLS integration **8 passed**; frontend **55 tests passed**, TypeScript typecheck and production build passed; endpoint agents, API container and Terraform checks passed.
+- Post-merge security checks [run #44729311389](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44729311389): NVD tests, Gitleaks, Python/npm dependency audits and Python/TypeScript CodeQL all passed.
+- Post-merge Flutter checks [run #44729311252](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44729311252): formatting, analysis and widget/unit tests passed.
+- The configuration remains a contract only: no FastAPI lifespan wiring, memory database connection, customer ingestion or RAG activation has been enabled.
