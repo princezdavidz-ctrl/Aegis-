@@ -226,6 +226,8 @@ Other open work remains separate: PR #37's integration-authorization migration h
 
 This is configuration only. It is not loaded by the FastAPI lifespan, does not create database connections and does not activate persistent retrieval or ingestion.
 
+Validation on final code head `a76b8e6e6df5244665e044fee36779f548b08efa` passed: API **123 passed/8 skipped**, PostgreSQL integration **8 passed**, frontend/typecheck/build, endpoint agents, API container, Terraform, Flutter, Ruff, Gitleaks, CodeQL and Python/npm dependency audits. See [AEGIS push checks](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44728686053), [AEGIS PR checks](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44728694767), [security push checks](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44728686043), [security PR checks](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44728694970), and [Flutter PR checks](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44728694980).
+
 ### Next implementation order
 
 1. Load `KnowledgeSettings` during FastAPI lifespan and create the runtime/ingestor engines only when the complete bundle is present.
