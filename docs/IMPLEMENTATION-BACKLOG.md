@@ -1,8 +1,8 @@
 # AEGIS implementation backlog
 
 **Repository:** `princezdavidz-ctrl/Aegis-`  
-**Baseline:** `main` at `a36b197f711be384b9b8cb54c7361a83db5074ce`  
-**Planning date:** 2026-11-14
+**Baseline:** `main` at `95da88d3720ea6e9d89be2d4040c928e7d4860ec`  
+**Planning date:** 2026-11-21
 
 This backlog is based on an inspection of the current `main` branch. It separates implemented foundations from live, externally configured capabilities. A feature is not considered operational merely because a UI screen, interface, schema or deployment workflow exists.
 
@@ -10,11 +10,11 @@ This backlog is based on an inspection of the current `main` branch. It separate
 
 | Area | Current state | Remaining proof or work |
 |---|---|---|
-| React portal | Responsive shell, Organization profile, Asset Inventory and Members screens with typed tenant API clients and regression tests exist; React session provider wires the provider-neutral OIDC Authorization Code + PKCE adapter, handles callback, and exposes sign-in/local sign-out | No non-production IdP/client/redirect/API audience is configured, so sign-in remains disabled; server-verified membership bootstrap is still required before customer data pages can receive a session; organization profile editing and browser-driven authenticated tests remain pending |
+| React portal | Responsive React/TypeScript/Tailwind shell, overview, Organization profile, Asset Inventory and tenant Members screens; OIDC Authorization Code + PKCE session provider; server-verified membership bootstrap; typed tenant API clients and accessibility/readiness tests | No non-production IdP/client/redirect/API audience is configured, so sign-in remains disabled; real customer API data and browser-driven authenticated tests remain pending; organization profile editing is incomplete |
 | FastAPI | App factory, OIDC verifier, tenant/profile/membership/manual asset APIs, endpoint enrollment/fleet APIs and advisory AI analysis route exist | Live IdP/database configuration, non-production identity verification and production deployment proof |
 | Tenant security | Membership resolution, tenant context and PostgreSQL RLS migration exist | Run migrations against PostgreSQL and prove RLS under production-like roles |
 | Audit | Append-only audit model/sink and database migration protections exist | Verify durable writes and database immutability on PostgreSQL |
-| AI | Provider-neutral gateway, OpenAI-compatible adapter, four advisory specialist workflows, deterministic evaluation, embeddings adapter and tenant-scoped pgvector schema exist | PostgreSQL KnowledgeStore adapter, live provider config, tenant evidence retrieval, retrieval evaluation and operational governance |
+| AI | Provider-neutral gateway, OpenAI-compatible chat adapter, four advisory specialist workflows, deterministic evaluation, embeddings adapter, tenant-scoped pgvector schema, backend PostgresKnowledgeStore adapter and fail-closed KnowledgeSettings exist | Knowledge settings are not wired into FastAPI lifespan; no tenant-bound runtime store is exposed to requests; retrieval/RAG is inactive; restricted-classification authorization, retention/deletion, live provider configuration and retrieval evaluation remain pending |
 | Flutter desktop | Engineer SOC shell and module navigation exist | Real API data, authentication, analyst workflows and realtime updates |
 | AWS | OIDC-based manual deployment workflow and role Terraform foundation exist | Provision AWS resources, correct/configure OIDC provider, set repository variables and execute staging deployment |
 | Telemetry/detection | Architecture and module placeholders exist | Connectors, event pipeline, detection rules and correlation are not operational |
@@ -238,3 +238,14 @@ Validation on final code head `a76b8e6e6df5244665e044fee36779f548b08efa` passed:
 6. Connect retrieved passages to specialist augmentation only after provenance, prompt-injection, cross-tenant and advisory-only tests pass.
 
 PR #37 remains separate and must pass its PostgreSQL migration/RLS checks before merge.
+
+
+## 2026-11-21 UI readiness correction
+
+- The React overview already contains a typed source-code readiness catalog. The persistent-memory row now accurately says **Adapter present · not connected** because the pgvector schema, PostgresKnowledgeStore adapter and fail-closed settings are in source, but FastAPI lifecycle wiring and retrieval are not active.
+- The memory row uses the existing `unconfigured` state rather than implying that no implementation exists or that a live database is healthy.
+- Rendered UI regression tests assert the status, explanation and state. See the 2026-11-21 entry in `docs/PROGRESS.md` for the PR and CI evidence.
+
+### Next implementation
+
+Wire `KnowledgeSettings` into FastAPI lifespan. Create separate runtime/ingestor engines only when the complete configuration exists, verify actual `current_user` roles before publishing a runtime, dispose all resources on startup failure and shutdown, and expose only a per-request/task store factory bound to the verified `TenantContext`. Do not enable customer ingestion or RAG in this increment.

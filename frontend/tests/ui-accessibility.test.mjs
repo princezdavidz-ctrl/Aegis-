@@ -143,15 +143,18 @@ test('overview distinguishes implemented code, CI evidence and unconfigured serv
   assert.match(markup, /Code present/);
   assert.match(markup, /CI verified/);
   assert.match(markup, /Provider unconfigured/);
-  assert.match(markup, /Not implemented/);
+  assert.match(markup, /Adapter present · not connected/);
   assert.match(markup, /not live service health/);
   assert.doesNotMatch(markup, />Pending<\/span>/);
 });
 
 test('platform readiness labels match the implementation catalog', () => {
+  const memory = platformReadiness.find(({ id }) => id === 'memory');
+  assert.equal(memory?.state, 'unconfigured');
+  assert.match(memory?.detail ?? '', /FastAPI lifecycle and retrieval are not connected/);
   assert.deepEqual(
     platformReadiness.map(({ status }) => status),
-    ['Code present', 'CI verified', 'Provider unconfigured', 'Not implemented'],
+    ['Code present', 'CI verified', 'Provider unconfigured', 'Adapter present · not connected'],
   );
 });
 

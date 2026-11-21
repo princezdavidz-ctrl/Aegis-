@@ -1008,3 +1008,39 @@ After PR #62 passes CI, wire the validated knowledge settings into the FastAPI l
 - Post-merge security checks [run #44729311389](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44729311389): NVD tests, Gitleaks, Python/npm dependency audits and Python/TypeScript CodeQL all passed.
 - Post-merge Flutter checks [run #44729311252](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/44729311252): formatting, analysis and widget/unit tests passed.
 - The configuration remains a contract only: no FastAPI lifespan wiring, memory database connection, customer ingestion or RAG activation has been enabled.
+
+
+## 2026-11-21 — Correct persistent-memory readiness in the React portal
+
+### Repository audit
+
+- Re-inspected `main` at `95da88d3720ea6e9d89be2d4040c928e7d4860ec`, the root README, implementation backlog, progress log, current React overview, readiness catalog, accessibility tests, and the already-open historical UI PR #33.
+- Confirmed the current portal already contains the React/TypeScript/Tailwind shell, OIDC session provider, organization/assets/members views, and a typed platform-readiness catalog. PR #33 is an older, diverged implementation and was not merged or reused.
+- Confirmed PostgreSQL knowledge schema, adapter and fail-closed settings are present in source, but FastAPI lifecycle wiring and retrieval are not active.
+
+### Completed
+
+- Updated the memory readiness item from `Not implemented` to `Adapter present · not connected`.
+- Clarified that the PostgreSQL schema and adapter exist while FastAPI lifecycle and retrieval remain disconnected.
+- Changed the memory state to `unconfigured`, matching the amber status treatment used for implemented-but-unconfigured capabilities.
+- Extended the rendered overview regression tests to assert the exact status, detail and state.
+- Documented that the readiness panel describes source-code status, not live health.
+- Added no dependencies, secrets, sample tenant data or live service claims.
+
+### Validation
+
+- Code and test changes are pushed on `feat/ui-memory-readiness-2026-11-21`.
+- Pull-request CI is pending; record exact frontend test, typecheck and production-build results after GitHub Actions completes.
+- No local test execution is claimed because this environment does not have a checked-out repository and project dependency environment.
+
+### Pending
+
+- Connect the fail-closed KnowledgeSettings to FastAPI lifespan with separate runtime/ingestor engines and cleanup.
+- Verify actual PostgreSQL roles before publishing the memory runtime; construct a tenant-bound store only from server-resolved TenantContext.
+- Implement role-aware restricted-classification access and retention/deletion controls before customer ingestion.
+- Connect retrieved evidence to specialist augmentation only after provenance, prompt-injection and advisory-only tests pass.
+- Configure a non-production identity provider, Neon database and model provider through managed secrets before live integration testing.
+
+### Next task
+
+After this UI correction passes CI, implement the already-documented FastAPI knowledge-memory lifespan wiring. Keep ingestion and RAG disabled until database-role, tenant-boundary and classification-authorization tests pass.

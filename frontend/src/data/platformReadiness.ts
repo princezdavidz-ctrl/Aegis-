@@ -25,9 +25,9 @@ export const platformReadiness = [
   {
     id: 'memory',
     label: 'Persistent memory',
-    detail: 'Durable tenant-scoped conversational memory is not implemented.',
-    status: 'Not implemented',
-    state: 'pending',
+    detail: 'PostgreSQL schema and adapter are implemented; FastAPI lifecycle and retrieval are not connected.',
+    status: 'Adapter present · not connected',
+    state: 'unconfigured',
   },
 ] as const satisfies readonly {
   id: 'api' | 'tenant' | 'ai' | 'memory';
