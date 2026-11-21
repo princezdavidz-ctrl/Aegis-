@@ -122,3 +122,12 @@ not select a tenant, infer a role, or pass tokens to customer pages. Those pages
 remain locked until a dedicated API bootstrap resolves the authenticated subject's
 active tenant memberships and role. Access tokens remain in memory and are cleared
 on local sign-out or when the adapter reports expiry.
+
+
+## Platform readiness indicators
+
+The overview's platform-readiness panel describes repository implementation state,
+not live service health. In particular, the memory row reports that the PostgreSQL
+schema and backend adapter are present while FastAPI lifecycle wiring and retrieval
+remain disconnected. It must not be interpreted as an active database connection
+or enabled customer-memory feature.
