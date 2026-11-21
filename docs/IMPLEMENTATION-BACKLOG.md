@@ -1,7 +1,7 @@
 # AEGIS implementation backlog
 
 **Repository:** `princezdavidz-ctrl/Aegis-`  
-**Baseline:** `main` at `95da88d3720ea6e9d89be2d4040c928e7d4860ec`  
+**Baseline:** `main` at `72b315f3c89aed7b7de9938c31c4f254dbc8773d`  
 **Planning date:** 2026-11-21
 
 This backlog is based on an inspection of the current `main` branch. It separates implemented foundations from live, externally configured capabilities. A feature is not considered operational merely because a UI screen, interface, schema or deployment workflow exists.
