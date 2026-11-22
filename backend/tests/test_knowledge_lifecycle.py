@@ -14,7 +14,6 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
-
 _MEMORY_ENVIRONMENT = {
     "AEGIS_KNOWLEDGE_RUNTIME_DATABASE_URL": (
         "postgresql+asyncpg://aegis_runtime:runtime-password@db.example/aegis"
