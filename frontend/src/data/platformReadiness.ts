@@ -25,8 +25,8 @@ export const platformReadiness = [
   {
     id: 'memory',
     label: 'Persistent memory',
-    detail: 'PostgreSQL schema and adapter are implemented; FastAPI lifecycle and retrieval are not connected.',
-    status: 'Adapter present · not connected',
+    detail: 'FastAPI can build tenant-bound PostgreSQL stores after configured database roles verify; retrieval and ingestion remain disabled.',
+    status: 'Runtime wired · retrieval disabled',
     state: 'unconfigured',
   },
 ] as const satisfies readonly {

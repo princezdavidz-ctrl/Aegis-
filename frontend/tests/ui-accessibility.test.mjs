@@ -143,7 +143,7 @@ test('overview distinguishes implemented code, CI evidence and unconfigured serv
   assert.match(markup, /Code present/);
   assert.match(markup, /CI verified/);
   assert.match(markup, /Provider unconfigured/);
-  assert.match(markup, /Adapter present · not connected/);
+  assert.match(markup, /Runtime wired · retrieval disabled/);
   assert.match(markup, /not live service health/);
   assert.doesNotMatch(markup, />Pending<\/span>/);
 });
@@ -151,10 +151,11 @@ test('overview distinguishes implemented code, CI evidence and unconfigured serv
 test('platform readiness labels match the implementation catalog', () => {
   const memory = platformReadiness.find(({ id }) => id === 'memory');
   assert.equal(memory?.state, 'unconfigured');
-  assert.match(memory?.detail ?? '', /FastAPI lifecycle and retrieval are not connected/);
+  assert.match(memory?.detail ?? '', /tenant-bound PostgreSQL stores/);
+  assert.match(memory?.detail ?? '', /retrieval and ingestion remain disabled/);
   assert.deepEqual(
     platformReadiness.map(({ status }) => status),
-    ['Code present', 'CI verified', 'Provider unconfigured', 'Adapter present · not connected'],
+    ['Code present', 'CI verified', 'Provider unconfigured', 'Runtime wired · retrieval disabled'],
   );
 });
 
