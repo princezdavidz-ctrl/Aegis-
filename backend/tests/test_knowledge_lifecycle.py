@@ -175,6 +175,7 @@ def test_memory_runtime_verifies_roles_and_builds_a_store_per_tenant(
 
     assert len(engines) == 2
     assert all(engine.disposed for engine in engines)
+    assert application.state.knowledge_runtime is None
 
 
 def test_wrong_database_role_fails_startup_and_disposes_both_engines(
