@@ -136,6 +136,7 @@ def create_app(
                 )
             yield
         finally:
+            application.state.knowledge_runtime = None
             try:
                 if ai_provider is not None:
                     await ai_provider.aclose()
