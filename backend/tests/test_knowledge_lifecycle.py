@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import typing
 from uuid import UUID
 
 import app.ai.knowledge_runtime as knowledge_runtime_module
@@ -45,7 +44,7 @@ class FakeSession:
         self.role = role
         self.error = error
 
-    async def __aenter__(self) -> typing.Self:
+    async def __aenter__(self):
         return self
 
     async def __aexit__(self, *args: object) -> None:
