@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Self
+import typing
 from uuid import UUID
 
 import app.ai.knowledge_runtime as knowledge_runtime_module
@@ -13,6 +13,7 @@ from app.main import create_app
 from app.security.tenant import TenantContext
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
+from sqlalchemy.exc import SQLAlchemyError
 
 
 _MEMORY_ENVIRONMENT = {
@@ -44,7 +45,7 @@ class FakeSession:
         self.role = role
         self.error = error
 
-    async def __aenter__(self) -> Self:
+    async def __aenter__(self) -> typing.Self:
         return self
 
     async def __aexit__(self, *args: object) -> None:
@@ -205,7 +206,7 @@ def test_database_connection_failure_is_sanitized_and_disposes_engines(
     _configure_memory(monkeypatch)
     engines = _install_fake_database(
         monkeypatch,
-        errors={"aegis_runtime": RuntimeError("connection password leaked")},
+        errors={"aegis_runtime": SQLAlchemyError("connection password leaked")},
     )
     application = create_app(Settings(environment="test"))
 
