@@ -1,8 +1,8 @@
 # AEGIS implementation backlog
 
 **Repository:** `princezdavidz-ctrl/Aegis-`  
-**Baseline:** `main` at `72b315f3c89aed7b7de9938c31c4f254dbc8773d`  
-**Planning date:** 2026-11-21
+**Baseline:** `main` at `3a19f301ac2a4ffbed9f1f80733eb673af6966a0`  
+**Planning date:** 2026-11-22
 
 This backlog is based on an inspection of the current `main` branch. It separates implemented foundations from live, externally configured capabilities. A feature is not considered operational merely because a UI screen, interface, schema or deployment workflow exists.
 
@@ -14,7 +14,7 @@ This backlog is based on an inspection of the current `main` branch. It separate
 | FastAPI | App factory, OIDC verifier, tenant/profile/membership/manual asset APIs, endpoint enrollment/fleet APIs and advisory AI analysis route exist | Live IdP/database configuration, non-production identity verification and production deployment proof |
 | Tenant security | Membership resolution, tenant context and PostgreSQL RLS migration exist | Run migrations against PostgreSQL and prove RLS under production-like roles |
 | Audit | Append-only audit model/sink and database migration protections exist | Verify durable writes and database immutability on PostgreSQL |
-| AI | Provider-neutral gateway, OpenAI-compatible chat adapter, four advisory specialist workflows, deterministic evaluation, embeddings adapter, tenant-scoped pgvector schema, backend PostgresKnowledgeStore adapter and fail-closed KnowledgeSettings exist | Knowledge settings are not wired into FastAPI lifespan; no tenant-bound runtime store is exposed to requests; retrieval/RAG is inactive; restricted-classification authorization, retention/deletion, live provider configuration and retrieval evaluation remain pending |
+| AI | Provider-neutral gateway, OpenAI-compatible chat adapter, four advisory specialist workflows, deterministic evaluation, embeddings adapter, tenant-scoped pgvector schema, backend PostgresKnowledgeStore adapter and fail-closed KnowledgeSettings exist; FastAPI lifespan verifies separate database roles and exposes a tenant-bound store factory | Retrieval/RAG and ingestion remain inactive; role-aware restricted-classification authorization, retention/deletion, authenticated retrieval, specialist augmentation, live provider configuration and retrieval evaluation remain pending |
 | Flutter desktop | Engineer SOC shell and module navigation exist | Real API data, authentication, analyst workflows and realtime updates |
 | AWS | OIDC-based manual deployment workflow and role Terraform foundation exist | Provision AWS resources, correct/configure OIDC provider, set repository variables and execute staging deployment |
 | Telemetry/detection | Architecture and module placeholders exist | Connectors, event pipeline, detection rules and correlation are not operational |
@@ -251,23 +251,25 @@ PR #37 remains separate and must pass its PostgreSQL migration/RLS checks before
 Wire `KnowledgeSettings` into FastAPI lifespan. Create separate runtime/ingestor engines only when the complete configuration exists, verify actual `current_user` roles before publishing a runtime, dispose all resources on startup failure and shutdown, and expose only a per-request/task store factory bound to the verified `TenantContext`. Do not enable customer ingestion or RAG in this increment.
 
 
-## 2026-11-22 — FastAPI knowledge runtime lifecycle
+## 2026-11-22 — FastAPI knowledge runtime lifecycle merged (PR #64)
 
-- `KnowledgeSettings` is now loaded by the FastAPI lifespan using the resolved application environment.
-- No memory settings means no knowledge engines/runtime are created; partial settings fail before database connections are opened.
-- Complete settings create separate runtime/ingestor engines. Startup checks actual `SELECT current_user` results against `aegis_runtime` and `aegis_ingestor` before publishing a runtime.
-- `KnowledgeRuntime.for_tenant(TenantContext)` creates a new tenant-bound store per call; no tenant-specific store is cached globally.
-- Startup connection/role failures are sanitized, abort startup and dispose all engines already created. Shutdown disposes the runtime resources.
-- The implemented embedding provider is explicitly restricted to `openai-compatible`. No retrieval route, customer ingestion or specialist RAG integration is enabled.
-- The React readiness catalog now reports **Runtime wired · retrieval disabled** while remaining `unconfigured` until live credentials/services are supplied.
-- Lifecycle, tenant-store construction, cleanup and configuration failure tests were added. CI validation is pending on the feature PR.
+- Merged [PR #64](https://github.com/princezdavidz-ctrl/Aegis-/pull/64) into `main` as squash commit `3a19f301ac2a4ffbed9f1f80733eb673af6966a0`.
+- The FastAPI lifespan loads fail-closed `KnowledgeSettings`; no settings means no knowledge engines, and partial settings fail before opening knowledge connections.
+- Complete settings create separate runtime and ingestor engines. Startup verifies `SELECT current_user` equals `aegis_runtime` and `aegis_ingestor` before publishing a `KnowledgeRuntime` factory.
+- `KnowledgeRuntime.for_tenant(TenantContext)` creates a fresh tenant-bound `PostgresKnowledgeStore` per call. No tenant-specific store is cached globally.
+- Connection/role failures are sanitized and fail startup closed; created engines are disposed on startup failure and shutdown. Only the implemented OpenAI-compatible embedding adapter is accepted.
+- Retrieval routes, specialist RAG augmentation and customer ingestion remain disabled. Restricted-classification authorization and retention/deletion controls are prerequisites.
+- AEGIS checks [#45021985457](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/45021985457): **128 Python API tests passed, 8 skipped, 1 warning**; PostgreSQL/RLS integration **8 passed**; frontend **55 passed**, TypeScript and Vite production build passed; API container, Linux/Windows/macOS endpoint agents and Terraform checks passed.
+- Security checks [#45021985487](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/45021985487): Ruff, NVD importer **11 passed**, Gitleaks, Python/TypeScript CodeQL and Python/npm dependency audits passed.
+- Flutter checks [#45021985545](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/45021985545): format, analyze and tests passed.
+- No live Neon database, embedding provider, customer content, ingestion, RAG or security-tool action was used. Hosted GitHub Actions supplied validation; no local execution is claimed.
 
 ### Next implementation
 
-1. Implement role-aware authorization for `restricted` knowledge and prove denied retrieval cannot expose restricted chunks.
-2. Define reviewed retention/deletion controls and database permissions before customer ingestion; the current ingestor role cannot DELETE.
-3. Add a tenant-bound retrieval dependency/endpoint only after durable audit semantics and classification checks are available.
-4. Connect `KnowledgeEngine` and `KnowledgeAugmentedSpecialistService` to specialist analysis with untrusted-passage labeling, source provenance and advisory-only tests.
-5. Configure a non-production Neon database and embedding provider via managed secrets for end-to-end verification.
+1. Add server-resolved role-aware authorization for `restricted` knowledge and test denied retrieval at both application and PostgreSQL policy boundaries.
+2. Design a reviewed retention/deletion workflow. The current ingestor role cannot DELETE; do not weaken this grant. Use a narrowly scoped, audited database function or a separate privileged workflow with explicit tenant/subject checks, immutable audit evidence and rollback semantics.
+3. Add a tenant-bound retrieval dependency/endpoint only after durable audit and classification checks are available.
+4. Connect `KnowledgeEngine` and `KnowledgeAugmentedSpecialistService` to specialist analysis with source provenance, explicit untrusted-passage handling, prompt-injection tests and advisory-only response checks.
+5. Configure a non-production identity provider, Neon database and embedding provider via managed secrets for end-to-end verification.
 
-PR #37's integration-authorization migration remains separate and unmerged pending its PostgreSQL migration/RLS repair.
+PR #37 remains separate and unmerged pending its PostgreSQL migration/RLS repair.
