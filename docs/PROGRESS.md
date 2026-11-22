@@ -1049,3 +1049,43 @@ After PR #62 passes CI, wire the validated knowledge settings into the FastAPI l
 ### Next task
 
 After this UI correction passes CI, implement the already-documented FastAPI knowledge-memory lifespan wiring. Keep ingestion and RAG disabled until database-role, tenant-boundary and classification-authorization tests pass.
+
+
+## 2026-11-22 — FastAPI persistent-memory runtime lifecycle
+
+### Repository audit
+
+- Re-inspected `main` at `557400fdade403542ca31cb47418d51069c75f0a`, the README, implementation backlog, progress log, FastAPI lifespan, memory configuration, tenant context, PostgreSQL store adapter, embedding provider, database session helpers and existing CI/security workflows.
+- Confirmed the React/TypeScript/Tailwind portal and Python API foundations are already present. The PostgreSQL schema, adapter and fail-closed configuration contract existed, but the configuration was not loaded by FastAPI and no tenant-bound runtime factory was exposed.
+- Preserved the existing chat-model path, request authentication, tenant membership resolver, database migration/RLS boundary and advisory-only analysis route.
+
+### Completed in this increment
+
+- Added `backend/app/ai/knowledge_runtime.py` with a shared runtime object that contains no tenant identity and creates a fresh `PostgresKnowledgeStore` only from a `TenantContext`.
+- Added startup verification using `SELECT current_user` for the exact `aegis_runtime` and `aegis_ingestor` database roles. Connection and role errors are sanitized and fail startup closed.
+- Wired `KnowledgeSettings` into FastAPI lifespan. No memory configuration means no knowledge engines/runtime are created; partial configuration is rejected before database connections are opened.
+- When the complete configuration is present, the lifespan creates separate runtime/ingestor engines, verifies both roles before publishing the runtime, and disposes all created engines on startup failure or shutdown.
+- Limited the configured embedding adapter to the implemented `openai-compatible` provider; no unsupported provider silently falls back.
+- Added lifecycle tests for disabled/partial configuration, exact role checks, sanitized connection failures, resource cleanup and fresh tenant-bound store construction.
+- Added the lifecycle module and tests to the security workflow's Ruff target.
+- Updated the React readiness catalog to say **Runtime wired · retrieval disabled**. The state remains `unconfigured` because no live database/provider bundle is configured and no retrieval/ingestion route is active.
+- Updated root/backend/PostgreSQL documentation to distinguish lifecycle wiring from operational retrieval.
+
+### Validation
+
+- Pull-request workflows are pending. Do not treat this branch as merged or the runtime as production-ready until AEGIS, security and Flutter checks complete successfully.
+- No local test execution is claimed because the execution environment has no checked-out repository/dependency environment; GitHub-hosted CI is the executable verification path.
+- No live Neon connection, embedding API request, customer document, customer ingestion, RAG request or security-tool action was performed.
+- Test credentials are synthetic placeholders; no real credentials or private data were committed.
+
+### Pending
+
+- Complete CI, correct any failures, and merge only after required checks pass.
+- Add role-aware authorization for `restricted` knowledge and a reviewed retention/deletion workflow before any customer ingestion.
+- Add an authenticated retrieval path and connect `KnowledgeEngine` to specialist augmentation only after provenance, prompt-injection, cross-tenant and advisory-only tests pass.
+- Configure a non-production identity provider, Neon database and embedding provider through managed secrets for integration testing.
+- PR #37 remains separate and open; its PostgreSQL migration/RLS failure must be repaired and independently verified before merge.
+
+### Next task
+
+Implement role-aware classification authorization and retention/deletion controls, then add API tests for tenant isolation, restricted-content denial, provider failure and audit behavior before enabling retrieval or ingestion.
