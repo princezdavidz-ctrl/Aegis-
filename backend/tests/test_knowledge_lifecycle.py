@@ -206,13 +206,11 @@ def test_database_connection_failure_is_sanitized_and_disposes_engines(
     )
     application = create_app(Settings(environment="test"))
 
-    with pytest.raises(RuntimeError, match="role verification failed"):
+    with pytest.raises(RuntimeError, match="role verification failed") as exc_info:
         with TestClient(application):
             pass
 
-    assert "connection password leaked" not in str(
-        pytest.ExceptionInfo if False else "sanitized"
-    )
+    assert "connection password leaked" not in str(exc_info.value)
     assert len(engines) == 2
     assert all(engine.disposed for engine in engines)
 
