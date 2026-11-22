@@ -9,6 +9,7 @@ from aegis_ai.knowledge.embeddings import (
     OpenAICompatibleEmbedder,
 )
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.ai.knowledge_config import KnowledgeSettings
@@ -58,7 +59,7 @@ async def verify_database_role(
     try:
         async with session_factory() as session:
             actual_role = await session.scalar(text("SELECT current_user"))
-    except Exception:
+    except SQLAlchemyError:
         raise RuntimeError(
             f"knowledge database role verification failed for {expected_role}"
         ) from None
