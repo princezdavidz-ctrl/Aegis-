@@ -249,3 +249,25 @@ PR #37 remains separate and must pass its PostgreSQL migration/RLS checks before
 ### Next implementation
 
 Wire `KnowledgeSettings` into FastAPI lifespan. Create separate runtime/ingestor engines only when the complete configuration exists, verify actual `current_user` roles before publishing a runtime, dispose all resources on startup failure and shutdown, and expose only a per-request/task store factory bound to the verified `TenantContext`. Do not enable customer ingestion or RAG in this increment.
+
+
+## 2026-11-22 — FastAPI knowledge runtime lifecycle
+
+- `KnowledgeSettings` is now loaded by the FastAPI lifespan using the resolved application environment.
+- No memory settings means no knowledge engines/runtime are created; partial settings fail before database connections are opened.
+- Complete settings create separate runtime/ingestor engines. Startup checks actual `SELECT current_user` results against `aegis_runtime` and `aegis_ingestor` before publishing a runtime.
+- `KnowledgeRuntime.for_tenant(TenantContext)` creates a new tenant-bound store per call; no tenant-specific store is cached globally.
+- Startup connection/role failures are sanitized, abort startup and dispose all engines already created. Shutdown disposes the runtime resources.
+- The implemented embedding provider is explicitly restricted to `openai-compatible`. No retrieval route, customer ingestion or specialist RAG integration is enabled.
+- The React readiness catalog now reports **Runtime wired · retrieval disabled** while remaining `unconfigured` until live credentials/services are supplied.
+- Lifecycle, tenant-store construction, cleanup and configuration failure tests were added. CI validation is pending on the feature PR.
+
+### Next implementation
+
+1. Implement role-aware authorization for `restricted` knowledge and prove denied retrieval cannot expose restricted chunks.
+2. Define reviewed retention/deletion controls and database permissions before customer ingestion; the current ingestor role cannot DELETE.
+3. Add a tenant-bound retrieval dependency/endpoint only after durable audit semantics and classification checks are available.
+4. Connect `KnowledgeEngine` and `KnowledgeAugmentedSpecialistService` to specialist analysis with untrusted-passage labeling, source provenance and advisory-only tests.
+5. Configure a non-production Neon database and embedding provider via managed secrets for end-to-end verification.
+
+PR #37's integration-authorization migration remains separate and unmerged pending its PostgreSQL migration/RLS repair.
