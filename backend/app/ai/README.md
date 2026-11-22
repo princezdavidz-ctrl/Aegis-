@@ -21,10 +21,16 @@ API fails closed rather than substituting a mock model.
   embedding profile. Database URLs and the embedding API key are
   `SecretStr` values and are omitted from model representations.
 
-The configuration contract is not yet loaded by the FastAPI lifespan, and the
-Postgres adapter is not yet available to request handlers or specialist
-augmentation. Do not configure customer ingestion or assume persistent memory
-is active until lifecycle wiring and authorization tests are merged.
+The FastAPI lifespan now loads the configuration. When the complete bundle is
+supplied, it creates separate runtime and ingestor engines, verifies each
+connection's actual `current_user`, and publishes a `KnowledgeRuntime` factory.
+`KnowledgeRuntime.for_tenant()` requires a server-resolved `TenantContext` and
+creates a new store for each call; tenant-specific stores are never cached
+globally. Startup fails closed if a configured database cannot be reached or
+has the wrong role. With no memory settings, no knowledge engines or runtime
+are created. The runtime is not yet consumed by a retrieval route or specialist
+augmentation, and customer ingestion remains disabled. Do not assume persistent
+memory is operational.
 
 ## Safety boundaries
 
