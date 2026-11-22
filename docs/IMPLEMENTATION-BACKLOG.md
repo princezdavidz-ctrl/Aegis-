@@ -246,9 +246,13 @@ PR #37 remains separate and must pass its PostgreSQL migration/RLS checks before
 - The memory row uses the existing `unconfigured` state rather than implying that no implementation exists or that a live database is healthy.
 - Rendered UI regression tests assert the status, explanation and state. See the 2026-11-21 entry in `docs/PROGRESS.md` for the PR and CI evidence.
 
+### Completion note
+
+The FastAPI knowledge-memory lifecycle item was completed and merged in PR #64. See the 2026-11-22 completion record below.
+
 ### Next implementation
 
-Wire `KnowledgeSettings` into FastAPI lifespan. Create separate runtime/ingestor engines only when the complete configuration exists, verify actual `current_user` roles before publishing a runtime, dispose all resources on startup failure and shutdown, and expose only a per-request/task store factory bound to the verified `TenantContext`. Do not enable customer ingestion or RAG in this increment.
+Implement role-aware authorization for `restricted` knowledge and a reviewed retention/deletion workflow. Keep retrieval, customer ingestion and specialist RAG disabled until application and PostgreSQL tests prove tenant isolation, classification denial, audit behavior and rollback.
 
 
 ## 2026-11-22 — FastAPI knowledge runtime lifecycle merged (PR #64)
