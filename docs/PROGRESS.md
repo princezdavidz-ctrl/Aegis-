@@ -1073,19 +1073,20 @@ After this UI correction passes CI, implement the already-documented FastAPI kno
 
 ### Validation
 
-- Pull-request workflows are pending. Do not treat this branch as merged or the runtime as production-ready until AEGIS, security and Flutter checks complete successfully.
-- No local test execution is claimed because the execution environment has no checked-out repository/dependency environment; GitHub-hosted CI is the executable verification path.
-- No live Neon connection, embedding API request, customer document, customer ingestion, RAG request or security-tool action was performed.
-- Test credentials are synthetic placeholders; no real credentials or private data were committed.
+- Merged [PR #64](https://github.com/princezdavidz-ctrl/Aegis-/pull/64) into `main` as squash commit `3a19f301ac2a4ffbed9f1f80733eb673af6966a0`.
+- AEGIS checks [run #45021985457](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/45021985457) passed all eight jobs: Python API **128 passed, 8 skipped, 1 warning**; PostgreSQL migration/RLS integration **8 passed**; frontend **55 passed**, TypeScript typecheck and production build passed; API container, Linux/Windows/macOS agents and AWS Terraform validation passed.
+- Security checks [run #45021985487](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/45021985487) passed: Ruff lint, NVD importer **11 passed**, Gitleaks, Python/TypeScript CodeQL and Python/npm dependency audits.
+- Flutter checks [run #45021985545](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/45021985545) passed formatting, analysis and tests.
+- GitHub-hosted Actions supplied executable validation; no local test execution is claimed because this environment has no checked-out repository/dependency environment.
+- No live Neon connection, embedding API request, customer document, customer ingestion, RAG request or security-tool action was performed. Test credentials are synthetic placeholders only; no real credentials or private data were committed.
 
 ### Pending
 
-- Complete CI, correct any failures, and merge only after required checks pass.
-- Add role-aware authorization for `restricted` knowledge and a reviewed retention/deletion workflow before any customer ingestion.
-- Add an authenticated retrieval path and connect `KnowledgeEngine` to specialist augmentation only after provenance, prompt-injection, cross-tenant and advisory-only tests pass.
+- Implement role-aware authorization for `restricted` knowledge and a reviewed retention/deletion workflow before accepting customer knowledge.
+- Add an authenticated tenant-bound retrieval path and connect `KnowledgeEngine` to specialist augmentation only after provenance, prompt-injection, cross-tenant and advisory-only tests pass.
 - Configure a non-production identity provider, Neon database and embedding provider through managed secrets for integration testing.
 - PR #37 remains separate and open; its PostgreSQL migration/RLS failure must be repaired and independently verified before merge.
 
 ### Next task
 
-Implement role-aware classification authorization and retention/deletion controls, then add API tests for tenant isolation, restricted-content denial, provider failure and audit behavior before enabling retrieval or ingestion.
+Implement role-aware classification authorization and retention/deletion controls, then add tests for tenant isolation, restricted-content denial, retention policy, audit behavior and rollback before enabling retrieval or ingestion.
