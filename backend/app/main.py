@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
-
-from fastapi import FastAPI
 
 from aegis_ai.config import AISettings
 from aegis_ai.gateway import ModelGateway
 from aegis_ai.providers.openai_compatible import OpenAICompatibleProvider
+from fastapi import FastAPI
 
 from app.ai.knowledge_config import KnowledgeSettings
 from app.ai.knowledge_runtime import build_knowledge_runtime, verify_database_role
@@ -18,10 +17,10 @@ from app.ai.specialist_service import SpecialistAnalysisAdapter
 from app.api.ai_analysis import router as ai_analysis_router
 from app.api.assets import router as assets_router
 from app.api.endpoints import router as endpoint_router
-from app.api.memberships import router as membership_router
 from app.api.membership_bootstrap import router as membership_bootstrap_router
-from app.api.tenants import router as tenant_router
+from app.api.memberships import router as membership_router
 from app.api.tenant_profile import router as tenant_profile_router
+from app.api.tenants import router as tenant_router
 from app.config import Settings
 from app.db.session import create_session_factory
 from app.health import router as health_router
