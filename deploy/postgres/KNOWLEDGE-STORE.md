@@ -85,11 +85,15 @@ supplied, the complete runtime/ingestor role pair and embedding profile are
 required; partial configuration is rejected. Credentials are secret-wrapped
 and excluded from representations.
 
-This settings contract is not yet wired into the FastAPI lifecycle. The
-in-memory store remains the active default and the PostgreSQL adapter is not
-available to request handlers or specialist augmentation. Do not configure
-customer ingestion or assume persistent memory is active until lifecycle
-wiring, role checks and authorization tests are merged.
+The FastAPI lifespan now loads this settings contract. When the complete bundle
+is present, it creates separate runtime and ingestor engines, verifies
+`SELECT current_user` against `aegis_runtime` and `aegis_ingestor`, and publishes
+a `KnowledgeRuntime` factory. The factory creates a fresh `PostgresKnowledgeStore`
+only from a server-resolved `TenantContext`; it does not cache tenant-specific
+stores. A configured connection failure or role mismatch aborts startup and
+disposes created engines. With no memory settings, the feature remains disabled
+and no knowledge engines are created. No retrieval route, specialist augmentation
+or customer ingestion is active. Do not assume persistent memory is operational.
 
 Document keys remain immutable for a content digest; changed source content
 requires a new versioned document key until a reviewed soft-delete/retention
