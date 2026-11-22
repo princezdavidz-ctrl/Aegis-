@@ -51,8 +51,8 @@ After migrations, run `deploy/postgres/grants.sql`:
   insert fails, the knowledge write fails in the same transaction.
 - `aegis_migrator`: schema ownership and migration-only policy.
 
-The future adapter must set `aegis.subject` and `aegis.tenant_id` using
-transaction-local settings on every connection/transaction. It must not accept
+`PostgresKnowledgeStore` sets `aegis.subject` and `aegis.tenant_id` using
+transaction-local settings on every read/write transaction. It does not accept
 tenant scope from document content or model output.
 
 ## Current status
