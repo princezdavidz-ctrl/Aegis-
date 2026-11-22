@@ -12,6 +12,8 @@ from aegis_ai.config import AISettings
 from aegis_ai.gateway import ModelGateway
 from aegis_ai.providers.openai_compatible import OpenAICompatibleProvider
 
+from app.ai.knowledge_config import KnowledgeSettings
+from app.ai.knowledge_runtime import build_knowledge_runtime, verify_database_role
 from app.ai.specialist_service import SpecialistAnalysisAdapter
 from app.api.ai_analysis import router as ai_analysis_router
 from app.api.assets import router as assets_router
@@ -64,39 +66,82 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-        engine = None
-        provisioner_engine = None
+        engines = []
         ai_provider = None
         application.state.session_factory = None
         application.state.provisioner_session_factory = None
+        application.state.knowledge_runtime = None
         application.state.ai_provider = None
         application.state.specialist_analysis_service = None
-        if resolved_settings.database_url is not None:
-            engine, factory = create_session_factory(
-                resolved_settings.database_url.get_secret_value()
-            )
-            application.state.session_factory = factory
-        if resolved_settings.provisioner_database_url is not None:
-            provisioner_engine, provisioner_factory = create_session_factory(
-                resolved_settings.provisioner_database_url.get_secret_value()
-            )
-            application.state.provisioner_session_factory = provisioner_factory
-        ai_settings = AISettings.from_environment()
-        if ai_settings.model != "unset" and ai_settings.api_key:
-            ai_provider = OpenAICompatibleProvider(ai_settings)
-            application.state.ai_provider = ai_provider
-            application.state.specialist_analysis_service = SpecialistAnalysisAdapter(
-                ModelGateway(ai_provider)
-            )
+
         try:
+            knowledge_settings = KnowledgeSettings.from_environment(
+                environment=resolved_settings.environment
+            )
+            if (
+                knowledge_settings.enabled
+                and knowledge_settings.embedding_provider != "openai-compatible"
+            ):
+                raise RuntimeError("configured knowledge embedding provider is unsupported")
+
+            if resolved_settings.database_url is not None:
+                engine, factory = create_session_factory(
+                    resolved_settings.database_url.get_secret_value()
+                )
+                engines.append(engine)
+                application.state.session_factory = factory
+
+            if resolved_settings.provisioner_database_url is not None:
+                provisioner_engine, provisioner_factory = create_session_factory(
+                    resolved_settings.provisioner_database_url.get_secret_value()
+                )
+                engines.append(provisioner_engine)
+                application.state.provisioner_session_factory = provisioner_factory
+
+            if knowledge_settings.enabled:
+                runtime_url = knowledge_settings.runtime_database_url
+                ingestor_url = knowledge_settings.ingestor_database_url
+                if runtime_url is None or ingestor_url is None:
+                    raise RuntimeError("knowledge memory configuration is incomplete")
+
+                runtime_engine, runtime_factory = create_session_factory(
+                    runtime_url.get_secret_value()
+                )
+                engines.append(runtime_engine)
+                ingestor_engine, ingestor_factory = create_session_factory(
+                    ingestor_url.get_secret_value()
+                )
+                engines.append(ingestor_engine)
+
+                await verify_database_role(
+                    runtime_factory,
+                    expected_role="aegis_runtime",
+                )
+                await verify_database_role(
+                    ingestor_factory,
+                    expected_role="aegis_ingestor",
+                )
+                application.state.knowledge_runtime = build_knowledge_runtime(
+                    knowledge_settings,
+                    runtime_session_factory=runtime_factory,
+                    ingestor_session_factory=ingestor_factory,
+                )
+
+            ai_settings = AISettings.from_environment()
+            if ai_settings.model != "unset" and ai_settings.api_key:
+                ai_provider = OpenAICompatibleProvider(ai_settings)
+                application.state.ai_provider = ai_provider
+                application.state.specialist_analysis_service = SpecialistAnalysisAdapter(
+                    ModelGateway(ai_provider)
+                )
             yield
         finally:
-            if ai_provider is not None:
-                await ai_provider.aclose()
-            if provisioner_engine is not None:
-                await provisioner_engine.dispose()
-            if engine is not None:
-                await engine.dispose()
+            try:
+                if ai_provider is not None:
+                    await ai_provider.aclose()
+            finally:
+                for engine in reversed(engines):
+                    await engine.dispose()
 
     is_production = resolved_settings.environment == "production"
     application = FastAPI(
