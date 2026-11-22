@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
+from typing import Self
 from uuid import UUID
 
-import pytest
-from fastapi.testclient import TestClient
-from pydantic import ValidationError
-
-import app.main as main_module
 import app.ai.knowledge_runtime as knowledge_runtime_module
+import app.main as main_module
+import pytest
 from app.config import Settings
 from app.main import create_app
 from app.security.tenant import TenantContext
+from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 
 _MEMORY_ENVIRONMENT = {
@@ -44,7 +44,7 @@ class FakeSession:
         self.role = role
         self.error = error
 
-    async def __aenter__(self) -> FakeSession:
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(self, *args: object) -> None:
@@ -188,9 +188,11 @@ def test_wrong_database_role_fails_startup_and_disposes_both_engines(
     )
     application = create_app(Settings(environment="test"))
 
-    with pytest.raises(RuntimeError, match="role verification failed for aegis_ingestor"):
-        with TestClient(application):
-            pass
+    with (
+        pytest.raises(RuntimeError, match="role verification failed for aegis_ingestor"),
+        TestClient(application),
+    ):
+        pass
 
     assert len(engines) == 2
     assert all(engine.disposed for engine in engines)
@@ -207,9 +209,11 @@ def test_database_connection_failure_is_sanitized_and_disposes_engines(
     )
     application = create_app(Settings(environment="test"))
 
-    with pytest.raises(RuntimeError, match="role verification failed") as exc_info:
-        with TestClient(application):
-            pass
+    with (
+        pytest.raises(RuntimeError, match="role verification failed") as exc_info,
+        TestClient(application),
+    ):
+        pass
 
     assert "connection password leaked" not in str(exc_info.value)
     assert len(engines) == 2
@@ -234,6 +238,8 @@ def test_partial_memory_configuration_fails_before_opening_connections(
     )
     application = create_app(Settings(environment="test"))
 
-    with pytest.raises(ValidationError, match="knowledge memory configuration is incomplete"):
-        with TestClient(application):
-            pass
+    with (
+        pytest.raises(ValidationError, match="knowledge memory configuration is incomplete"),
+        TestClient(application),
+    ):
+        pass
