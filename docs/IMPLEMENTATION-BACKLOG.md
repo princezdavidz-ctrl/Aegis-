@@ -276,13 +276,12 @@ Design and implement the reviewed tenant-scoped retention/deletion workflow. Pre
 
 ### Next implementation
 
-1. Add server-resolved role-aware authorization for `restricted` knowledge and test denied retrieval at both application and PostgreSQL policy boundaries.
-2. Design a reviewed retention/deletion workflow. The current ingestor role cannot DELETE; do not weaken this grant. Use a narrowly scoped, audited database function or a separate privileged workflow with explicit tenant/subject checks, immutable audit evidence and rollback semantics.
-3. Add a tenant-bound retrieval dependency/endpoint only after durable audit and classification checks are available.
-4. Connect `KnowledgeEngine` and `KnowledgeAugmentedSpecialistService` to specialist analysis with source provenance, explicit untrusted-passage handling, prompt-injection tests and advisory-only response checks.
-5. Configure a non-production identity provider, Neon database and embedding provider via managed secrets for end-to-end verification.
+1. Design a reviewed retention/deletion workflow. The current ingestor role cannot DELETE; do not weaken this grant. Use a narrowly scoped, audited database function or a separate privileged workflow with explicit tenant/subject checks, immutable audit evidence and rollback semantics.
+2. Add a tenant-bound retrieval dependency/endpoint only after sensitive-read audit and classification checks are available.
+3. Connect `KnowledgeEngine` and `KnowledgeAugmentedSpecialistService` to specialist analysis with source provenance, explicit untrusted-passage handling, prompt-injection tests and advisory-only response checks.
+4. Configure a non-production identity provider, Neon database and embedding provider via managed secrets for end-to-end verification.
 
-PR #37 remains separate and unmerged pending its PostgreSQL migration/RLS repair.
+Role-aware classification was completed in PR #65 and is recorded below. PR #37 remains separate and unmerged pending its PostgreSQL migration/RLS repair.
 
 
 ## 2026-11-23 — Role-aware knowledge classification merged (PR #65)
