@@ -202,6 +202,7 @@ class PostgresKnowledgeStore(KnowledgeStore):
             result = await session.execute(
                 text(
                     """
+                    -- Forced RLS on documents and chunks enforces the current membership role.
                     WITH vector_candidates AS (
                         SELECT candidate.id,
                                ROW_NUMBER() OVER (
@@ -221,7 +222,6 @@ class PostgresKnowledgeStore(KnowledgeStore):
                              AND document.id = chunk.document_id
                             WHERE chunk.tenant_id = :tenant_id
                               AND chunk.embedding_space_id = :space_id
-                              AND document.classification IN ('public', 'internal')
                             ORDER BY distance, chunk.document_id, chunk.chunk_index
                             LIMIT :candidate_limit
                         ) AS candidate
@@ -247,7 +247,6 @@ class PostgresKnowledgeStore(KnowledgeStore):
                              AND document.id = chunk.document_id
                             WHERE chunk.tenant_id = :tenant_id
                               AND chunk.embedding_space_id = :space_id
-                              AND document.classification IN ('public', 'internal')
                               AND chunk.search_vector @@ plainto_tsquery('simple', :query)
                             ORDER BY lexical_score DESC,
                                      chunk.document_id,

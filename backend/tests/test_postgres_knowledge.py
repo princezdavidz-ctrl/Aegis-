@@ -350,6 +350,45 @@ async def test_postgres_knowledge_store_is_idempotent_tenant_bound_and_classifie
             await session.commit()
             return tenant_id
 
+    async def add_active_member(
+        tenant_id,
+        tenant_slug: str,
+        admin_subject: str,
+        member_subject: str,
+        role: str,
+    ) -> None:
+        async with provisioner_factory() as session:
+            await session.execute(
+                text("""
+                    SELECT * FROM public.aegis_manage_tenant_member(
+                        :tenant_id, :target_subject, :target_role, 'invite',
+                        :actor_subject, 'user', :request_id
+                    )
+                """),
+                {
+                    "tenant_id": tenant_id,
+                    "target_subject": member_subject,
+                    "target_role": role,
+                    "actor_subject": admin_subject,
+                    "request_id": uuid4(),
+                },
+            )
+            await session.commit()
+        async with provisioner_factory() as session:
+            await session.execute(
+                text("""
+                    SELECT * FROM public.aegis_accept_tenant_invitation(
+                        :tenant_slug, :actor_subject, :request_id
+                    )
+                """),
+                {
+                    "tenant_slug": tenant_slug,
+                    "actor_subject": member_subject,
+                    "request_id": uuid4(),
+                },
+            )
+            await session.commit()
+
     def store_for(tenant_id, actor: str) -> PostgresKnowledgeStore:
         return PostgresKnowledgeStore(
             runtime_session_factory=runtime_factory,
@@ -361,10 +400,24 @@ async def test_postgres_knowledge_store_is_idempotent_tenant_bound_and_classifie
         )
 
     try:
-        tenant_a = await provision(f"{slug_prefix}-a", actor_a)
-        tenant_b = await provision(f"{slug_prefix}-b", actor_b)
+        tenant_a_slug = f"{slug_prefix}-a"
+        tenant_b_slug = f"{slug_prefix}-b"
+        tenant_a = await provision(tenant_a_slug, actor_a)
+        tenant_b = await provision(tenant_b_slug, actor_b)
+        viewer_subject = "oidc|knowledge-adapter-viewer"
+        security_manager_subject = "oidc|knowledge-adapter-security-manager"
+        await add_active_member(
+            tenant_a, tenant_a_slug, actor_a, viewer_subject, "viewer"
+        )
+        await add_active_member(
+            tenant_a, tenant_a_slug, actor_a, security_manager_subject, "security_manager"
+        )
         engine_a = KnowledgeEngine(store_for(tenant_a, actor_a))
         engine_b = KnowledgeEngine(store_for(tenant_b, actor_b))
+        engine_viewer = KnowledgeEngine(store_for(tenant_a, viewer_subject))
+        engine_security_manager = KnowledgeEngine(
+            store_for(tenant_a, security_manager_subject)
+        )
 
         public_document = KnowledgeDocument(
             tenant_id=str(tenant_a),
@@ -408,9 +461,87 @@ async def test_postgres_knowledge_store_is_idempotent_tenant_bound_and_classifie
             RetrievalRequest(str(tenant_a), "Linux endpoint hardening authentication", 5)
         )
         assert results
-        assert {item.chunk.document_id for item in results} == {"baseline-a"}
+        assert {item.chunk.document_id for item in results} == {"baseline-a", "restricted-a"}
         assert all(item.chunk.tenant_id == str(tenant_a) for item in results)
-        assert all(item.chunk.classification == KnowledgeClassification.PUBLIC for item in results)
+        assert any(
+            item.chunk.classification == KnowledgeClassification.RESTRICTED
+            for item in results
+        )
+
+        viewer_results = await engine_viewer.retrieve(
+            RetrievalRequest(str(tenant_a), "Linux endpoint hardening authentication", 5)
+        )
+        assert {item.chunk.document_id for item in viewer_results} == {"baseline-a"}
+        assert all(
+            item.chunk.classification != KnowledgeClassification.RESTRICTED
+            for item in viewer_results
+        )
+
+        manager_results = await engine_security_manager.retrieve(
+            RetrievalRequest(str(tenant_a), "incident response access details", 5)
+        )
+        assert "restricted-a" in {item.chunk.document_id for item in manager_results}
+
+        async def visible_rows(subject: str) -> tuple[list[str], int]:
+            async with runtime_factory() as session:
+                await apply_database_context(session, subject=subject, tenant_id=tenant_a)
+                document_keys = (
+                    await session.execute(
+                        text("""
+                            SELECT document_key
+                            FROM public.knowledge_documents
+                            ORDER BY document_key
+                        """)
+                    )
+                ).scalars().all()
+                chunk_count = await session.scalar(
+                    text("SELECT count(*) FROM public.knowledge_chunks")
+                )
+                return document_keys, int(chunk_count or 0)
+
+        assert await visible_rows(viewer_subject) == (["baseline-a"], 1)
+        assert await visible_rows(security_manager_subject) == (
+            ["baseline-a", "restricted-a"],
+            2,
+        )
+
+        with pytest.raises(DBAPIError):
+            await engine_viewer.ingest(
+                KnowledgeDocument(
+                    tenant_id=str(tenant_a),
+                    document_id="restricted-viewer-write",
+                    title="Unauthorized restricted ingestion",
+                    source="incident-notes",
+                    content="A viewer must not write restricted security evidence.",
+                    classification=KnowledgeClassification.RESTRICTED,
+                )
+            )
+
+        # Classification access is checked against the live membership row, not
+        # a cached role carried by the store. A role downgrade takes effect at once.
+        async with provisioner_factory() as session:
+            await session.execute(
+                text("""
+                    SELECT * FROM public.aegis_manage_tenant_member(
+                        :tenant_id, :target_subject, 'viewer', 'change_role',
+                        :actor_subject, 'user', :request_id
+                    )
+                """),
+                {
+                    "tenant_id": tenant_a,
+                    "target_subject": security_manager_subject,
+                    "actor_subject": actor_a,
+                    "request_id": uuid4(),
+                },
+            )
+            await session.commit()
+
+        downgraded_results = await engine_security_manager.retrieve(
+            RetrievalRequest(str(tenant_a), "incident response access details", 5)
+        )
+        assert "restricted-a" not in {
+            item.chunk.document_id for item in downgraded_results
+        }
 
         with pytest.raises(PermissionError):
             await engine_a.retrieve(
