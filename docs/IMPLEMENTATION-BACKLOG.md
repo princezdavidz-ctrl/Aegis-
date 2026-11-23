@@ -1,8 +1,8 @@
 # AEGIS implementation backlog
 
 **Repository:** `princezdavidz-ctrl/Aegis-`  
-**Baseline:** `main` at `3a19f301ac2a4ffbed9f1f80733eb673af6966a0`  
-**Planning date:** 2026-11-22
+**Baseline:** `main` at `857dde088c7fe16f124e5ee11c0c3c9fcac8ffc8`  
+**Planning date:** 2026-11-23
 
 This backlog is based on an inspection of the current `main` branch. It separates implemented foundations from live, externally configured capabilities. A feature is not considered operational merely because a UI screen, interface, schema or deployment workflow exists.
 
@@ -14,7 +14,7 @@ This backlog is based on an inspection of the current `main` branch. It separate
 | FastAPI | App factory, OIDC verifier, tenant/profile/membership/manual asset APIs, endpoint enrollment/fleet APIs and advisory AI analysis route exist | Live IdP/database configuration, non-production identity verification and production deployment proof |
 | Tenant security | Membership resolution, tenant context and PostgreSQL RLS migration exist | Run migrations against PostgreSQL and prove RLS under production-like roles |
 | Audit | Append-only audit model/sink and database migration protections exist | Verify durable writes and database immutability on PostgreSQL |
-| AI | Provider-neutral gateway, OpenAI-compatible chat adapter, four advisory specialist workflows, deterministic evaluation, embeddings adapter, tenant-scoped pgvector schema, backend PostgresKnowledgeStore adapter and fail-closed KnowledgeSettings exist; FastAPI lifespan verifies separate database roles and exposes a tenant-bound store factory | Retrieval/RAG and ingestion remain inactive; role-aware restricted-classification authorization, retention/deletion, authenticated retrieval, specialist augmentation, live provider configuration and retrieval evaluation remain pending |
+| AI | Provider-neutral gateway, OpenAI-compatible chat adapter, four advisory specialist workflows, deterministic evaluation, embeddings adapter, tenant-scoped pgvector schema, backend PostgresKnowledgeStore adapter and fail-closed FastAPI memory lifecycle exist; migration 0011 enforces classification-aware forced RLS for documents and chunks | Retrieval/RAG and ingestion remain inactive; reviewed retention/deletion, authenticated retrieval and sensitive-read audit, specialist augmentation, live provider configuration and retrieval evaluation remain pending |
 | Flutter desktop | Engineer SOC shell and module navigation exist | Real API data, authentication, analyst workflows and realtime updates |
 | AWS | OIDC-based manual deployment workflow and role Terraform foundation exist | Provision AWS resources, correct/configure OIDC provider, set repository variables and execute staging deployment |
 | Telemetry/detection | Architecture and module placeholders exist | Connectors, event pipeline, detection rules and correlation are not operational |
@@ -250,9 +250,15 @@ PR #37 remains separate and must pass its PostgreSQL migration/RLS checks before
 
 The FastAPI knowledge-memory lifecycle item was completed and merged in PR #64. See the 2026-11-22 completion record below.
 
+### Completion note — role-aware classification (PR #65)
+
+- PostgreSQL forced RLS now permits `public`/`internal` to all active tenant members and limits `restricted` documents/chunks to active `tenant_admin` and `security_manager` memberships.
+- The same classification checks apply to runtime reads and ingestor SELECT/INSERT/UPDATE. The database reads the live membership role per statement; no direct DELETE grant was added.
+- PR #65 passed PostgreSQL integration (**8 passed**), API (**128 passed, 8 skipped**), frontend (**55 passed**), security, CodeQL, dependency, NVD (**11 passed**) and Flutter workflows. See the 2026-11-23 entry in `docs/PROGRESS.md`.
+
 ### Next implementation
 
-Implement role-aware authorization for `restricted` knowledge and a reviewed retention/deletion workflow. Keep retrieval, customer ingestion and specialist RAG disabled until application and PostgreSQL tests prove tenant isolation, classification denial, audit behavior and rollback.
+Design and implement the reviewed tenant-scoped retention/deletion workflow. Preserve the no-DELETE ingestor grant and require a narrowly scoped audited database function or separate privileged worker with explicit tenant/subject authorization, immutable audit evidence and rollback semantics. Keep customer ingestion and specialist RAG disabled until retention, sensitive-read audit and classification checks are complete.
 
 
 ## 2026-11-22 — FastAPI knowledge runtime lifecycle merged (PR #64)
@@ -277,3 +283,16 @@ Implement role-aware authorization for `restricted` knowledge and a reviewed ret
 5. Configure a non-production identity provider, Neon database and embedding provider via managed secrets for end-to-end verification.
 
 PR #37 remains separate and unmerged pending its PostgreSQL migration/RLS repair.
+
+
+## 2026-11-23 — Role-aware knowledge classification merged (PR #65)
+
+- Merged [PR #65](https://github.com/princezdavidz-ctrl/Aegis-/pull/65) into `main` as squash commit `857dde088c7fe16f124e5ee11c0c3c9fcac8ffc8`.
+- Migration `0011_knowledge_class_access` applies live-membership-role policies to both knowledge documents and chunks. `public`/`internal` are visible to all active members; `restricted` is limited to active `tenant_admin` and `security_manager` members.
+- The ingestor's SELECT/INSERT/UPDATE RLS policy uses the same classification rule. Its existing no-DELETE privilege remains unchanged.
+- The adapter's vector and lexical queries rely on forced RLS rather than a hard-coded classification list. PostgreSQL rechecks the persisted membership role on each statement, so role downgrades take effect immediately.
+- PostgreSQL integration **8 passed**; API **128 passed, 8 skipped, 1 warning**; frontend **55 passed** plus typecheck/build; security and Flutter workflows passed. Full run links and the initial Alembic revision-length correction are recorded in `docs/PROGRESS.md`.
+
+### Next task
+
+Implement the reviewed retention/deletion workflow with a tenant-scoped tombstone or audited soft-delete design. Do not grant direct DELETE to `aegis_ingestor`; require a narrow privileged database function/worker, append-only audit evidence, explicit tenant/subject authorization, rollback and cross-tenant denial tests. Retrieval and customer ingestion remain disabled.

@@ -1,8 +1,10 @@
 # Tenant-scoped PostgreSQL knowledge store schema
 
 Migration `0010_tenant_knowledge_store` creates the persistence boundary for
-AEGIS knowledge documents, chunks and embedding-space metadata. It does not
-install an ingestion API or activate semantic retrieval by itself.
+AEGIS knowledge documents, chunks and embedding-space metadata. Migration
+`0011_knowledge_classification_access` adds membership-role classification
+policies to the forced RLS boundary. Neither migration installs an ingestion
+API or activates semantic retrieval by itself.
 
 ## Prerequisite
 
@@ -41,10 +43,14 @@ privileged project/database administrator first.
 
 After migrations, run `deploy/postgres/grants.sql`:
 
-- `aegis_runtime`: SELECT only on knowledge tables.
-- `aegis_ingestor`: SELECT/INSERT on embedding spaces and SELECT/INSERT/UPDATE on documents/chunks, with forced RLS
-  requiring a matching active tenant membership and transaction-local context.
-  It cannot update embedding-space identity or DELETE any knowledge row. A model, revision or dimension change creates a new embedding space.
+- `aegis_runtime`: SELECT only on knowledge tables. Forced RLS allows every
+  active tenant member to read `public`/`internal` documents and chunks; only
+  active `tenant_admin` and `security_manager` members can read `restricted`.
+- `aegis_ingestor`: SELECT/INSERT on embedding spaces and SELECT/INSERT/UPDATE
+  on documents/chunks. The same classification rules apply to its `FOR ALL`
+  policy and are checked against the live membership row for every statement.
+  It cannot update embedding-space identity or DELETE any knowledge row. A
+  model, revision or dimension change creates a new embedding space.
 - `aegis_ingestor` can read only its own membership row through the existing
   membership RLS policy so the knowledge policies can verify authorization.
 - Inserts and updates to documents and chunks append audit events. If the audit
@@ -97,9 +103,13 @@ or customer ingestion is active. Do not assume persistent memory is operational.
 
 Document keys remain immutable for a content digest; changed source content
 requires a new versioned document key until a reviewed soft-delete/retention
-migration exists. Restricted documents remain excluded pending role-aware
-classification authorization. No live Neon database or embedding provider is
-configured.
+migration exists. Migration `0011_knowledge_classification_access` now limits
+restricted document/chunk visibility to active `tenant_admin` and
+`security_manager` memberships, while `public`/`internal` remains available to
+all active members. This is enforced in PostgreSQL RLS for both runtime reads
+and ingestor operations; the current membership role is checked on each SQL
+statement. The application-level retrieval route is still disabled. No live
+Neon database or embedding provider is configured.
 
 The downgrade drops AEGIS knowledge tables and triggers but intentionally
 leaves the shared pgvector extension installed.

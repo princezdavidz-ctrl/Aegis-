@@ -1090,3 +1090,42 @@ After this UI correction passes CI, implement the already-documented FastAPI kno
 ### Next task
 
 Implement role-aware classification authorization and retention/deletion controls, then add tests for tenant isolation, restricted-content denial, retention policy, audit behavior and rollback before enabling retrieval or ingestion.
+
+
+## 2026-11-23 — Role-aware knowledge classification enforced by PostgreSQL RLS
+
+### Repository audit
+
+- Re-inspected `main` at `247816741fe46251ed9a56a55c700852e5ef849d`, README, architecture, progress log, implementation backlog, PostgreSQL grants/migration 0010, membership role lifecycle functions, `TenantContext`, the knowledge store adapter and PostgreSQL integration tests.
+- Confirmed the existing roles are `tenant_admin`, `security_manager`, `analyst` and `viewer`; the role is resolved from an active persisted membership. Preserved the existing tenant/RLS context, separate runtime/ingestor database roles, audit triggers and no-DELETE grant.
+
+### Completed
+
+- Added migration `0011_knowledge_classification_access.py` (Alembic revision ID `0011_knowledge_class_access`, kept within the existing 32-character `alembic_version.version_num` limit).
+- Replaced the document and chunk read policies with classification-aware policies: every active tenant member can read `public` and `internal`; only active `tenant_admin` and `security_manager` members can read `restricted`.
+- Applied the same classification conditions to the ingestor's SELECT/INSERT/UPDATE policy. No table grant was broadened and the ingestor still has no DELETE privilege.
+- PostgreSQL reads the live membership role on each statement. A role downgrade therefore removes restricted access immediately, without trusting a browser/model role or a cached application claim.
+- Removed the adapter's hard-coded `public/internal` SQL filters so PostgreSQL RLS is the authoritative enforcement boundary for both vector and lexical candidate selection.
+- Expanded PostgreSQL integration coverage for tenant admin, security manager and viewer access, denied restricted ingestion by a viewer, and immediate access loss after a security-manager-to-viewer role change.
+
+### Validation
+
+- Merged [PR #65](https://github.com/princezdavidz-ctrl/Aegis-/pull/65) into `main` as squash commit `857dde088c7fe16f124e5ee11c0c3c9fcac8ffc8`.
+- AEGIS checks [run #45168525762](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/45168525762) passed all eight jobs: Python API **128 passed, 8 skipped, 1 warning**; PostgreSQL migration/RLS integration **8 passed**; frontend **55 tests passed**, TypeScript typecheck and Vite production build passed; API container smoke test, Linux/Windows/macOS endpoint agents and AWS Terraform validation passed.
+- Security checks [run #45168525704](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/45168525704) passed all five jobs: Gitleaks, Python/npm dependency audits, Python/TypeScript CodeQL and NVD catalogue importer **11 passed**.
+- Flutter checks [run #45168525730](https://github.com/princezdavidz-ctrl/Aegis-/actions/runs/45168525730) passed formatting, analysis and tests.
+- The first migration run exposed an Alembic revision ID longer than the existing `version_num varchar(32)`; the ID was shortened to `0011_knowledge_class_access` and the complete PR workflows were rerun successfully. No test, audit or policy check was disabled.
+- GitHub-hosted Actions supplied executable validation; no local execution is claimed because this environment has no checked-out repository/dependency environment.
+- No live Neon database, embedding API, customer document, customer ingestion, retrieval endpoint, RAG request or security-tool action was used. No credentials or private data were committed.
+
+### Pending
+
+- Design and implement a reviewed retention/deletion workflow. The ingestor still has no DELETE grant; do not broaden it. Use a narrowly scoped, audited database function or a separate privileged workflow with tenant/subject checks, immutable audit evidence and rollback semantics.
+- Add an authenticated tenant-bound retrieval endpoint only after sensitive-read audit behavior and classification checks are wired.
+- Connect retrieved passages to specialist augmentation with evidence provenance, explicit untrusted-passage handling, prompt-injection tests and advisory-only regression checks.
+- Configure a non-production identity provider, Neon database and embedding provider through managed secrets for end-to-end testing.
+- PR #37 remains separate and open pending its own PostgreSQL migration/RLS repair.
+
+### Next task
+
+Design the tenant-scoped retention/deletion data model and audited database workflow without granting direct DELETE to `aegis_ingestor`. Add migration-upgrade/downgrade, authorization, audit-append, tenant-isolation and rollback tests before implementing any deletion API or enabling customer ingestion.

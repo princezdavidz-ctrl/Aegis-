@@ -13,8 +13,13 @@ API fails closed rather than substituting a mock model.
   write-limited session factories, verifies `current_user`, and applies
   transaction-local subject/tenant RLS context for every operation.
 - Vector and lexical retrieval is filtered by tenant and immutable embedding
-  space before ranking. Restricted-classification content is excluded until
-  role-aware authorization is implemented.
+  space before ranking. Migration `0011_knowledge_class_access` enforces
+  classification visibility with forced RLS on both documents and chunks:
+  every active member can read `public`/`internal`; only active `tenant_admin`
+  and `security_manager` members can read `restricted`. The same rule applies
+  to the ingestor's SELECT/INSERT/UPDATE policy. PostgreSQL reads the current
+  membership role on every statement, so a role downgrade takes effect without
+  relying on a cached application claim.
 - `KnowledgeSettings` in `knowledge_config.py` defines the optional,
   fail-closed configuration contract. No memory settings means disabled;
   supplying any core setting requires the complete pair of database roles and
@@ -42,3 +47,7 @@ retrieval, cache, memory and report leakage.
 
 No model tool-calling surface, shell access, security-tool execution, patch
 deployment or autonomous remediation is enabled by this subsystem.
+
+## Classification and activation boundary
+
+The PostgreSQL adapter relies on database-enforced RLS for classification; it does not pass a role or an `allow_restricted` flag from the browser or model. The in-memory adapter is for tests/local development only and is not a production authorization boundary. No retrieval route, specialist augmentation or customer ingestion is active. A live database and embedding provider are not configured.

@@ -30,14 +30,17 @@ bounded batches, and performs tenant- and embedding-space-filtered vector plus
 lexical retrieval in SQL.
 
 The adapter is not wired into FastAPI lifespan or specialist augmentation.
-`InMemoryKnowledgeStore` remains the active default. Customer ingestion and
-RAG augmentation remain disabled until separate database/provider
-configuration, role-aware classification authorization, and retention/
-deletion controls are implemented. Document keys are immutable for a content
-digest; changed source content requires a new versioned document ID because
-the current schema intentionally has no knowledge DELETE or soft-delete path.
-Restricted-classification records are stored but excluded from retrieval until
-role-aware access is available.
+`InMemoryKnowledgeStore` remains the active default. Customer ingestion and RAG augmentation remain disabled until separate
+database/provider configuration and reviewed retention/deletion controls are
+implemented. Migration `0011_knowledge_class_access` now enforces classification
+visibility in the PostgreSQL adapter: all active tenant members can read
+`public`/`internal`, while only active `tenant_admin` and `security_manager`
+members can read `restricted`. Forced RLS applies to both documents and chunks
+and checks the live membership role for runtime reads and ingestor operations.
+Document keys are immutable for a content digest; changed source content
+requires a new versioned document ID because the current schema intentionally
+has no knowledge DELETE or soft-delete path. The in-memory adapter is only for
+tests/local development and is not a production authorization boundary.
 
 ## Ingestion boundary
 Only ingest content from approved, authorized sources. Validate source ownership, document size, tenant membership, classification and retention before constructing KnowledgeDocument. Do not fetch arbitrary user-supplied URLs from the AI service. The optional source URI is provenance metadata only; it is not fetched by this package.
@@ -48,7 +51,7 @@ Only ingest content from approved, authorized sources. Validate source ownership
 - Retrieved passages are untrusted data. They may contain prompt-injection attempts and must never override system instructions.
 - Each retrieved passage is attached to analysis with a stable knowledge evidence ID, title, source, classification and retrieval score.
 - Retrieved content is advisory reference material; it does not authorize tools or actions.
-- This first store uses transparent lexical ranking. Durable PostgreSQL/pgvector storage, ingestion jobs, retention enforcement and retrieval evaluation gates remain production-hardening work.
+- The in-memory store uses transparent lexical ranking and is test/local-development only. Durable PostgreSQL/pgvector storage exists, but authenticated retrieval, ingestion jobs, retention enforcement and retrieval evaluation gates remain production-hardening work.
 
 ## Embedding provider foundation
 
@@ -61,5 +64,5 @@ The package exports an EmbeddingProvider protocol and an OpenAICompatibleEmbedde
 - Redirects are disabled; transport and provider errors are sanitized.
 - Tests use mocked HTTP transport and do not call a live provider.
 
-This adapter is not automatically invoked by the knowledge engine, does not persist vectors, and does not make semantic retrieval operational. The next step is a PostgreSQL/pgvector implementation of KnowledgeStore with database-enforced tenant isolation and explicit model/dimension compatibility.
+This adapter is not automatically invoked by the knowledge engine, does not persist vectors, and does not make semantic retrieval operational. The PostgreSQL/pgvector `KnowledgeStore` implementation and database-enforced tenant/classification isolation are now present in the backend; authenticated retrieval, specialist wiring and retention controls remain pending.
 
