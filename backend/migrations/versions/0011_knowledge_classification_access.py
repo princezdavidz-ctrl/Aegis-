@@ -2,7 +2,7 @@
 
 from alembic import op
 
-revision = "0011_knowledge_classification_access"
+revision = "0011_knowledge_class_access"
 down_revision = "0010_tenant_knowledge_store"
 branch_labels = None
 depends_on = None
