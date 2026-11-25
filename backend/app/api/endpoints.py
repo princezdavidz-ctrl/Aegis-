@@ -107,16 +107,23 @@ def _provisioner_factory(request: Request) -> async_sessionmaker[AsyncSession]:
     return factory
 
 
-def _endpoint_health(last_heartbeat_at: datetime | None, status: str, now: datetime | None = None) -> str:
+def _endpoint_health(
+    last_heartbeat_at: datetime | None,
+    status: str,
+    now: datetime | None = None,
+    *,
+    online_threshold_seconds: int = 120,
+    stale_threshold_seconds: int = 900,
+) -> str:
     if status == "revoked":
         return "revoked"
     if last_heartbeat_at is None:
         return "never_reported"
     current = now or datetime.now(timezone.utc)
     age_seconds = max(0.0, (current - last_heartbeat_at).total_seconds())
-    if age_seconds <= 120:
+    if age_seconds <= online_threshold_seconds:
         return "online"
-    if age_seconds <= 900:
+    if age_seconds <= stale_threshold_seconds:
         return "stale"
     return "offline"
 
@@ -151,8 +158,13 @@ async def endpoint_fleet(request: Request, limit: int = Query(default=100, ge=1,
         raise _database_error(exc) from None
     except SQLAlchemyError:
         raise HTTPException(status_code=503, detail="endpoint_service_unavailable") from None
+    settings = request.app.state.settings
     return EndpointFleetOutput(items=[
-        EndpointDeviceSummary(**row, health_status=_endpoint_health(row.get("last_heartbeat_at"), row["status"]))
+        EndpointDeviceSummary(**row, health_status=_endpoint_health(
+            row.get("last_heartbeat_at"), row["status"],
+            online_threshold_seconds=settings.endpoint_online_threshold_seconds,
+            stale_threshold_seconds=settings.endpoint_stale_threshold_seconds,
+        ))
         for row in rows
     ], limit=limit)
 
