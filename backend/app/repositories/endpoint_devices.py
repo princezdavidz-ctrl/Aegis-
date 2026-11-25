@@ -84,10 +84,15 @@ async def list_devices(factory: async_sessionmaker[AsyncSession], *, tenant_id: 
             last_sequence,revoked_at,last_event_type,last_event_received_at
           FROM public.aegis_endpoint_list_devices(:tenant_id,:actor,:limit)
         """), {"tenant_id":tenant_id,"actor":actor,"limit":limit})).all()
+        heartbeats = (await session.execute(text("""
+          SELECT device_id,last_heartbeat_at
+          FROM public.aegis_endpoint_list_heartbeats(:tenant_id,:actor,:limit)
+        """), {"tenant_id":tenant_id,"actor":actor,"limit":limit})).all()
+        heartbeat_by_device = {row.device_id: row.last_heartbeat_at for row in heartbeats}
         return [{
           "device_id":row.device_id,"platform":row.platform,"hostname":row.hostname,
           "agent_version":row.agent_version,"status":row.status,"enrolled_at":row.enrolled_at,
-          "last_seen_at":row.last_seen_at,"last_sequence":row.last_sequence,
-          "revoked_at":row.revoked_at,"last_event_type":row.last_event_type,
-          "last_event_received_at":row.last_event_received_at,
+          "last_seen_at":row.last_seen_at,"last_heartbeat_at":heartbeat_by_device.get(row.device_id),
+          "last_sequence":row.last_sequence,"revoked_at":row.revoked_at,
+          "last_event_type":row.last_event_type,"last_event_received_at":row.last_event_received_at,
         } for row in rows]
