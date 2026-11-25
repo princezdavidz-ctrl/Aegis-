@@ -41,3 +41,13 @@ test('enrollment invitation API is bounded, platform-bound and validates one-tim
   assert.match(page, /One-time enrollment token/);
   assert.match(page, /window\.navigator\.clipboard\.writeText/);
 });
+
+
+test('endpoint fleet validates heartbeat freshness and renders health states', () => {
+  assert.match(api, /last_heartbeat_at/);
+  assert.match(api, /health_status/);
+  assert.match(api, /never_reported/);
+  assert.match(page, /Last heartbeat/);
+  assert.match(page, /Needs attention/);
+  assert.match(page, /HealthPill/);
+});

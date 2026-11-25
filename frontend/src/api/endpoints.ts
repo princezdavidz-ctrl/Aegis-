@@ -2,6 +2,7 @@ import type { TenantSession } from './tenantProfile';
 
 export type EndpointPlatform = 'windows' | 'linux' | 'macos';
 export type EndpointStatus = 'active' | 'revoked';
+export type EndpointHealthStatus = 'online' | 'stale' | 'offline' | 'never_reported' | 'revoked';
 
 export interface EndpointDevice {
   device_id: string;
@@ -11,6 +12,8 @@ export interface EndpointDevice {
   status: EndpointStatus;
   enrolled_at: string;
   last_seen_at: string | null;
+  last_heartbeat_at: string | null;
+  health_status: EndpointHealthStatus;
   last_sequence: number;
   revoked_at: string | null;
   last_event_type: string | null;
@@ -61,7 +64,7 @@ function isDevice(value: unknown): value is EndpointDevice {
   if (!isRecord(value)) return false;
   const allowed = new Set([
     'device_id', 'platform', 'hostname', 'agent_version', 'status', 'enrolled_at',
-    'last_seen_at', 'last_sequence', 'revoked_at', 'last_event_type', 'last_event_received_at',
+    'last_seen_at', 'last_heartbeat_at', 'health_status', 'last_sequence', 'last_event_type', 'last_event_received_at',
   ]);
   return !Object.keys(value).some((key) => !allowed.has(key)) &&
     typeof value.device_id === 'string' && UUID_PATTERN.test(value.device_id) &&
@@ -70,7 +73,9 @@ function isDevice(value: unknown): value is EndpointDevice {
     typeof value.agent_version === 'string' &&
     (value.status === 'active' || value.status === 'revoked') &&
     typeof value.enrolled_at === 'string' && Number.isFinite(Date.parse(value.enrolled_at)) &&
-    isNullableDate(value.last_seen_at) && Number.isInteger(value.last_sequence) &&
+    isNullableDate(value.last_seen_at) && isNullableDate(value.last_heartbeat_at) &&
+    ['online', 'stale', 'offline', 'never_reported', 'revoked'].includes(String(value.health_status)) &&
+    Number.isInteger(value.last_sequence) &&
     Number(value.last_sequence) >= 0 && isNullableDate(value.revoked_at) &&
     (value.last_event_type === null || typeof value.last_event_type === 'string') &&
     isNullableDate(value.last_event_received_at);
