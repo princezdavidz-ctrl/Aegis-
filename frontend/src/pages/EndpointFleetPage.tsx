@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AlertCircle, Copy, Laptop, Monitor, Plus, RefreshCw, ShieldCheck, ShieldOff,
+  AlertCircle, Copy, Laptop, Monitor, Plus, RefreshCw, ShieldCheck,
 } from 'lucide-react';
 import {
   createEndpointClient, EndpointApiError, type EndpointDevice, type EndpointInvitation, type EndpointPlatform,
