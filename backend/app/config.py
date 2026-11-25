@@ -26,6 +26,8 @@ class Settings(BaseModel):
     oidc_jwks_url: str | None = None
     oidc_clock_skew_seconds: int = Field(default=30, ge=0, le=300)
     oidc_jwks_cache_seconds: int = Field(default=300, ge=30, le=600)
+    endpoint_online_threshold_seconds: int = Field(default=120, ge=1, le=3600)
+    endpoint_stale_threshold_seconds: int = Field(default=900, ge=2, le=86400)
 
     @field_validator("app_name")
     @classmethod
@@ -44,6 +46,8 @@ class Settings(BaseModel):
         )
         if any(configured) and not all(configured):
             raise ValueError("OIDC_ISSUER, OIDC_AUDIENCE and OIDC_JWKS_URL must be configured together")
+        if self.endpoint_stale_threshold_seconds <= self.endpoint_online_threshold_seconds:
+            raise ValueError("endpoint stale threshold must exceed online threshold")
         return self
 
     @classmethod
@@ -56,6 +60,8 @@ class Settings(BaseModel):
             "log_level": os.getenv("AEGIS_LOG_LEVEL", "INFO"),
             "oidc_clock_skew_seconds": os.getenv("AEGIS_OIDC_CLOCK_SKEW_SECONDS", "30"),
             "oidc_jwks_cache_seconds": os.getenv("AEGIS_OIDC_JWKS_CACHE_SECONDS", "300"),
+            "endpoint_online_threshold_seconds": os.getenv("AEGIS_ENDPOINT_ONLINE_THRESHOLD_SECONDS", "120"),
+            "endpoint_stale_threshold_seconds": os.getenv("AEGIS_ENDPOINT_STALE_THRESHOLD_SECONDS", "900"),
         }
         for setting, variable in (
             ("database_url", "AEGIS_DATABASE_URL"),
