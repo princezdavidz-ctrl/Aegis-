@@ -71,3 +71,16 @@ def test_fleet_response_contract_is_tenant_agnostic_and_includes_health_metadata
             last_sequence=0, revoked_at=None, last_event_type=None, last_event_received_at=None,
             tenant_id=uuid4(),
         )
+
+
+def test_endpoint_health_thresholds_are_derived_from_signed_heartbeat_time():
+    from datetime import datetime, timedelta, timezone
+    from app.api.endpoints import _endpoint_health
+
+    now = datetime(2026, 11, 25, 12, 0, tzinfo=timezone.utc)
+    assert _endpoint_health(None, "active", now) == "never_reported"
+    assert _endpoint_health(now - timedelta(seconds=120), "active", now) == "online"
+    assert _endpoint_health(now - timedelta(seconds=121), "active", now) == "stale"
+    assert _endpoint_health(now - timedelta(minutes=15), "active", now) == "stale"
+    assert _endpoint_health(now - timedelta(minutes=15, seconds=1), "active", now) == "offline"
+    assert _endpoint_health(now, "revoked", now) == "revoked"
