@@ -84,3 +84,27 @@ def test_endpoint_health_thresholds_are_derived_from_signed_heartbeat_time():
     assert _endpoint_health(now - timedelta(minutes=15), "active", now) == "stale"
     assert _endpoint_health(now - timedelta(minutes=15, seconds=1), "active", now) == "offline"
     assert _endpoint_health(now, "revoked", now) == "revoked"
+
+
+def test_endpoint_health_thresholds_are_configurable_without_changing_defaults():
+    from datetime import datetime, timedelta, timezone
+    from app.api.endpoints import _endpoint_health
+
+    now = datetime(2026, 11, 25, 12, 0, tzinfo=timezone.utc)
+    heartbeat = now - timedelta(seconds=60)
+    assert _endpoint_health(heartbeat, "active", now,
+        online_threshold_seconds=30, stale_threshold_seconds=300) == "stale"
+    assert _endpoint_health(heartbeat, "active", now,
+        online_threshold_seconds=120, stale_threshold_seconds=300) == "online"
+    assert _endpoint_health(now - timedelta(seconds=301), "active", now,
+        online_threshold_seconds=30, stale_threshold_seconds=300) == "offline"
+
+
+def test_endpoint_health_configuration_rejects_overlapping_thresholds():
+    from pydantic import ValidationError
+    from app.config import Settings
+
+    with pytest.raises(ValidationError):
+        Settings(endpoint_online_threshold_seconds=900, endpoint_stale_threshold_seconds=900)
+    with pytest.raises(ValidationError):
+        Settings(endpoint_online_threshold_seconds=0)

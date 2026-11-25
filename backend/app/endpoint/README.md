@@ -17,6 +17,10 @@
 
 The event signature is Ed25519 over the deterministic canonical JSON bytes of the complete `EndpointTelemetryEnvelope`. The signature is sent separately as `signature_b64`. The device ID in the signed envelope is checked against the registered key; tenant identity is always resolved from the database record, never from the client payload.
 
+## Heartbeat health thresholds
+
+The fleet API derives health from the latest verified heartbeat, not general telemetry. Defaults are `AEGIS_ENDPOINT_ONLINE_THRESHOLD_SECONDS=120` and `AEGIS_ENDPOINT_STALE_THRESHOLD_SECONDS=900`. A device is `online` at or below the online threshold, `stale` above the online threshold and at or below the stale threshold, and `offline` above the stale threshold. Devices without a heartbeat are `never_reported`; revocation takes precedence. Values are validated at startup: online must be 1–3600 seconds, stale must be 2–86400 seconds, and stale must exceed online. These are server-side environment settings, not tenant-controlled request parameters.
+
 ## Security boundaries
 - Device private keys are generated and retained by the endpoint; AEGIS stores only the public key and its SHA-256 fingerprint.
 - Enrollment invitations are high-entropy, single-use and short-lived. Raw tokens are never persisted or logged.
@@ -27,4 +31,4 @@ The event signature is Ed25519 over the deterministic canonical JSON bytes of th
 - Deployments must enforce HTTPS and apply gateway-level rate limiting to public enrollment and ingestion routes.
 
 ## Current limitations
-This increment implements the server-side enrollment and signed telemetry boundary. It does not yet ship native OS collectors, a local agent key store, key rotation, fleet UI, or automated detection rules. OS collectors must use native platform APIs, least privilege, explicit customer configuration and signed updates. No remote shell or arbitrary command execution is part of this agent contract.
+This increment implements server-side enrollment, signed telemetry, fleet inventory, and heartbeat freshness monitoring. Native OS collectors, a local agent key store, key rotation, external alert delivery, and automated detection rules remain future work. OS collectors must use native platform APIs, least privilege, explicit customer configuration and signed updates. No remote shell or arbitrary command execution is part of this agent contract.
