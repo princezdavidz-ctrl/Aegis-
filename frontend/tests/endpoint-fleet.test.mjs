@@ -32,3 +32,12 @@ test('app mounts fleet view only for the authenticated tenant session', () => {
   assert.match(app, /active === 'agents'/);
   assert.match(app, /auth\.tenantSession/);
 });
+
+test('enrollment invitation API is bounded, platform-bound and validates one-time token response', () => {
+  assert.match(api, /createInvitation\(session: TenantSession, platform: EndpointPlatform/);
+  assert.match(api, /ttlMinutes < 5 \|\| ttlMinutes > 1440/);
+  assert.match(api, /\/api\/v1\/endpoints\/invitations/);
+  assert.match(api, /enrollment_token/);
+  assert.match(page, /One-time enrollment token/);
+  assert.match(page, /window\.navigator\.clipboard\.writeText/);
+});
