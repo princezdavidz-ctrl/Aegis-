@@ -59,7 +59,7 @@ def test_fleet_response_contract_is_tenant_agnostic_and_includes_health_metadata
     row = EndpointDeviceSummary(
         device_id=uuid4(), platform="linux", hostname="sensor-01", agent_version="0.1.0",
         status="active", enrolled_at="2026-11-11T12:00:00Z", last_seen_at=None,
-        last_sequence=0, revoked_at=None, last_event_type=None, last_event_received_at=None,
+        last_heartbeat_at=None, health_status="never_reported", last_sequence=0, revoked_at=None, last_event_type=None, last_event_received_at=None,
     )
     response = EndpointFleetOutput(items=[row], limit=100)
     assert response.items[0].hostname == "sensor-01"
@@ -68,7 +68,7 @@ def test_fleet_response_contract_is_tenant_agnostic_and_includes_health_metadata
         EndpointDeviceSummary(
             device_id=uuid4(), platform="linux", hostname="sensor-01", agent_version="0.1.0",
             status="active", enrolled_at="2026-11-11T12:00:00Z", last_seen_at=None,
-            last_sequence=0, revoked_at=None, last_event_type=None, last_event_received_at=None,
+            last_heartbeat_at=None, health_status="never_reported", last_sequence=0, revoked_at=None, last_event_type=None, last_event_received_at=None,
             tenant_id=uuid4(),
         )
 
