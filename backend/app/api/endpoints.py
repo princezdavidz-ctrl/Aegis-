@@ -72,6 +72,8 @@ class EndpointDeviceSummary(BaseModel):
     status: str
     enrolled_at: datetime
     last_seen_at: datetime | None
+    last_heartbeat_at: datetime | None
+    health_status: str
     last_sequence: int
     revoked_at: datetime | None
     last_event_type: str | None
@@ -105,6 +107,20 @@ def _provisioner_factory(request: Request) -> async_sessionmaker[AsyncSession]:
     return factory
 
 
+def _endpoint_health(last_heartbeat_at: datetime | None, status: str, now: datetime | None = None) -> str:
+    if status == "revoked":
+        return "revoked"
+    if last_heartbeat_at is None:
+        return "never_reported"
+    current = now or datetime.now(timezone.utc)
+    age_seconds = max(0.0, (current - last_heartbeat_at).total_seconds())
+    if age_seconds <= 120:
+        return "online"
+    if age_seconds <= 900:
+        return "stale"
+    return "offline"
+
+
 def _require_endpoint_manager(tenant: TenantContext) -> None:
     if tenant.role not in {"tenant_admin", "security_manager"}:
         raise HTTPException(status_code=403, detail="endpoint_manager_required")
@@ -135,7 +151,10 @@ async def endpoint_fleet(request: Request, limit: int = Query(default=100, ge=1,
         raise _database_error(exc) from None
     except SQLAlchemyError:
         raise HTTPException(status_code=503, detail="endpoint_service_unavailable") from None
-    return EndpointFleetOutput(items=[EndpointDeviceSummary(**row) for row in rows], limit=limit)
+    return EndpointFleetOutput(items=[
+        EndpointDeviceSummary(**row, health_status=_endpoint_health(row.get("last_heartbeat_at"), row["status"]))
+        for row in rows
+    ], limit=limit)
 
 
 @router.post("/invitations", response_model=InvitationOutput, status_code=status.HTTP_201_CREATED)
