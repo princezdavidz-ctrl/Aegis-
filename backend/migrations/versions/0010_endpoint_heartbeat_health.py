@@ -2,8 +2,8 @@
 
 from alembic import op
 
-revision = "0010_endpoint_heartbeat_health"
-down_revision = "0009_endpoint_fleet_inventory"
+revision = "0012_endpoint_heartbeat_health"
+down_revision = "0011_knowledge_class_access"
 branch_labels = None
 depends_on = None
 
