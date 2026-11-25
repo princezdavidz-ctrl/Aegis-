@@ -90,7 +90,15 @@ def resolve_webhook_addresses(
             raise WebhookConfigurationError("webhook DNS response was invalid") from exc
         # Reject the entire DNS answer if even one address is unsafe. This
         # prevents a mixed public/private answer from becoming a rebinding path.
-        if not address.is_global:
+        if (
+            not address.is_global
+            or address.is_private
+            or address.is_loopback
+            or address.is_link_local
+            or address.is_multicast
+            or address.is_reserved
+            or address.is_unspecified
+        ):
             raise WebhookConfigurationError("webhook DNS resolved to a non-global address")
         addresses.add(address.compressed)
 
