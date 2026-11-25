@@ -48,6 +48,12 @@ export function EndpointFleetPage({ session }: EndpointFleetPageProps) {
   const refresh = useCallback(() => setRetry((value) => value + 1), []);
 
   useEffect(() => {
+    if (!session) return;
+    const interval = window.setInterval(() => setRetry((value) => value + 1), 60_000);
+    return () => window.clearInterval(interval);
+  }, [session]);
+
+  useEffect(() => {
     if (!session || config.state !== 'ready') return;
     let active = true;
     setLoading(true);
@@ -94,6 +100,8 @@ export function EndpointFleetPage({ session }: EndpointFleetPageProps) {
     }
   }
 
+  const attentionDevices = devices.filter((device) => ['stale', 'offline', 'never_reported'].includes(device.health_status));
+
   if (!session) return <State title="Connect your organization account" body="Endpoint inventory is available only after trusted sign-in and a server-side membership check. No demo devices or tenant identifiers are shown." />;
   if (config.state !== 'ready') return <State title={config.state === 'missing' ? 'API connection is not configured' : 'API configuration is invalid'} body="Configure VITE_AEGIS_API_BASE_URL with the HTTPS API origin. Access tokens must come from the trusted OIDC session and must never be placed in Vite environment variables." />;
   if (loading && devices.length === 0) return <div role="status" className="flex min-h-64 items-center justify-center gap-3 text-sm text-slate-400"><RefreshCw size={17} className="animate-spin text-cyan-200" />Loading endpoint fleet…</div>;
@@ -107,6 +115,10 @@ export function EndpointFleetPage({ session }: EndpointFleetPageProps) {
       </div>
       {error && <p role="alert" className="rounded-xl border border-rose-200/15 bg-rose-300/[0.05] px-4 py-3 text-xs text-rose-100">{error}</p>}
       {notice && <p role="status" className="rounded-xl border border-emerald-200/15 bg-emerald-300/[0.05] px-4 py-3 text-xs text-emerald-100">{notice}</p>}
+      {attentionDevices.length > 0 && <div role="status" aria-live="polite" className="rounded-xl border border-amber-200/15 bg-amber-300/[0.05] px-4 py-3">
+        <p className="text-xs font-semibold text-amber-100">{attentionDevices.length} endpoint{attentionDevices.length === 1 ? '' : 's'} need attention</p>
+        <p className="mt-1 text-xs text-amber-100/70">{attentionDevices.slice(0, 5).map((device) => device.hostname + ' · ' + (device.health_status === 'never_reported' ? 'no heartbeat received' : device.health_status)).join('  |  ')}{attentionDevices.length > 5 ? '  |  +' + (attentionDevices.length - 5) + ' more' : ''}</p>
+      </div>}
       {canManage && <section className="rounded-2xl border border-white/[0.07] bg-[#101722] p-5">
         <div className="flex items-center gap-2"><Plus size={16} className="text-cyan-200" /><h3 className="text-sm font-semibold text-white">Enroll an endpoint</h3></div>
         <p className="mt-1 text-xs text-slate-500">Create a single-use enrollment token for a specific operating system. The raw token is displayed once and is never stored by the browser beyond this page state.</p>
