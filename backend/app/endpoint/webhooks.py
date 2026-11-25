@@ -9,6 +9,8 @@ import hashlib
 import hmac
 import ipaddress
 import re
+import socket
+from collections.abc import Callable
 from urllib.parse import urlsplit
 
 _MAX_BODY_BYTES = 1_048_576
@@ -59,6 +61,50 @@ def validate_webhook_url(value: str) -> str:
     if len(labels) < 2 or any(not _DOMAIN_LABEL.fullmatch(label) for label in labels):
         raise WebhookConfigurationError("invalid webhook hostname")
     return value
+
+
+def resolve_webhook_addresses(
+    value: str,
+    *,
+    resolver: Callable[..., list[tuple]] = socket.getaddrinfo,
+) -> tuple[str, ...]:
+    """Resolve a validated webhook host and reject any non-global DNS answer.
+
+    The delivery worker must connect to one of the returned IP addresses
+    directly (IP pinning), while preserving the original hostname for TLS SNI
+    and certificate verification. It must not perform a second DNS lookup.
+    """
+    validate_webhook_url(value)
+    hostname = urlsplit(value).hostname
+    assert hostname is not None  # guaranteed by validate_webhook_url
+    try:
+        records = resolver(hostname, 443, type=socket.SOCK_STREAM)
+    except OSError as exc:
+        raise WebhookConfigurationError("webhook hostname could not be resolved") from exc
+
+    addresses: set[str] = set()
+    for record in records:
+        try:
+            address = ipaddress.ip_address(record[4][0].split("%", 1)[0])
+        except (IndexError, TypeError, ValueError) as exc:
+            raise WebhookConfigurationError("webhook DNS response was invalid") from exc
+        # Reject the entire DNS answer if even one address is unsafe. This
+        # prevents a mixed public/private answer from becoming a rebinding path.
+        if (
+            not address.is_global
+            or address.is_private
+            or address.is_loopback
+            or address.is_link_local
+            or address.is_multicast
+            or address.is_reserved
+            or address.is_unspecified
+        ):
+            raise WebhookConfigurationError("webhook DNS resolved to a non-global address")
+        addresses.add(address.compressed)
+
+    if not addresses:
+        raise WebhookConfigurationError("webhook hostname returned no addresses")
+    return tuple(sorted(addresses))
 
 
 def sign_webhook_payload(secret: bytes, timestamp: int, body: bytes) -> str:
