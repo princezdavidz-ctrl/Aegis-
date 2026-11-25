@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AlertCircle, Laptop, Monitor, RefreshCw, ShieldCheck, ShieldOff,
+  AlertCircle, Copy, Laptop, Monitor, Plus, RefreshCw, ShieldCheck, ShieldOff,
 } from 'lucide-react';
 import {
-  createEndpointClient, EndpointApiError, type EndpointDevice, type EndpointPlatform,
+  createEndpointClient, EndpointApiError, type EndpointDevice, type EndpointInvitation, type EndpointPlatform,
 } from '../api/endpoints';
 import type { TenantSession } from '../api/tenantProfile';
 
@@ -39,6 +39,10 @@ export function EndpointFleetPage({ session }: EndpointFleetPageProps) {
   const [retry, setRetry] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [invitationPlatform, setInvitationPlatform] = useState<EndpointPlatform>('linux');
+  const [invitationTtl, setInvitationTtl] = useState(60);
+  const [issuingInvitation, setIssuingInvitation] = useState(false);
+  const [issuedInvitation, setIssuedInvitation] = useState<EndpointInvitation | null>(null);
   const canManage = session?.membershipRole === 'tenant_admin' || session?.membershipRole === 'security_manager';
 
   const refresh = useCallback(() => setRetry((value) => value + 1), []);
@@ -54,6 +58,24 @@ export function EndpointFleetPage({ session }: EndpointFleetPageProps) {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [session, config, retry]);
+
+  async function issueInvitation(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session || config.state !== 'ready' || !canManage || issuingInvitation) return;
+    setIssuingInvitation(true);
+    setError(null);
+    setNotice(null);
+    setIssuedInvitation(null);
+    try {
+      const invitation = await config.client.createInvitation(session, invitationPlatform, invitationTtl);
+      setIssuedInvitation(invitation);
+      setNotice('One-time enrollment invitation created. Copy the token now; it will not be shown again after leaving this page.');
+    } catch (reason) {
+      setError(errorLabel(reason));
+    } finally {
+      setIssuingInvitation(false);
+    }
+  }
 
   async function revoke(device: EndpointDevice) {
     if (!session || config.state !== 'ready' || !canManage || device.status !== 'active') return;
@@ -85,6 +107,29 @@ export function EndpointFleetPage({ session }: EndpointFleetPageProps) {
       </div>
       {error && <p role="alert" className="rounded-xl border border-rose-200/15 bg-rose-300/[0.05] px-4 py-3 text-xs text-rose-100">{error}</p>}
       {notice && <p role="status" className="rounded-xl border border-emerald-200/15 bg-emerald-300/[0.05] px-4 py-3 text-xs text-emerald-100">{notice}</p>}
+      {canManage && <section className="rounded-2xl border border-white/[0.07] bg-[#101722] p-5">
+        <div className="flex items-center gap-2"><Plus size={16} className="text-cyan-200" /><h3 className="text-sm font-semibold text-white">Enroll an endpoint</h3></div>
+        <p className="mt-1 text-xs text-slate-500">Create a single-use enrollment token for a specific operating system. The raw token is displayed once and is never stored by the browser beyond this page state.</p>
+        <form onSubmit={(event) => void issueInvitation(event)} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="flex-1 text-xs text-slate-400">Platform
+            <select value={invitationPlatform} onChange={(event) => setInvitationPlatform(event.target.value as EndpointPlatform)} disabled={issuingInvitation} className="mt-1 block w-full rounded-lg border border-white/10 bg-[#0d141e] px-3 py-2.5 text-sm text-white">
+              <option value="windows">Windows</option><option value="linux">Linux</option><option value="macos">macOS</option>
+            </select>
+          </label>
+          <label className="flex-1 text-xs text-slate-400">Expires after
+            <select value={invitationTtl} onChange={(event) => setInvitationTtl(Number(event.target.value))} disabled={issuingInvitation} className="mt-1 block w-full rounded-lg border border-white/10 bg-[#0d141e] px-3 py-2.5 text-sm text-white">
+              <option value={15}>15 minutes</option><option value={60}>1 hour</option><option value={360}>6 hours</option><option value={1440}>24 hours</option>
+            </select>
+          </label>
+          <button type="submit" disabled={issuingInvitation} className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-200/20 bg-cyan-200/[0.08] px-4 py-2.5 text-xs font-medium text-cyan-100 disabled:opacity-50"><Plus size={14} />{issuingInvitation ? 'Creating…' : 'Create invitation'}</button>
+        </form>
+        {issuedInvitation && <div className="mt-4 rounded-xl border border-cyan-200/15 bg-cyan-200/[0.04] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold text-cyan-100">One-time enrollment token · {platformLabels[issuedInvitation.platform]}</p><span className="text-[10px] text-slate-500">Expires {timeLabel(issuedInvitation.expires_at)}</span></div>
+          <code className="mt-3 block break-all rounded-lg bg-black/20 p-3 text-xs text-white">{issuedInvitation.enrollment_token}</code>
+          <button type="button" onClick={() => { void window.navigator.clipboard.writeText(issuedInvitation.enrollment_token).then(() => setNotice('Enrollment token copied to clipboard.')).catch(() => setError('Clipboard access was unavailable. Select and copy the token manually.')); }} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-200"><Copy size={13} />Copy token</button>
+          <p className="mt-2 text-[10px] text-amber-200/80">Treat this token as a secret. It can enroll one matching-platform device and cannot be retrieved again.</p>
+        </div>}
+      </section>}
       <div className="grid gap-4 sm:grid-cols-3">
         <Metric label="Registered devices" value={String(devices.length)} icon={Monitor} />
         <Metric label="Active devices" value={String(devices.filter((d) => d.status === 'active').length)} icon={ShieldCheck} />
