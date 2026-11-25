@@ -12,7 +12,7 @@ const expectedLabels = [
   'Members',
   'Assets',
   'Investigations',
-  'AI agents',
+  'Endpoints',
   'Integrations',
   'Memory',
   'Audit log',

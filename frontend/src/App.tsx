@@ -8,6 +8,7 @@ import { platformReadiness } from './data/platformReadiness';
 import { OrganizationPage } from './pages/OrganizationPage';
 import { AssetInventoryPage } from './pages/AssetInventoryPage';
 import { MembershipPage } from './pages/MembershipPage';
+import { EndpointFleetPage } from './pages/EndpointFleetPage';
 
 type SectionId = (typeof navigationItems)[number]['id'];
 
@@ -224,6 +225,8 @@ export default function App() {
               <AssetInventoryPage session={auth.tenantSession ?? undefined} />
             ) : active === 'members' ? (
               <MembershipPage session={auth.tenantSession ?? undefined} />
+            ) : active === 'agents' ? (
+              <EndpointFleetPage session={auth.tenantSession ?? undefined} />
             ) : (
               <section className="mx-auto flex min-h-[420px] max-w-3xl flex-col items-center justify-center rounded-2xl border border-white/[0.07] bg-[#101722] p-8 text-center">
                 <CloudOff size={28} className="text-cyan-200" aria-hidden="true" />
