@@ -83,6 +83,12 @@ async def test_endpoint_lifecycle_is_single_use_signed_tenant_scoped_and_audited
             """), {"device_id":device_id,"event_id":uuid4(),
                 "observed_at":datetime.now(timezone.utc),"payload":'{"status":"healthy"}'})).one()
             assert accepted.sequence == 1
+            heartbeat = (await session.execute(text("""
+                SELECT last_heartbeat_at
+                FROM public.aegis_endpoint_list_heartbeats(:tenant_id,:actor,100)
+                WHERE device_id=:device_id
+            """), {"tenant_id":tenant_id,"actor":actor,"device_id":device_id})).scalar_one()
+            assert heartbeat is not None
             await session.commit()
 
         async with provisioner_factory() as session:
