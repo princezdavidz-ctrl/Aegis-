@@ -22,6 +22,13 @@ export interface EndpointFleet {
   limit: number;
 }
 
+export interface EndpointInvitation {
+  invitation_id: string;
+  platform: EndpointPlatform;
+  expires_at: string;
+  enrollment_token: string;
+}
+
 type FetchImplementation = typeof fetch;
 
 export class EndpointApiError extends Error {
@@ -125,6 +132,26 @@ export function createEndpointClient(baseUrl: string, fetchImplementation: Fetch
         throw new EndpointApiError(200, 'invalid_response');
       }
       return payload as unknown as EndpointFleet;
+    },
+
+    async createInvitation(session: TenantSession, platform: EndpointPlatform, ttlMinutes = 60): Promise<EndpointInvitation> {
+      if (!PLATFORMS.has(platform) || !Number.isInteger(ttlMinutes) || ttlMinutes < 5 || ttlMinutes > 1440) {
+        throw new TypeError('Invitation platform or expiry is invalid.');
+      }
+      const payload = await request('/api/v1/endpoints/invitations', session, {
+        method: 'POST',
+        body: JSON.stringify({ platform, ttl_minutes: ttlMinutes }),
+      });
+      if (!isRecord(payload) || Object.keys(payload).some((key) =>
+        !['invitation_id', 'platform', 'expires_at', 'enrollment_token'].includes(key)) ||
+        typeof payload.invitation_id !== 'string' || !UUID_PATTERN.test(payload.invitation_id) ||
+        payload.platform !== platform || typeof payload.expires_at !== 'string' ||
+        !Number.isFinite(Date.parse(payload.expires_at)) ||
+        typeof payload.enrollment_token !== 'string' ||
+        payload.enrollment_token.length < 32 || payload.enrollment_token.length > 256) {
+        throw new EndpointApiError(200, 'invalid_response');
+      }
+      return payload as unknown as EndpointInvitation;
     },
 
     async revokeDevice(session: TenantSession, deviceId: string): Promise<void> {
