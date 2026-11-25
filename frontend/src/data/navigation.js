@@ -33,8 +33,8 @@ export const navigationItems = Object.freeze([
   },
   {
     id: 'agents',
-    label: 'AI agents',
-    description: 'Manage narrowly scoped assistants and their permissions.',
+    label: 'Endpoints',
+    description: 'Manage enrolled Windows, Linux and macOS endpoint devices.'
   },
   {
     id: 'integrations',
