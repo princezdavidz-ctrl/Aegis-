@@ -132,24 +132,24 @@ export function EndpointFleetPage({ session }: EndpointFleetPageProps) {
       </section>}
       <div className="grid gap-4 sm:grid-cols-3">
         <Metric label="Registered devices" value={String(devices.length)} icon={Monitor} />
-        <Metric label="Active devices" value={String(devices.filter((d) => d.status === 'active').length)} icon={ShieldCheck} />
-        <Metric label="Revoked devices" value={String(devices.filter((d) => d.status === 'revoked').length)} icon={ShieldOff} />
+        <Metric label="Online devices" value={String(devices.filter((d) => d.health_status === 'online').length)} icon={ShieldCheck} />
+        <Metric label="Needs attention" value={String(devices.filter((d) => ['stale', 'offline', 'never_reported'].includes(d.health_status)).length)} icon={AlertCircle} />
       </div>
       <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#101722]">
         <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4"><h3 className="text-xs font-semibold text-slate-200">Managed endpoints</h3><span className="text-[10px] text-slate-500">Up to 100 devices</span></div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[850px] text-left text-xs">
             <caption className="sr-only">Organization endpoint devices and telemetry health</caption>
-            <thead className="bg-[#0d141e] text-[10px] uppercase tracking-[0.12em] text-slate-500"><tr><th scope="col" className="px-5 py-3">Device</th><th scope="col" className="px-4 py-3">Platform</th><th scope="col" className="px-4 py-3">Agent</th><th scope="col" className="px-4 py-3">Last seen</th><th scope="col" className="px-4 py-3">Last event</th><th scope="col" className="px-4 py-3">Status</th>{canManage && <th scope="col" className="px-4 py-3">Action</th>}</tr></thead>
+            <thead className="bg-[#0d141e] text-[10px] uppercase tracking-[0.12em] text-slate-500"><tr><th scope="col" className="px-5 py-3">Device</th><th scope="col" className="px-4 py-3">Platform</th><th scope="col" className="px-4 py-3">Agent</th><th scope="col" className="px-4 py-3">Last heartbeat</th><th scope="col" className="px-4 py-3">Last event</th><th scope="col" className="px-4 py-3">Health</th><th scope="col" className="px-4 py-3">Device</th>{canManage && <th scope="col" className="px-4 py-3">Action</th>}</tr></thead>
             <tbody className="divide-y divide-white/[0.05]">
               {devices.map((device) => (
                 <tr key={device.device_id} className="text-slate-300">
                   <td className="px-5 py-4"><p className="font-medium text-white">{device.hostname}</p><p className="mt-1 text-[10px] text-slate-600">{device.device_id}</p></td>
                   <td className="px-4 py-4">{platformLabels[device.platform]}</td>
                   <td className="px-4 py-4">{device.agent_version}</td>
-                  <td className="px-4 py-4">{timeLabel(device.last_seen_at)}</td>
+                  <td className="px-4 py-4">{timeLabel(device.last_heartbeat_at)}</td>
                   <td className="px-4 py-4"><p>{device.last_event_type ?? 'No events'}</p><p className="mt-1 text-[10px] text-slate-600">{timeLabel(device.last_event_received_at)}</p></td>
-                  <td className="px-4 py-4"><span className={device.status === 'active' ? 'text-emerald-200' : 'text-slate-500'}>{device.status}</span></td>
+                  <td className="px-4 py-4"><HealthPill status={device.health_status} /></td><td className="px-4 py-4"><span className={device.status === 'active' ? 'text-emerald-200' : 'text-slate-500'}>{device.status}</span></td>
                   {canManage && <td className="px-4 py-4"><button type="button" disabled={device.status !== 'active' || busyId === device.device_id} onClick={() => void revoke(device)} className="rounded-lg border border-rose-200/15 px-2.5 py-2 text-[10px] text-rose-200 disabled:cursor-not-allowed disabled:opacity-40">{busyId === device.device_id ? 'Revoking…' : 'Revoke'}</button></td>}
                 </tr>
               ))}
@@ -161,6 +161,22 @@ export function EndpointFleetPage({ session }: EndpointFleetPageProps) {
       <p className="text-[10px] leading-5 text-slate-600">Device inventory is read from the verified tenant context. Revocation requires a tenant administrator or security manager and is recorded by the backend audit service.</p>
     </section>
   );
+}
+
+
+function HealthPill({ status }: { status: import('../api/endpoints').EndpointHealthStatus }) {
+  const styles: Record<typeof status, string> = {
+    online: 'text-emerald-200 bg-emerald-300/10',
+    stale: 'text-amber-200 bg-amber-300/10',
+    offline: 'text-rose-200 bg-rose-300/10',
+    never_reported: 'text-slate-300 bg-slate-300/10',
+    revoked: 'text-slate-500 bg-slate-500/10',
+  };
+  const labels: Record<typeof status, string> = {
+    online: 'Online', stale: 'Stale', offline: 'Offline',
+    never_reported: 'Never reported', revoked: 'Revoked',
+  };
+  return <span className={'inline-flex rounded-full px-2.5 py-1 text-[10px] font-medium ' + styles[status]}>{labels[status]}</span>;
 }
 
 function Metric({ label, value, icon: Icon }: { label: string; value: string; icon: typeof Monitor }) {
