@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from uuid import UUID
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
