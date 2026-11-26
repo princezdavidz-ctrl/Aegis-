@@ -5,7 +5,7 @@ receives no direct table privileges. Delivery remains disabled.
 """
 from alembic import op
 
-revision = "0014_webhook_destination_management"
+revision = "0014_webhook_dest_mgmt"
 down_revision = "0013_webhook_delivery_outbox"
 branch_labels = None
 depends_on = None
