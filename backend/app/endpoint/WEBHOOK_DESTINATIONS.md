@@ -44,3 +44,8 @@ If KMS is not configured, create requests fail closed with HTTP 503. Listing
 and disabling do not require decrypting a secret. This API does not activate
 delivery; the outbox worker, secret rotation, audit events, and delivery
 outcome reporting remain separate release gates.
+
+For AWS deployment, the API task role requires only `kms:GenerateDataKey`
+on the configured key, constrained by the webhook purpose encryption context.
+It does not require `kms:Decrypt`; reserve that capability for a separate
+delivery-worker role after the worker is implemented and reviewed.
