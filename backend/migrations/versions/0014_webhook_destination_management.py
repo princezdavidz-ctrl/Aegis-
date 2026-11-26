@@ -1,0 +1,143 @@
+"""Add narrowly scoped tenant-manager operations for webhook destinations.
+
+The provisioner role receives EXECUTE on SECURITY DEFINER functions only; it
+receives no direct table privileges. Delivery remains disabled.
+"""
+from alembic import op
+
+revision = "0014_webhook_destination_management"
+down_revision = "0013_webhook_delivery_outbox"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    op.execute("""
+        CREATE FUNCTION public.aegis_webhook_create_destination(
+            p_tenant_id uuid, p_actor text, p_name text, p_target_url text,
+            p_event_types text[], p_secret_ciphertext bytea, p_secret_key_ref text,
+            p_secret_encryption_version smallint, p_secret_version integer
+        ) RETURNS TABLE(
+            destination_id uuid, name varchar, target_url varchar, status varchar,
+            event_types text[], secret_version integer, created_at timestamptz
+        )
+        LANGUAGE plpgsql SECURITY DEFINER
+        SET search_path = pg_catalog, public, pg_temp
+        AS $function$
+        DECLARE v_id uuid := gen_random_uuid();
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM public.tenant_memberships m
+                WHERE m.tenant_id = p_tenant_id AND m.subject = p_actor
+                  AND m.status = 'active'
+                  AND m.role IN ('tenant_admin', 'security_manager')
+            ) THEN
+                RAISE EXCEPTION 'webhook manager required' USING ERRCODE = '42501';
+            END IF;
+            IF p_name IS NULL OR length(btrim(p_name)) NOT BETWEEN 1 AND 120
+               OR p_target_url IS NULL OR length(p_target_url) NOT BETWEEN 9 AND 2048
+               OR p_target_url !~ '^https://'
+               OR p_event_types IS NULL OR cardinality(p_event_types) NOT BETWEEN 1 AND 32
+               OR p_secret_ciphertext IS NULL OR octet_length(p_secret_ciphertext) NOT BETWEEN 48 AND 8192
+               OR p_secret_key_ref IS NULL OR length(btrim(p_secret_key_ref)) NOT BETWEEN 1 AND 512
+               OR p_secret_encryption_version <> 1 OR p_secret_version <> 1
+               OR p_actor IS NULL OR length(btrim(p_actor)) NOT BETWEEN 1 AND 128
+            THEN
+                RAISE EXCEPTION 'invalid webhook destination' USING ERRCODE = '22023';
+            END IF;
+            IF EXISTS (SELECT 1 FROM unnest(p_event_types) e
+                       WHERE e IS NULL OR e !~ '^[a-z][a-z0-9_.-]{0,63}$')
+               OR cardinality(ARRAY(SELECT DISTINCT e FROM unnest(p_event_types) e)) <> cardinality(p_event_types)
+            THEN
+                RAISE EXCEPTION 'invalid webhook event types' USING ERRCODE = '22023';
+            END IF;
+            RETURN QUERY
+            INSERT INTO public.endpoint_webhook_destinations AS d (
+                id, tenant_id, name, target_url, status, event_types,
+                secret_ciphertext, secret_key_ref, secret_encryption_version,
+                secret_version, created_by
+            ) VALUES (
+                v_id, p_tenant_id, btrim(p_name), p_target_url, 'active', p_event_types,
+                p_secret_ciphertext, btrim(p_secret_key_ref), p_secret_encryption_version,
+                p_secret_version, p_actor
+            )
+            RETURNING d.id, d.name, d.target_url, d.status, d.event_types,
+                      d.secret_version, d.created_at;
+        END
+        $function$
+    """)
+    op.execute("""
+        CREATE FUNCTION public.aegis_webhook_list_destinations(
+            p_tenant_id uuid, p_actor text
+        ) RETURNS TABLE(
+            destination_id uuid, name varchar, target_url varchar, status varchar,
+            event_types text[], secret_version integer, created_at timestamptz,
+            updated_at timestamptz, disabled_at timestamptz
+        )
+        LANGUAGE plpgsql SECURITY DEFINER
+        SET search_path = pg_catalog, public, pg_temp
+        AS $function$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM public.tenant_memberships m
+                WHERE m.tenant_id = p_tenant_id AND m.subject = p_actor
+                  AND m.status = 'active'
+                  AND m.role IN ('tenant_admin', 'security_manager')
+            ) THEN
+                RAISE EXCEPTION 'webhook manager required' USING ERRCODE = '42501';
+            END IF;
+            RETURN QUERY
+            SELECT d.id, d.name, d.target_url, d.status, d.event_types,
+                   d.secret_version, d.created_at, d.updated_at, d.disabled_at
+            FROM public.endpoint_webhook_destinations d
+            WHERE d.tenant_id = p_tenant_id
+            ORDER BY d.created_at DESC, d.id;
+        END
+        $function$
+    """)
+    op.execute("""
+        CREATE FUNCTION public.aegis_webhook_disable_destination(
+            p_tenant_id uuid, p_destination_id uuid, p_actor text
+        ) RETURNS boolean
+        LANGUAGE plpgsql SECURITY DEFINER
+        SET search_path = pg_catalog, public, pg_temp
+        AS $function$
+        DECLARE v_count integer;
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM public.tenant_memberships m
+                WHERE m.tenant_id = p_tenant_id AND m.subject = p_actor
+                  AND m.status = 'active'
+                  AND m.role IN ('tenant_admin', 'security_manager')
+            ) THEN
+                RAISE EXCEPTION 'webhook manager required' USING ERRCODE = '42501';
+            END IF;
+            UPDATE public.endpoint_webhook_destinations d
+            SET status = 'disabled', disabled_at = now(), updated_at = now()
+            WHERE d.tenant_id = p_tenant_id AND d.id = p_destination_id
+              AND d.status = 'active';
+            GET DIAGNOSTICS v_count = ROW_COUNT;
+            IF v_count = 0 AND NOT EXISTS (
+                SELECT 1 FROM public.endpoint_webhook_destinations d
+                WHERE d.tenant_id = p_tenant_id AND d.id = p_destination_id
+            ) THEN
+                RAISE EXCEPTION 'webhook destination not found' USING ERRCODE = 'P0002';
+            END IF;
+            RETURN v_count = 1;
+        END
+        $function$
+    """)
+    for function in (
+        "aegis_webhook_create_destination(uuid,text,text,text,text[],bytea,text,smallint,integer)",
+        "aegis_webhook_list_destinations(uuid,text)",
+        "aegis_webhook_disable_destination(uuid,uuid,text)",
+    ):
+        op.execute(f"ALTER FUNCTION public.{function} OWNER TO aegis_migrator")
+        op.execute(f"REVOKE ALL ON FUNCTION public.{function} FROM PUBLIC")
+        op.execute(f"GRANT EXECUTE ON FUNCTION public.{function} TO aegis_provisioner")
+
+
+def downgrade() -> None:
+    op.execute("DROP FUNCTION IF EXISTS public.aegis_webhook_disable_destination(uuid,uuid,text)")
+    op.execute("DROP FUNCTION IF EXISTS public.aegis_webhook_list_destinations(uuid,text)")
+    op.execute("DROP FUNCTION IF EXISTS public.aegis_webhook_create_destination(uuid,text,text,text,text[],bytea,text,smallint,integer)")
