@@ -40,7 +40,7 @@ def upgrade() -> None:
                OR p_event_types IS NULL OR cardinality(p_event_types) NOT BETWEEN 1 AND 32
                OR p_secret_ciphertext IS NULL OR octet_length(p_secret_ciphertext) NOT BETWEEN 48 AND 8192
                OR p_secret_key_ref IS NULL OR length(btrim(p_secret_key_ref)) NOT BETWEEN 1 AND 512
-               OR p_secret_encryption_version <> 1 OR p_secret_version <> 1
+               OR p_secret_encryption_version IS DISTINCT FROM 1 OR p_secret_version IS DISTINCT FROM 1
                OR p_actor IS NULL OR length(btrim(p_actor)) NOT BETWEEN 1 AND 128
             THEN
                 RAISE EXCEPTION 'invalid webhook destination' USING ERRCODE = '22023';
