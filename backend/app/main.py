@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import logging
-import boto3
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import boto3
 from aegis_ai.config import AISettings
 from aegis_ai.gateway import ModelGateway
 from aegis_ai.providers.openai_compatible import OpenAICompatibleProvider
@@ -21,12 +21,12 @@ from app.api.endpoints import router as endpoint_router
 from app.api.membership_bootstrap import router as membership_bootstrap_router
 from app.api.memberships import router as membership_router
 from app.api.tenant_profile import router as tenant_profile_router
-from app.api.webhook_destinations import router as webhook_destinations_router
 from app.api.tenants import router as tenant_router
+from app.api.webhook_destinations import router as webhook_destinations_router
 from app.config import Settings
 from app.db.session import create_session_factory
-from app.health import router as health_router
 from app.endpoint.webhook_secrets import KMSWebhookSecretProvider
+from app.health import router as health_router
 from app.security.authentication import CredentialVerifier
 from app.security.oidc import OidcJwtCredentialVerifier
 
