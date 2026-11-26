@@ -144,6 +144,8 @@ async def create_destination(
             secret_encryption_version=1,
             secret_version=1,
         )
+    except HTTPException:
+        raise
     except DBAPIError as exc:
         raise _database_error(exc) from None
     except SQLAlchemyError:
