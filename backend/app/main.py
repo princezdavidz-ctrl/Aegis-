@@ -6,6 +6,7 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import boto3
 from aegis_ai.config import AISettings
 from aegis_ai.gateway import ModelGateway
 from aegis_ai.providers.openai_compatible import OpenAICompatibleProvider
@@ -21,8 +22,10 @@ from app.api.membership_bootstrap import router as membership_bootstrap_router
 from app.api.memberships import router as membership_router
 from app.api.tenant_profile import router as tenant_profile_router
 from app.api.tenants import router as tenant_router
+from app.api.webhook_destinations import router as webhook_destinations_router
 from app.config import Settings
 from app.db.session import create_session_factory
+from app.endpoint.webhook_secrets import KMSWebhookSecretProvider
 from app.health import router as health_router
 from app.security.authentication import CredentialVerifier
 from app.security.oidc import OidcJwtCredentialVerifier
@@ -67,11 +70,13 @@ def create_app(
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         engines = []
         ai_provider = None
+        kms_client = None
         application.state.session_factory = None
         application.state.provisioner_session_factory = None
         application.state.knowledge_runtime = None
         application.state.ai_provider = None
         application.state.specialist_analysis_service = None
+        application.state.webhook_secret_provider = None
 
         try:
             knowledge_settings = KnowledgeSettings.from_environment(
@@ -126,6 +131,16 @@ def create_app(
                     ingestor_session_factory=ingestor_factory,
                 )
 
+            if resolved_settings.webhook_kms_key_id:
+                # boto3 uses the AWS default credential provider chain (task role,
+                # workload identity, or local profile); static keys are never read.
+                kms_client = boto3.client(
+                    "kms", region_name=resolved_settings.webhook_kms_region
+                )
+                application.state.webhook_secret_provider = KMSWebhookSecretProvider(
+                    kms_client, resolved_settings.webhook_kms_key_id
+                )
+
             ai_settings = AISettings.from_environment()
             if ai_settings.model != "unset" and ai_settings.api_key:
                 ai_provider = OpenAICompatibleProvider(ai_settings)
@@ -139,6 +154,8 @@ def create_app(
             try:
                 if ai_provider is not None:
                     await ai_provider.aclose()
+                if kms_client is not None:
+                    kms_client.close()
             finally:
                 for engine in reversed(engines):
                     await engine.dispose()
@@ -162,6 +179,7 @@ def create_app(
     application.include_router(tenant_profile_router)
     application.include_router(assets_router)
     application.include_router(endpoint_router)
+    application.include_router(webhook_destinations_router)
     return application
 
 

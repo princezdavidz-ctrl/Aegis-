@@ -2,24 +2,25 @@
 from __future__ import annotations
 
 from uuid import UUID
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
 async def create_webhook_destination(
-    factory: async_sessionmaker[AsyncSession], *, tenant_id: UUID, actor: str,
+    factory: async_sessionmaker[AsyncSession], *, tenant_id: UUID, destination_id: UUID, actor: str,
     name: str, target_url: str, event_types: list[str], secret_ciphertext: bytes,
     secret_key_ref: str, secret_encryption_version: int = 1, secret_version: int = 1,
 ) -> dict[str, object]:
     async with factory() as session:
         row = (await session.execute(text("""
-            SELECT * FROM public.aegis_webhook_create_destination(
-                :tenant_id, :actor, :name, :target_url, :event_types,
+            SELECT * FROM public.aegis_webhook_create_destination_v2(
+                :tenant_id, :destination_id, :actor, :name, :target_url, :event_types,
                 :secret_ciphertext, :secret_key_ref,
                 :secret_encryption_version, :secret_version
             )
         """), {
-            "tenant_id": tenant_id, "actor": actor, "name": name,
+            "tenant_id": tenant_id, "destination_id": destination_id, "actor": actor, "name": name,
             "target_url": target_url, "event_types": event_types,
             "secret_ciphertext": secret_ciphertext, "secret_key_ref": secret_key_ref,
             "secret_encryption_version": secret_encryption_version,

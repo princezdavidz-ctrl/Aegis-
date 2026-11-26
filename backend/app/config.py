@@ -21,6 +21,8 @@ class Settings(BaseModel):
     log_level: LogLevel = "INFO"
     database_url: SecretStr | None = None
     provisioner_database_url: SecretStr | None = None
+    webhook_kms_key_id: str | None = Field(default=None, min_length=1, max_length=512)
+    webhook_kms_region: str | None = Field(default=None, min_length=1, max_length=64)
     oidc_issuer: str | None = None
     oidc_audience: str | None = None
     oidc_jwks_url: str | None = None
@@ -46,6 +48,10 @@ class Settings(BaseModel):
         )
         if any(configured) and not all(configured):
             raise ValueError("OIDC_ISSUER, OIDC_AUDIENCE and OIDC_JWKS_URL must be configured together")
+        if self.webhook_kms_region and not self.webhook_kms_key_id:
+            raise ValueError("AEGIS_WEBHOOK_KMS_REGION requires AEGIS_WEBHOOK_KMS_KEY_ID")
+        if self.webhook_kms_key_id and not self.webhook_kms_key_id.strip():
+            raise ValueError("AEGIS_WEBHOOK_KMS_KEY_ID must not be blank")
         if self.endpoint_stale_threshold_seconds <= self.endpoint_online_threshold_seconds:
             raise ValueError("endpoint stale threshold must exceed online threshold")
         return self
@@ -66,6 +72,8 @@ class Settings(BaseModel):
         for setting, variable in (
             ("database_url", "AEGIS_DATABASE_URL"),
             ("provisioner_database_url", "AEGIS_PROVISIONER_DATABASE_URL"),
+            ("webhook_kms_key_id", "AEGIS_WEBHOOK_KMS_KEY_ID"),
+            ("webhook_kms_region", "AEGIS_WEBHOOK_KMS_REGION"),
             ("oidc_issuer", "AEGIS_OIDC_ISSUER"),
             ("oidc_audience", "AEGIS_OIDC_AUDIENCE"),
             ("oidc_jwks_url", "AEGIS_OIDC_JWKS_URL"),

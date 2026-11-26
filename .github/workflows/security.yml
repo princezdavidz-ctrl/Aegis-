@@ -95,7 +95,7 @@ jobs:
           python -m pip install --disable-pip-version-check -r backend/requirements-dev.txt
           python -m pip install -e services/ai ruff
       - name: Lint NVD importer
-        run: ruff check backend/app/vulnerability_intel backend/scripts/sync_nvd_cves.py backend/tests/test_nvd_sync.py backend/app/ai/knowledge_store.py backend/tests/test_postgres_knowledge.py backend/app/main.py backend/app/ai/knowledge_config.py backend/tests/test_knowledge_config.py backend/app/ai/knowledge_runtime.py backend/tests/test_knowledge_lifecycle.py
+        run: ruff check backend/app/vulnerability_intel backend/scripts/sync_nvd_cves.py backend/tests/test_nvd_sync.py backend/app/ai/knowledge_store.py backend/tests/test_postgres_knowledge.py backend/app/main.py backend/app/ai/knowledge_config.py backend/tests/test_knowledge_config.py backend/app/ai/knowledge_runtime.py backend/tests/test_knowledge_lifecycle.py backend/app/api/webhook_destinations.py backend/app/repositories/webhook_destinations.py backend/app/endpoint/webhook_secrets.py backend/migrations/versions/0015_webhook_api_kms.py backend/tests/test_webhook_destinations_api.py backend/tests/test_webhook_destinations_repository.py backend/tests/test_webhook_kms_config.py backend/tests/test_postgres_webhook_destinations.py
       - name: Test NVD importer
         env:
           PYTHONPATH: backend
