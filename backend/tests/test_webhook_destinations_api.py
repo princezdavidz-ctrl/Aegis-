@@ -99,6 +99,7 @@ def test_create_returns_random_signing_secret_once_and_stores_only_ciphertext(mo
             "created_at": datetime.now(timezone.utc),
         }
 
+    monkeypatch.setattr(api, "uuid4", lambda: destination_id)
     monkeypatch.setattr(api, "create_webhook_destination", fake_create)
     with make_client() as client:
         client.app.state.webhook_secret_provider = FakeProvider()
