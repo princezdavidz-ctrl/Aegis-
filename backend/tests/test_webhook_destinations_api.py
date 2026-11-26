@@ -3,6 +3,7 @@
 import base64
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
+
 from fastapi.testclient import TestClient
 
 from app.config import Settings
