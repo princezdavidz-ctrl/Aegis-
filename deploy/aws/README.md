@@ -100,3 +100,46 @@ The workflow fails closed if required variables or AWS resources are missing. Re
 ## Separate tenant-provisioning database credential
 
 The API uses two database connections. AEGIS_DATABASE_URL uses the restricted aegis_runtime role. AEGIS_PROVISIONER_DATABASE_URL uses the separate aegis_provisioner role, which has no direct table privileges and can execute only the audited tenant-provisioning function. Set independent credentials in Secrets Manager. Do not use the migration-owner credential in the API.
+
+
+## Webhook destination KMS permissions
+
+For the API's create-destination operation, configure these non-secret runtime
+settings in the ECS task definition (prefer the existing Secrets Manager
+injection mechanism for consistency):
+
+- `AEGIS_WEBHOOK_KMS_KEY_ID`: ARN or ID of the dedicated symmetric KMS key.
+- `AEGIS_WEBHOOK_KMS_REGION`: optional; otherwise boto3 uses the task's AWS region.
+
+Grant the **API task role only** `kms:GenerateDataKey` on that specific key.
+The API does not need `kms:Decrypt` to create, list or disable destinations.
+A minimal identity-policy statement is:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "GenerateWebhookSigningDataKeys",
+      "Effect": "Allow",
+      "Action": "kms:GenerateDataKey",
+      "Resource": "arn:aws:kms:af-south-1:123456789012:key/REPLACE-WITH-KEY-ID",
+      "Condition": {
+        "StringEquals": {
+          "kms:EncryptionContext:purpose": "aegis:endpoint-webhook-signing-secret"
+        }
+      }
+    }
+  ]
+}
+```
+
+Replace the example key ARN with the actual key in your account and ensure
+the KMS key policy also permits the ECS task role. Do not grant
+`kms:Decrypt` to the API task role. When a separate delivery worker is
+implemented, give that worker a distinct task role with narrowly scoped
+`kms:Decrypt` permission and the same encryption-context purpose constraint.
+Never place AWS access keys in the task definition; boto3 obtains temporary
+credentials from the ECS task role. Keep outbound webhook delivery disabled
+until the worker's DNS pinning, TLS hostname verification, redirect blocking,
+timeouts, retry, idempotency, audit and kill-switch controls are deployed.
