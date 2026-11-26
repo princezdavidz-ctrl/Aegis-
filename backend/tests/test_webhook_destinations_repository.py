@@ -53,7 +53,7 @@ async def test_create_passes_ciphertext_only_and_returns_no_secret_material():
     ciphertext = b"\x01" * 128
 
     result = await create_webhook_destination(
-        factory, tenant_id=uuid4(), actor="security-admin",
+        factory, tenant_id=uuid4(), destination_id=destination_id, actor="security-admin",
         name="SOC alerts", target_url="https://alerts.example.org/aegis",
         event_types=["endpoint.health"], secret_ciphertext=ciphertext,
         secret_key_ref="arn:aws:kms:region:account:key/id",
@@ -62,6 +62,8 @@ async def test_create_passes_ciphertext_only_and_returns_no_secret_material():
     assert result["id"] == destination_id
     assert "secret_ciphertext" not in result
     assert "secret_key_ref" not in result
+    assert session.calls[0][1]["destination_id"] == destination_id
+    assert "aegis_webhook_create_destination_v2" in session.calls[0][0]
     assert session.calls[0][1]["secret_ciphertext"] == ciphertext
     assert session.committed
 
